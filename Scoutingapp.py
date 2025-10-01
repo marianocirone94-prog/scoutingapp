@@ -83,47 +83,6 @@ def mostrar_ficha(jugador):
 
     mostrar_ficha(jugador)
 
-# ============================
-# EDITAR DATOS DEL JUGADOR
-# ============================
-if st.button(f"✏️ Editar datos de {jugador['Nombre']}"):
-    with st.form(key=f"edit_form_{jugador['ID_Jugador']}"):
-        nuevo_nombre = st.text_input("Nombre completo", jugador["Nombre"])
-        nueva_fecha_nac = st.text_input("Fecha de nacimiento", jugador["Fecha_Nac"])
-        nueva_nacionalidad = st.text_input("Nacionalidad", jugador["Nacionalidad"])
-        nueva_segunda_nac = st.text_input("Segunda nacionalidad", jugador["Segunda_Nacionalidad"])
-        nueva_altura = st.number_input("Altura (cm)", min_value=140, max_value=210, value=int(jugador["Altura"]))
-        nuevo_pie = st.text_input("Pie hábil", jugador["Pie_Hábil"])
-        nueva_posicion = st.text_input("Posición específica", jugador["Posición"])
-        nueva_caracteristica = st.text_input("Característica principal", jugador["Caracteristica"])
-        nuevo_club = st.text_input("Club", jugador["Club"])
-        nueva_liga = st.text_input("Liga", jugador["Liga"])
-        nuevo_sexo = st.text_input("Sexo", jugador["Sexo"])
-        nueva_url_foto = st.text_input("URL Foto", jugador["URL_Foto"])
-        nueva_url_perfil = st.text_input("URL Perfil externo", jugador["URL_Perfil"])
-
-        guardar = st.form_submit_button("💾 Guardar cambios")
-
-        if guardar:
-            df_players.loc[df_players["ID_Jugador"] == jugador["ID_Jugador"], "Nombre"] = nuevo_nombre
-            df_players.loc[df_players["ID_Jugador"] == jugador["ID_Jugador"], "Fecha_Nac"] = nueva_fecha_nac
-            df_players.loc[df_players["ID_Jugador"] == jugador["ID_Jugador"], "Nacionalidad"] = nueva_nacionalidad
-            df_players.loc[df_players["ID_Jugador"] == jugador["ID_Jugador"], "Segunda_Nacionalidad"] = nueva_segunda_nac
-            df_players.loc[df_players["ID_Jugador"] == jugador["ID_Jugador"], "Altura"] = nueva_altura
-            df_players.loc[df_players["ID_Jugador"] == jugador["ID_Jugador"], "Pie_Hábil"] = nuevo_pie
-            df_players.loc[df_players["ID_Jugador"] == jugador["ID_Jugador"], "Posición"] = nueva_posicion
-            df_players.loc[df_players["ID_Jugador"] == jugador["ID_Jugador"], "Caracteristica"] = nueva_caracteristica
-            df_players.loc[df_players["ID_Jugador"] == jugador["ID_Jugador"], "Club"] = nuevo_club
-            df_players.loc[df_players["ID_Jugador"] == jugador["ID_Jugador"], "Liga"] = nueva_liga
-            df_players.loc[df_players["ID_Jugador"] == jugador["ID_Jugador"], "Sexo"] = nuevo_sexo
-            df_players.loc[df_players["ID_Jugador"] == jugador["ID_Jugador"], "URL_Foto"] = nueva_url_foto
-            df_players.loc[df_players["ID_Jugador"] == jugador["ID_Jugador"], "URL_Perfil"] = nueva_url_perfil
-
-            df_players.to_csv(FILE_PLAYERS, index=False)
-            st.success(f"✅ Datos de {nuevo_nombre} actualizados correctamente")
-            st.rerun()
-
-
     if st.button("⭐ Agregar a lista corta"):
         df_short = pd.read_csv(FILE_SHORTLIST)
         if jugador["ID_Jugador"] not in df_short["ID_Jugador"].values:
@@ -359,3 +318,4 @@ if menu == "Lista corta":
                     df_short.to_csv(FILE_SHORTLIST, index=False)
                     st.success(f"Jugador {row['Nombre']} eliminado de la lista corta")
                     st.rerun()
+
