@@ -305,4 +305,13 @@ if menu == "Lista corta":
                         st.markdown(f"### Informes de {row['Nombre']}")
                         for _, inf in informes_sel.iterrows():
                             st.markdown(f"**🗓️ {inf['Fecha_Partido']} | Scout: {inf['Scout']} | Línea: {inf['Línea']}**")
-                            st.write(f"🏟️ Equipos: {inf['Equipos]()
+                            st.write(f"🏟️ Equipos: {inf['Equipos_Resultados']}")
+                            st.text_area("Observaciones", inf["Observaciones"], height=100, disabled=True)
+                            st.markdown("---")
+
+                # Botón para eliminar de lista corta
+                if st.button("🗑️ Eliminar", key=f"del_{row['ID_Jugador']}"):
+                    df_short = df_short[df_short["ID_Jugador"] != row["ID_Jugador"]]
+                    df_short.to_csv(FILE_SHORTLIST, index=False)
+                    st.success(f"Jugador {row['Nombre']} eliminado de la lista corta")
+                    st.experimental_rerun()
