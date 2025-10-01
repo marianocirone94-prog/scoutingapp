@@ -309,9 +309,9 @@ if menu == "Lista corta":
                             st.text_area("Observaciones", inf["Observaciones"], height=100, disabled=True)
                             st.markdown("---")
 
-                # Botón para eliminar de lista corta
-                if st.button("🗑️ Eliminar", key=f"del_{row['ID_Jugador']}"):
-                    df_short = df_short[df_short["ID_Jugador"] != row["ID_Jugador"]]
-                    df_short.to_csv(FILE_SHORTLIST, index=False)
-                    st.success(f"Jugador {row['Nombre']} eliminado de la lista corta")
-                    st.experimental_rerun()
+              # Botón para eliminar de lista corta
+if st.button("🗑️ Eliminar", key=f"del_{row['ID_Jugador']}"):
+    df_short = df_short[df_short["ID_Jugador"] != row["ID_Jugador"]]
+    df_short.to_csv(FILE_SHORTLIST, index=False)
+    st.success(f"Jugador {row['Nombre']} eliminado de la lista corta")
+    st.rerun()  # recargar la app
