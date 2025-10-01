@@ -81,8 +81,6 @@ def mostrar_ficha(jugador):
         if pd.notna(jugador["URL_Perfil"]) and str(jugador["URL_Perfil"]).startswith("http"):
             st.markdown(f"[🌐 Ver perfil externo]({jugador['URL_Perfil']})", unsafe_allow_html=True)
 
-    mostrar_ficha(jugador)
-
     if st.button("⭐ Agregar a lista corta"):
         df_short = pd.read_csv(FILE_SHORTLIST)
         if jugador["ID_Jugador"] not in df_short["ID_Jugador"].values:
@@ -258,27 +256,28 @@ if menu == "Ver informes":
             informes_sel = df_reports[df_reports["ID_Jugador"] == jugador_sel["ID_Jugador"]].copy()
             if not informes_sel.empty:
                 st.markdown("### 📝 Informes del jugador")
-                for idx, inf in informes_sel.iterrows():
+                for _, inf in informes_sel.iterrows():
                     with st.expander(f"🗓️ {inf['Fecha_Partido']} | Scout: {inf['Scout']} | Línea: {inf['Línea']}"):
-                        # Formulario de edición del informe
-                        nuevo_scout = st.text_input("Scout", inf["Scout"], key=f"scout_{idx}")
-                        nueva_fecha = st.text_input("Fecha del partido", inf["Fecha_Partido"], key=f"fecha_{idx}")
-                        nuevos_equipos = st.text_input("Equipos y resultado", inf["Equipos_Resultados"], key=f"equipos_{idx}")
-                        nueva_linea = st.selectbox("Línea", ["1ra (Fichar)", "2da (Seguir)", "3ra (Ver más adelante)", "4ta (Descartar)", "Joven Promesa"], 
-                                                   index=["1ra (Fichar)", "2da (Seguir)", "3ra (Ver más adelante)", "4ta (Descartar)", "Joven Promesa"].index(inf["Línea"]),
-                                                   key=f"linea_{idx}")
-                        nuevas_obs = st.text_area("Observaciones", inf["Observaciones"], height=120, key=f"obs_{idx}")
+                        nuevo_scout = st.text_input("Scout", inf["Scout"], key=f"scout_{inf['ID_Informe']}")
+                        nueva_fecha = st.text_input("Fecha del partido", inf["Fecha_Partido"], key=f"fecha_{inf['ID_Informe']}")
+                        nuevos_equipos = st.text_input("Equipos y resultado", inf["Equipos_Resultados"], key=f"equipos_{inf['ID_Informe']}")
+                        nueva_linea = st.selectbox(
+                            "Línea",
+                            ["1ra (Fichar)", "2da (Seguir)", "3ra (Ver más adelante)", "4ta (Descartar)", "Joven Promesa"],
+                            index=["1ra (Fichar)", "2da (Seguir)", "3ra (Ver más adelante)", "4ta (Descartar)", "Joven Promesa"].index(inf["Línea"]),
+                            key=f"linea_{inf['ID_Informe']}"
+                        )
+                        nuevas_obs = st.text_area("Observaciones", inf["Observaciones"], height=120, key=f"obs_{inf['ID_Informe']}")
 
-                        if st.button("💾 Guardar cambios", key=f"save_{idx}"):
-                            df_reports.loc[idx, "Scout"] = nuevo_scout
-                            df_reports.loc[idx, "Fecha_Partido"] = nueva_fecha
-                            df_reports.loc[idx, "Equipos_Resultados"] = nuevos_equipos
-                            df_reports.loc[idx, "Línea"] = nueva_linea
-                            df_reports.loc[idx, "Observaciones"] = nuevas_obs
+                        if st.button("💾 Guardar cambios", key=f"save_{inf['ID_Informe']}"):
+                            df_reports.loc[df_reports["ID_Informe"] == inf["ID_Informe"], "Scout"] = nuevo_scout
+                            df_reports.loc[df_reports["ID_Informe"] == inf["ID_Informe"], "Fecha_Partido"] = nueva_fecha
+                            df_reports.loc[df_reports["ID_Informe"] == inf["ID_Informe"], "Equipos_Resultados"] = nuevos_equipos
+                            df_reports.loc[df_reports["ID_Informe"] == inf["ID_Informe"], "Línea"] = nueva_linea
+                            df_reports.loc[df_reports["ID_Informe"] == inf["ID_Informe"], "Observaciones"] = nuevas_obs
                             df_reports.to_csv(FILE_REPORTS, index=False)
                             st.success("✅ Informe actualizado")
                             st.rerun()
-
 
 # ============================
 # LISTA CORTA
@@ -291,11 +290,9 @@ if menu == "Lista corta":
     else:
         st.markdown("### 📊 Jugadores en la lista corta")
 
-        cols = st.columns(3)  # hasta 3 tarjetas por fila
-
+        cols = st.columns(3)
         for i, row in df_short.iterrows():
-            with cols[i % 3]:  # distribuir tarjetas en columnas
-                # Tarjeta compacta con foto y datos
+            with cols[i % 3]:
                 st.markdown(f"""
                 <div style="
                     background: linear-gradient(90deg, #1e3c72, #2a5298);
@@ -315,7 +312,6 @@ if menu == "Lista corta":
                 </div>
                 """, unsafe_allow_html=True)
 
-                # Botón para ver informes
                 if st.button(f"📑 Ver informes de {row['Nombre']}", key=f"inf_{i}"):
                     informes_sel = df_reports[df_reports["ID_Jugador"] == row["ID_Jugador"]].copy()
                     if informes_sel.empty:
@@ -328,11 +324,8 @@ if menu == "Lista corta":
                             st.text_area("Observaciones", inf["Observaciones"], height=100, disabled=True)
                             st.markdown("---")
 
-                # Botón para eliminar de lista corta
                 if st.button(f"🗑️ Eliminar {row['Nombre']}", key=f"del_{i}"):
                     df_short = df_short[df_short["ID_Jugador"] != row["ID_Jugador"]]
                     df_short.to_csv(FILE_SHORTLIST, index=False)
                     st.success(f"Jugador {row['Nombre']} eliminado de la lista corta")
                     st.rerun()
-
-
