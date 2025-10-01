@@ -215,7 +215,7 @@ if menu == "Ver informes":
     filtro_posicion = st.sidebar.multiselect("Posición", sorted(df_merged["Posición"].dropna().unique()))
     filtro_linea = st.sidebar.multiselect("Línea", sorted(df_merged["Línea"].dropna().unique()))
     filtro_caracteristica = st.sidebar.multiselect("Característica", sorted(df_merged["Caracteristica"].dropna().unique()))
-    filtro_edad = st.sidebar.slider("Edad", 15, 40, (15,40))
+    filtro_edad = st.sidebar.slider("Edad", 15, 40, (15, 40))
 
     df_filtrado = df_merged.copy()
     if filtro_scout: df_filtrado = df_filtrado[df_filtrado["Scout"].isin(filtro_scout)]
@@ -240,7 +240,7 @@ if menu == "Ver informes":
             jugador_sel = df_players[df_players["Nombre"] == seleccion].iloc[0]
 
             st.markdown("### 📋 Ficha del jugador")
-            col1, col2 = st.columns([1,3])
+            col1, col2 = st.columns([1, 3])
             with col1:
                 if pd.notna(jugador_sel["URL_Foto"]) and str(jugador_sel["URL_Foto"]).startswith("http"):
                     st.image(jugador_sel["URL_Foto"], width=120, caption=jugador_sel["Nombre"])
@@ -258,11 +258,27 @@ if menu == "Ver informes":
             informes_sel = df_reports[df_reports["ID_Jugador"] == jugador_sel["ID_Jugador"]].copy()
             if not informes_sel.empty:
                 st.markdown("### 📝 Informes del jugador")
-                for _, inf in informes_sel.iterrows():
-                    st.markdown(f"**🗓️ {inf['Fecha_Partido']} | Scout: {inf['Scout']} | Línea: {inf['Línea']}**")
-                    st.write(f"🏟️ Equipos: {inf['Equipos_Resultados']}")
-                    st.text_area("Observaciones", inf["Observaciones"], height=120, disabled=True)
-                    st.markdown("---")
+                for idx, inf in informes_sel.iterrows():
+                    with st.expander(f"🗓️ {inf['Fecha_Partido']} | Scout: {inf['Scout']} | Línea: {inf['Línea']}"):
+                        # Formulario de edición del informe
+                        nuevo_scout = st.text_input("Scout", inf["Scout"], key=f"scout_{idx}")
+                        nueva_fecha = st.text_input("Fecha del partido", inf["Fecha_Partido"], key=f"fecha_{idx}")
+                        nuevos_equipos = st.text_input("Equipos y resultado", inf["Equipos_Resultados"], key=f"equipos_{idx}")
+                        nueva_linea = st.selectbox("Línea", ["1ra (Fichar)", "2da (Seguir)", "3ra (Ver más adelante)", "4ta (Descartar)", "Joven Promesa"], 
+                                                   index=["1ra (Fichar)", "2da (Seguir)", "3ra (Ver más adelante)", "4ta (Descartar)", "Joven Promesa"].index(inf["Línea"]),
+                                                   key=f"linea_{idx}")
+                        nuevas_obs = st.text_area("Observaciones", inf["Observaciones"], height=120, key=f"obs_{idx}")
+
+                        if st.button("💾 Guardar cambios", key=f"save_{idx}"):
+                            df_reports.loc[idx, "Scout"] = nuevo_scout
+                            df_reports.loc[idx, "Fecha_Partido"] = nueva_fecha
+                            df_reports.loc[idx, "Equipos_Resultados"] = nuevos_equipos
+                            df_reports.loc[idx, "Línea"] = nueva_linea
+                            df_reports.loc[idx, "Observaciones"] = nuevas_obs
+                            df_reports.to_csv(FILE_REPORTS, index=False)
+                            st.success("✅ Informe actualizado")
+                            st.rerun()
+
 
 # ============================
 # LISTA CORTA
@@ -318,4 +334,5 @@ if menu == "Lista corta":
                     df_short.to_csv(FILE_SHORTLIST, index=False)
                     st.success(f"Jugador {row['Nombre']} eliminado de la lista corta")
                     st.rerun()
+
 
