@@ -296,6 +296,7 @@ if menu == "Lista corta":
                 </div>
                 """, unsafe_allow_html=True)
 
+                # Botón para ver informes
                 if st.button("📑 Ver informes", key=f"inf_{row['ID_Jugador']}"):
                     informes_sel = df_reports[df_reports["ID_Jugador"] == row["ID_Jugador"]].copy()
                     if informes_sel.empty:
@@ -304,6 +305,4 @@ if menu == "Lista corta":
                         st.markdown(f"### Informes de {row['Nombre']}")
                         for _, inf in informes_sel.iterrows():
                             st.markdown(f"**🗓️ {inf['Fecha_Partido']} | Scout: {inf['Scout']} | Línea: {inf['Línea']}**")
-                            st.write(f"🏟️ Equipos: {inf['Equipos_Resultados']}")
-                            st.text_area("Observaciones", inf["Observaciones"], height=100, disabled=True)
-                            st.markdown("---")
+                            st.write(f"🏟️ Equipos: {inf['Equipos]()
