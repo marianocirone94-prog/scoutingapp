@@ -416,6 +416,9 @@ if menu == "Jugadores":
         id_jugador = opciones[seleccion]
         jugador = df_players[df_players["ID_Jugador"] == id_jugador].iloc[0]
 
+        if "editar_jugador" not in st.session_state:
+            st.session_state.editar_jugador = False
+
         # === Ficha del jugador ===
         col1, col2, col3, col4 = st.columns([1.5, 1, 1, 1.5])
 
@@ -434,41 +437,44 @@ if menu == "Jugadores":
             if pd.notna(jugador["URL_Perfil"]) and str(jugador["URL_Perfil"]).startswith("http"):
                 st.markdown(f"[Enlace externo]({jugador['URL_Perfil']})", unsafe_allow_html=True)
 
-            # --- Botón para editar jugador ---
+            # --- Editar jugador ---
             if CURRENT_ROLE in ["admin", "scout"]:
                 if st.button("✏️ Editar datos del jugador"):
-                    st.markdown("### Editar información del jugador")
-                    with st.form("editar_jugador_form"):
-                        e_nombre = st.text_input("Nombre completo", value=jugador["Nombre"])
-                        e_fecha = st.text_input("Fecha de nacimiento (dd/mm/aaaa)", value=jugador["Fecha_Nac"])
-                        e_altura = st.number_input("Altura (cm)", min_value=140, max_value=210, value=int(jugador["Altura"]))
-                        e_pie = st.selectbox("Pie hábil", ["Derecho", "Izquierdo", "Ambidiestro"], 
-                                             index=["Derecho","Izquierdo","Ambidiestro"].index(jugador["Pie_Hábil"]))
-                        e_posicion = st.text_input("Posición", value=jugador["Posición"])
-                        e_club = st.text_input("Club actual", value=jugador["Club"])
-                        e_liga = st.text_input("Liga o país", value=jugador["Liga"])
-                        e_nacionalidad = st.text_input("Nacionalidad", value=jugador["Nacionalidad"])
-                        e_url_foto = st.text_input("URL de foto (opcional)", value=str(jugador["URL_Foto"]))
-                        e_url_perfil = st.text_input("URL de enlace externo (opcional)", value=str(jugador["URL_Perfil"]))
+                    st.session_state.editar_jugador = not st.session_state.editar_jugador
 
-                        guardar_edicion = st.form_submit_button("Guardar cambios")
+            if st.session_state.editar_jugador:
+                st.markdown("### 📝 Editar información del jugador")
+                with st.form("editar_jugador_form", clear_on_submit=False):
+                    e_nombre = st.text_input("Nombre completo", value=jugador["Nombre"])
+                    e_fecha = st.text_input("Fecha de nacimiento (dd/mm/aaaa)", value=jugador["Fecha_Nac"])
+                    e_altura = st.number_input("Altura (cm)", min_value=140, max_value=210, value=int(jugador["Altura"]))
+                    opciones_pie = ["Derecho", "Izquierdo", "Ambidiestro"]
+                    e_pie = st.selectbox("Pie hábil", opciones_pie,
+                                         index=opciones_pie.index(str(jugador["Pie_Hábil"])) if jugador["Pie_Hábil"] in opciones_pie else 0)
+                    e_posicion = st.text_input("Posición", value=jugador["Posición"])
+                    e_club = st.text_input("Club actual", value=jugador["Club"])
+                    e_liga = st.text_input("Liga o país", value=jugador["Liga"])
+                    e_nacionalidad = st.text_input("Nacionalidad", value=jugador["Nacionalidad"])
+                    e_url_foto = st.text_input("URL de foto (opcional)", value=str(jugador["URL_Foto"]))
+                    e_url_perfil = st.text_input("URL de enlace externo (opcional)", value=str(jugador["URL_Perfil"]))
 
-                        if guardar_edicion:
-                            try:
-                                df_players.loc[df_players["ID_Jugador"] == id_jugador, [
-                                    "Nombre", "Fecha_Nac", "Altura", "Pie_Hábil",
-                                    "Posición", "Club", "Liga", "Nacionalidad",
-                                    "URL_Foto", "URL_Perfil"
-                                ]] = [
-                                    e_nombre, e_fecha, e_altura, e_pie,
-                                    e_posicion, e_club, e_liga, e_nacionalidad,
-                                    e_url_foto, e_url_perfil
-                                ]
-                                guardar_csv(df_players, FILE_PLAYERS)
-                                st.success("Datos del jugador actualizados correctamente.")
-                                st.rerun()
-                            except Exception as e:
-                                st.error(f"Ocurrió un error al guardar los cambios: {e}")
+                    guardar_edicion = st.form_submit_button("Guardar cambios")
+
+                    if guardar_edicion:
+                        try:
+                            df_players.loc[df_players["ID_Jugador"] == id_jugador, [
+                                "Nombre", "Fecha_Nac", "Altura", "Pie_Hábil", "Posición",
+                                "Club", "Liga", "Nacionalidad", "URL_Foto", "URL_Perfil"
+                            ]] = [
+                                e_nombre, e_fecha, e_altura, e_pie, e_posicion,
+                                e_club, e_liga, e_nacionalidad, e_url_foto, e_url_perfil
+                            ]
+                            guardar_csv(df_players, FILE_PLAYERS)
+                            st.success("Datos del jugador actualizados correctamente.")
+                            st.session_state.editar_jugador = False
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Ocurrió un error al guardar los cambios: {e}")
 
             # --- Agregar a lista corta ---
             if CURRENT_ROLE in ["admin", "scout"]:
@@ -497,6 +503,7 @@ if menu == "Jugadores":
                 st.markdown("---")
                 st.markdown("#### ⚠️ Eliminar jugador")
                 eliminar_confirm = st.checkbox("Confirmar eliminación")
+
                 eliminar_css = """
                 <style>
                 div[data-testid="stButton"] button[kind="primary"] {
@@ -587,6 +594,81 @@ if menu == "Jugadores":
                 ax.tick_params(colors="white")
                 ax.legend(loc="upper right", bbox_to_anchor=(1.2, 1.1), facecolor="#0e1117", labelcolor="white")
                 st.pyplot(fig)
+
+        # === FORMULARIO DE INFORME ===
+        st.subheader(f"Cargar informe para {jugador['Nombre']}")
+
+        if CURRENT_ROLE in ["admin", "scout"]:
+            scout = CURRENT_USER
+            fecha_partido = st.date_input("Fecha del partido", format="DD/MM/YYYY")
+            equipos_resultados = st.text_input("Equipos y resultado")
+            formacion = st.selectbox("Formación", ["4-2-3-1", "4-3-1-2", "4-4-2", "4-3-3", "3-5-2", "3-4-3", "5-3-2"])
+            observaciones = st.text_area("Observaciones")
+            linea = st.selectbox("Línea", [
+                "1ra (Fichar)", "2da (Seguir)",
+                "3ra (Ver más adelante)", "4ta (Descartar)", "Joven Promesa"
+            ])
+
+            st.write("### Evaluación del jugador (0 a 5)")
+            with st.expander("Técnica"):
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    controles = st.slider("Controles", 0.0, 5.0, 0.0, 0.5)
+                    perfiles = st.slider("Perfiles", 0.0, 5.0, 0.0, 0.5)
+                with col2:
+                    pase_corto = st.slider("Pase corto", 0.0, 5.0, 0.0, 0.5)
+                    pase_largo = st.slider("Pase largo", 0.0, 5.0, 0.0, 0.5)
+                with col3:
+                    pase_filtrado = st.slider("Pase filtrado", 0.0, 5.0, 0.0, 0.5)
+
+            with st.expander("Defensivos"):
+                col1, col2 = st.columns(2)
+                with col1:
+                    v1_def = st.slider("1v1 Defensivo", 0.0, 5.0, 0.0, 0.5)
+                    recuperacion = st.slider("Recuperación", 0.0, 5.0, 0.0, 0.5)
+                with col2:
+                    intercepciones = st.slider("Intercepciones", 0.0, 5.0, 0.0, 0.5)
+                    duelos_aereos = st.slider("Duelos aéreos", 0.0, 5.0, 0.0, 0.5)
+
+            with st.expander("Ofensivos"):
+                col1, col2 = st.columns(2)
+                with col1:
+                    regate = st.slider("Regate", 0.0, 5.0, 0.0, 0.5)
+                    velocidad = st.slider("Velocidad", 0.0, 5.0, 0.0, 0.5)
+                with col2:
+                    duelos_of = st.slider("Duelos ofensivos", 0.0, 5.0, 0.0, 0.5)
+
+            with st.expander("Psicológicos"):
+                col1, col2 = st.columns(2)
+                with col1:
+                    resiliencia = st.slider("Resiliencia", 0.0, 5.0, 0.0, 0.5)
+                    liderazgo = st.slider("Liderazgo", 0.0, 5.0, 0.0, 0.5)
+                with col2:
+                    int_tactica = st.slider("Inteligencia táctica", 0.0, 5.0, 0.0, 0.5)
+                    int_emocional = st.slider("Inteligencia emocional", 0.0, 5.0, 0.0, 0.5)
+
+            with st.expander("Tácticos"):
+                col1, col2 = st.columns(2)
+                with col1:
+                    posicionamiento = st.slider("Posicionamiento", 0.0, 5.0, 0.0, 0.5)
+                    vision = st.slider("Visión de juego", 0.0, 5.0, 0.0, 0.5)
+                with col2:
+                    movimientos = st.slider("Movimientos sin pelota", 0.0, 5.0, 0.0, 0.5)
+
+            if st.button("Guardar informe"):
+                nuevo = [
+                    len(df_reports)+1, id_jugador, scout, fecha_partido.strftime("%d/%m/%Y"),
+                    date.today().strftime("%d/%m/%Y"), equipos_resultados, formacion,
+                    observaciones, linea,
+                    controles, perfiles, pase_corto, pase_largo, pase_filtrado,
+                    v1_def, recuperacion, intercepciones, duelos_aereos,
+                    regate, velocidad, duelos_of,
+                    resiliencia, liderazgo, int_tactica, int_emocional,
+                    posicionamiento, vision, movimientos
+                ]
+                df_reports.loc[len(df_reports)] = nuevo
+                guardar_csv(df_reports, FILE_REPORTS)
+                st.success("Informe guardado correctamente.")
 
 # =========================================================
 # VER INFORMES
@@ -941,4 +1023,5 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp</p>",
     unsafe_allow_html=True
 )
+
 
