@@ -801,12 +801,11 @@ if menu == "Ver informes":
         # =========================================================
         # INFORMES INDIVIDUALES
         # =========================================================
-seleccion_inf = st.selectbox("👤 Seleccioná un jugador", [""] + list(df_filtrado["Nombre"].unique()))
-if seleccion_inf:
-    jugador_sel = df_players[df_players["Nombre"] == seleccion_inf].iloc[0]
-    informes_sel = df_reports[df_reports["ID_Jugador"] == jugador_sel["ID_Jugador"]]
-    st.markdown(f"### 📄 Informes de {jugador_sel['Nombre']}")
-
+        seleccion_inf = st.selectbox("👤 Seleccioná un jugador", [""] + list(df_filtrado["Nombre"].unique()))
+        if seleccion_inf:
+            jugador_sel = df_players[df_players["Nombre"] == seleccion_inf].iloc[0]
+            informes_sel = df_reports[df_reports["ID_Jugador"] == jugador_sel["ID_Jugador"]]
+            st.markdown(f"### 📄 Informes de {jugador_sel['Nombre']}")
 
             # === EXPORTAR A PDF ===
             if CURRENT_ROLE in ["admin","scout"] and not informes_sel.empty:
@@ -881,8 +880,10 @@ if seleccion_inf:
                                     st.rerun()
                                 except Exception as e:
                                     st.error(f"⚠️ Error al actualizar el informe: {e}")
+
     else:
         st.info("ℹ️ No se encontraron informes con los filtros seleccionados.")
+
 # =========================================================
 # BLOQUE 5 / 5 — Lista corta + Cancha + Cierre
 # =========================================================
@@ -1077,5 +1078,6 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
