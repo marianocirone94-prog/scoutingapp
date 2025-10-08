@@ -490,72 +490,75 @@ if menu == "Jugadores":
                         st.error(f"⚠️ Ocurrió un error al agregar el jugador: {e}")
 
     # =========================================================
-    # MOSTRAR JUGADOR SELECCIONADO
+# MOSTRAR JUGADOR SELECCIONADO
+# =========================================================
+if seleccion:
+    id_jugador = opciones[seleccion]
+    jugador = df_players[df_players["ID_Jugador"] == id_jugador].iloc[0]
+
+    if "editar_jugador" not in st.session_state:
+        st.session_state.editar_jugador = False
+
+    col1, col2, col3, col4 = st.columns([1.5, 1, 1, 1.5])
+
+    # --- FICHA DEL JUGADOR ---
+    with col1:
+        st.markdown(f"### {jugador['Nombre']}")
+        if pd.notna(jugador.get("URL_Foto")) and str(jugador["URL_Foto"]).startswith("http"):
+            st.image(jugador["URL_Foto"], width=150)
+
+        edad = calcular_edad(jugador.get("Fecha_Nac"))
+        st.write(f"📅 {jugador.get('Fecha_Nac', '')} ({edad} años)")
+        st.write(f"🌍 Nacionalidad: {jugador.get('Nacionalidad', '-')}")
+        st.write(f"📏 Altura: {jugador.get('Altura', '-') } cm")
+        st.write(f"👟 Pie hábil: {jugador.get('Pie_Hábil', '-')}")
+        st.write(f"🎯 Posición: {jugador.get('Posición', '-')}")
+        st.write(f"🏟️ Club: {jugador.get('Club', '-')} ({jugador.get('Liga', '-')})")
+
+        if pd.notna(jugador.get("URL_Perfil")) and str(jugador["URL_Perfil"]).startswith("http"):
+            st.markdown(f"[Enlace externo]({jugador['URL_Perfil']})", unsafe_allow_html=True)
+
+        # --- BOTÓN EDITAR JUGADOR ---
+        if CURRENT_ROLE in ["admin", "scout"]:
+            if st.button("✏️ Editar datos del jugador"):
+                st.session_state.editar_jugador = not st.session_state.editar_jugador
+
     # =========================================================
-    if seleccion:
-        id_jugador = opciones[seleccion]
-        jugador = df_players[df_players["ID_Jugador"] == id_jugador].iloc[0]
+    # FORMULARIO DE EDICIÓN
+    # =========================================================
+    if st.session_state.editar_jugador:
+        st.markdown("### 📝 Editar información del jugador")
+        with st.form("editar_jugador_form", clear_on_submit=False):
+            e_nombre = st.text_input("Nombre completo", value=jugador.get("Nombre", ""))
+            e_fecha = st.text_input("Fecha de nacimiento (dd/mm/aaaa)", value=jugador.get("Fecha_Nac", ""))
 
-        if "editar_jugador" not in st.session_state:
-            st.session_state.editar_jugador = False
+            try:
+                e_altura = st.number_input(
+                    "Altura (cm)", min_value=140, max_value=210,
+                    value=int(float(jugador.get("Altura", 175))) if str(jugador.get("Altura", "")).strip() else 175
+                )
+            except Exception:
+                e_altura = st.number_input("Altura (cm)", min_value=140, max_value=210, value=175)
 
-        col1, col2, col3, col4 = st.columns([1.5, 1, 1, 1.5])
+            e_pie = st.selectbox("Pie hábil", opciones_pies,
+                                 index=opciones_pies.index(jugador["Pie_Hábil"]) if jugador["Pie_Hábil"] in opciones_pies else 0)
+            e_pos = st.selectbox("Posición", opciones_posiciones,
+                                 index=opciones_posiciones.index(jugador["Posición"]) if jugador["Posición"] in opciones_posiciones else 0)
+            e_club = st.text_input("Club actual", value=jugador.get("Club", ""))
+            e_liga = st.selectbox("Liga", opciones_ligas,
+                                  index=opciones_ligas.index(jugador["Liga"]) if jugador["Liga"] in opciones_ligas else 0)
+            e_nac = st.selectbox("Nacionalidad", opciones_paises,
+                                 index=opciones_paises.index(jugador["Nacionalidad"]) if jugador["Nacionalidad"] in opciones_paises else 0)
+            e_seg = st.text_input("Segunda nacionalidad", value=jugador.get("Segunda_Nacionalidad", ""))
+            e_car = st.text_input("Característica distintiva", value=jugador.get("Caracteristica", ""))
+            e_foto = st.text_input("URL de foto (opcional)", value=str(jugador.get("URL_Foto", "")))
+            e_link = st.text_input("URL perfil (opcional)", value=str(jugador.get("URL_Perfil", "")))
 
-        # --- FICHA DEL JUGADOR ---
-        with col1:
-            st.markdown(f"### {jugador['Nombre']}")
-            if pd.notna(jugador.get("URL_Foto")) and str(jugador["URL_Foto"]).startswith("http"):
-                st.image(jugador["URL_Foto"], width=150)
+            guardar_ed = st.form_submit_button("💾 Guardar cambios")
 
-            edad = calcular_edad(jugador.get("Fecha_Nac"))
-            st.write(f"📅 {jugador.get('Fecha_Nac', '')} ({edad} años)")
-            st.write(f"🌍 Nacionalidad: {jugador.get('Nacionalidad', '-')}")
-            st.write(f"📏 Altura: {jugador.get('Altura', '-') } cm")
-            st.write(f"👟 Pie hábil: {jugador.get('Pie_Hábil', '-')}")
-            st.write(f"🎯 Posición: {jugador.get('Posición', '-')}")
-            st.write(f"🏟️ Club: {jugador.get('Club', '-')} ({jugador.get('Liga', '-')})")
-
-            if pd.notna(jugador.get("URL_Perfil")) and str(jugador["URL_Perfil"]).startswith("http"):
-                st.markdown(f"[Enlace externo]({jugador['URL_Perfil']})", unsafe_allow_html=True)
-
-            # --- BOTÓN EDITAR JUGADOR ---
-            if CURRENT_ROLE in ["admin", "scout"]:
-                if st.button("✏️ Editar datos del jugador"):
-                    st.session_state.editar_jugador = not st.session_state.editar_jugador
-
-            # --- FORMULARIO DE EDICIÓN ---
-if st.session_state.editar_jugador:
-    st.markdown("### 📝 Editar información del jugador")
-    with st.form("editar_jugador_form", clear_on_submit=False):
-        e_nombre = st.text_input("Nombre completo", value=jugador.get("Nombre", ""))
-        e_fecha = st.text_input("Fecha de nacimiento (dd/mm/aaaa)", value=jugador.get("Fecha_Nac", ""))
-        try:
-            e_altura = st.number_input(
-                "Altura (cm)", min_value=140, max_value=210,
-                value=int(float(jugador.get("Altura", 175))) if str(jugador.get("Altura", "")).strip() else 175
-            )
-        except Exception:
-            e_altura = st.number_input("Altura (cm)", min_value=140, max_value=210, value=175)
-
-        e_pie = st.selectbox("Pie hábil", opciones_pies,
-                             index=opciones_pies.index(jugador["Pie_Hábil"]) if jugador["Pie_Hábil"] in opciones_pies else 0)
-        e_pos = st.selectbox("Posición", opciones_posiciones,
-                             index=opciones_posiciones.index(jugador["Posición"]) if jugador["Posición"] in opciones_posiciones else 0)
-        e_club = st.text_input("Club actual", value=jugador.get("Club", ""))
-        e_liga = st.selectbox("Liga", opciones_ligas,
-                              index=opciones_ligas.index(jugador["Liga"]) if jugador["Liga"] in opciones_ligas else 0)
-        e_nac = st.selectbox("Nacionalidad", opciones_paises,
-                             index=opciones_paises.index(jugador["Nacionalidad"]) if jugador["Nacionalidad"] in opciones_paises else 0)
-        e_seg = st.text_input("Segunda nacionalidad", value=jugador.get("Segunda_Nacionalidad", ""))
-        e_car = st.text_input("Característica distintiva", value=jugador.get("Caracteristica", ""))
-        e_foto = st.text_input("URL de foto (opcional)", value=str(jugador.get("URL_Foto", "")))
-        e_link = st.text_input("URL perfil (opcional)", value=str(jugador.get("URL_Perfil", "")))
-
-        guardar_ed = st.form_submit_button("💾 Guardar cambios")
-
+        # --- GUARDAR CAMBIOS (fuera del formulario) ---
         if guardar_ed:
             try:
-                # --- Actualizar DataFrame local ---
                 df_players.loc[df_players["ID_Jugador"] == id_jugador, [
                     "Nombre", "Fecha_Nac", "Altura", "Pie_Hábil", "Posición",
                     "Club", "Liga", "Nacionalidad", "Segunda_Nacionalidad",
@@ -565,67 +568,64 @@ if st.session_state.editar_jugador:
                     e_club, e_liga, e_nac, e_seg, e_car, e_foto, e_link
                 ]
 
-                # --- Subir a Google Sheets ---
                 actualizar_hoja("Jugadores", df_players)
-
-                # --- Volver a leer los datos actualizados desde Sheets ---
-                df_players = cargar_datos_sheets("Jugadores", list(df_players.columns))
-
-                # --- Reasignar el jugador actualizado ---
-                jugador = df_players[df_players["ID_Jugador"] == id_jugador].iloc[0]
-
-                st.success(f"✅ Datos de '{jugador['Nombre']}' actualizados correctamente.")
+                st.success("✅ Datos actualizados correctamente.")
                 st.session_state.editar_jugador = False
                 st.experimental_rerun()
 
             except Exception as e:
                 st.error(f"⚠️ Error al guardar cambios: {e}")
 
+    # =========================================================
+    # AGREGAR A LISTA CORTA
+    # =========================================================
+    if CURRENT_ROLE in ["admin", "scout"]:
+        st.markdown("---")
+        if st.button("⭐ Agregar a lista corta"):
+            try:
+                edad = calcular_edad(jugador["Fecha_Nac"])
+                columnas_short = [
+                    "ID_Jugador", "Nombre", "Edad", "Altura", "Club", "Posición",
+                    "URL_Foto", "URL_Perfil", "Agregado_Por", "Fecha_Agregado"
+                ]
+                df_short_local = cargar_datos_sheets("Lista corta", columnas_short)
+                if jugador["ID_Jugador"] not in df_short_local["ID_Jugador"].values:
+                    nuevo = pd.DataFrame([[ 
+                        jugador.get("ID_Jugador", ""), jugador.get("Nombre", ""), edad,
+                        jugador.get("Altura", ""), jugador.get("Club", ""),
+                        jugador.get("Posición", ""), jugador.get("URL_Foto", ""),
+                        jugador.get("URL_Perfil", ""), CURRENT_USER, date.today().strftime("%d/%m/%Y")
+                    ]], columns=columnas_short)
+                    df_short_local = pd.concat([df_short_local, nuevo], ignore_index=True)
+                    actualizar_hoja("Lista corta", df_short_local)
+                    st.success("⭐ Jugador agregado a la lista corta.")
+                else:
+                    st.info("⚠️ Este jugador ya está en la lista corta.")
+            except Exception as e:
+                st.error(f"⚠️ Error al agregar a lista corta: {e}")
 
-            # --- AGREGAR A LISTA CORTA ---
-            if CURRENT_ROLE in ["admin","scout"]:
-                if st.button("⭐ Agregar a lista corta"):
-                    try:
-                        edad = calcular_edad(jugador["Fecha_Nac"])
-                        columnas_short = [
-                            "ID_Jugador","Nombre","Edad","Altura","Club","Posición",
-                            "URL_Foto","URL_Perfil","Agregado_Por","Fecha_Agregado"
-                        ]
-                        df_short_local = cargar_datos_sheets("Lista corta", columnas_short)
-                        if jugador["ID_Jugador"] not in df_short_local["ID_Jugador"].values:
-                            nuevo = pd.DataFrame([[
-                                jugador.get("ID_Jugador",""), jugador.get("Nombre",""), edad,
-                                jugador.get("Altura",""), jugador.get("Club",""),
-                                jugador.get("Posición",""), jugador.get("URL_Foto",""),
-                                jugador.get("URL_Perfil",""), CURRENT_USER, date.today().strftime("%d/%m/%Y")
-                            ]], columns=columnas_short)
-                            df_short_local = pd.concat([df_short_local, nuevo], ignore_index=True)
-                            actualizar_hoja("Lista corta", df_short_local)
-                            st.success("Jugador agregado a la lista corta.")
-                        else:
-                            st.info("⚠️ Este jugador ya está en la lista corta.")
-                    except Exception as e:
-                        st.error(f"⚠️ Error al agregar a lista corta: {e}")
+    # =========================================================
+    # ELIMINAR JUGADOR
+    # =========================================================
+    if CURRENT_ROLE == "admin":
+        st.markdown("---")
+        st.markdown("#### ⚠️ Eliminar jugador permanentemente")
+        eliminar_confirm = st.checkbox("Confirmar eliminación")
+        if st.button("🗑️ Eliminar jugador"):
+            if eliminar_confirm:
+                try:
+                    df_players = df_players[df_players["ID_Jugador"] != id_jugador]
+                    actualizar_hoja("Jugadores", df_players)
+                    df_short_local = cargar_datos_sheets("Lista corta")
+                    df_short_local = df_short_local[df_short_local["ID_Jugador"] != id_jugador]
+                    actualizar_hoja("Lista corta", df_short_local)
+                    st.success(f"Jugador '{jugador['Nombre']}' eliminado correctamente.")
+                    st.experimental_rerun()
+                except Exception as e:
+                    st.error(f"⚠️ Error al eliminar: {e}")
+            else:
+                st.warning("Debes confirmar la eliminación antes de continuar.")
 
-            # --- ELIMINAR JUGADOR (solo admin) ---
-            if CURRENT_ROLE == "admin":
-                st.markdown("---")
-                st.markdown("#### ⚠️ Eliminar jugador permanentemente")
-                eliminar_confirm = st.checkbox("Confirmar eliminación")
-                if st.button("🗑️ Eliminar jugador"):
-                    if eliminar_confirm:
-                        try:
-                            df_players = df_players[df_players["ID_Jugador"] != id_jugador]
-                            actualizar_hoja("Jugadores", df_players)
-                            df_short_local = cargar_datos_sheets("Lista corta")
-                            df_short_local = df_short_local[df_short_local["ID_Jugador"] != id_jugador]
-                            actualizar_hoja("Lista corta", df_short_local)
-                            st.success(f"Jugador '{jugador['Nombre']}' eliminado correctamente.")
-                            st.rerun()
-                        except Exception as e:
-                            st.error(f"⚠️ Error al eliminar: {e}")
-                    else:
-                        st.warning("Debes confirmar la eliminación antes de continuar.")
 
         # =========================================================
         # FORMULARIO DE INFORME
