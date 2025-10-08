@@ -1,6 +1,30 @@
-streamlit
-pandas
-numpy
-matplotlib
-fpdf
-streamlit-aggrid
+# --- Framework principal ---
+streamlit>=1.35.0
+streamlit-aggrid>=0.3.4.post3
+
+# --- Ciencia de datos ---
+pandas>=2.2.0
+numpy>=1.26.0
+matplotlib>=3.8.0
+
+# --- Google Sheets API ---
+gspread>=6.0.0
+google-auth>=2.33.0
+google-auth-oauthlib>=1.2.0
+google-auth-httplib2>=0.2.0
+
+# --- PDF ---
+fpdf2>=2.7.8
+
+# --- Utilidades ---
+python-dateutil>=2.9.0
+pytz>=2024.1
+
+# --- Seguridad y conexión ---
+requests>=2.32.0
+
+# --- (Opcional) para dark theme / extras UI ---
+st-theme>=1.2.0
+
+# --- (Opcional) para emojis, formateo y otros helpers ---
+emoji>=2.10.1
