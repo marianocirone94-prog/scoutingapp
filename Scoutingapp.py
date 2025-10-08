@@ -524,44 +524,63 @@ if menu == "Jugadores":
                     st.session_state.editar_jugador = not st.session_state.editar_jugador
 
             # --- FORMULARIO DE EDICIÓN ---
-            if st.session_state.editar_jugador:
-                st.markdown("### 📝 Editar información del jugador")
-                with st.form("editar_jugador_form", clear_on_submit=False):
-                    e_nombre = st.text_input("Nombre completo", value=jugador.get("Nombre",""))
-                    e_fecha = st.text_input("Fecha de nacimiento (dd/mm/aaaa)", value=jugador.get("Fecha_Nac",""))
-                    e_altura = st.number_input("Altura (cm)", min_value=140, max_value=210, value=int(jugador.get("Altura",175)))
-                    e_pie = st.selectbox("Pie hábil", opciones_pies,
-                                         index=opciones_pies.index(jugador["Pie_Hábil"]) if jugador["Pie_Hábil"] in opciones_pies else 0)
-                    e_pos = st.selectbox("Posición", opciones_posiciones,
-                                         index=opciones_posiciones.index(jugador["Posición"]) if jugador["Posición"] in opciones_posiciones else 0)
-                    e_club = st.text_input("Club actual", value=jugador.get("Club",""))
-                    e_liga = st.selectbox("Liga", opciones_ligas,
-                                          index=opciones_ligas.index(jugador["Liga"]) if jugador["Liga"] in opciones_ligas else len(opciones_ligas)-1)
-                    e_nac = st.selectbox("Nacionalidad", opciones_paises,
-                                         index=opciones_paises.index(jugador["Nacionalidad"]) if jugador["Nacionalidad"] in opciones_paises else len(opciones_paises)-1)
-                    e_seg = st.text_input("Segunda nacionalidad", value=jugador.get("Segunda_Nacionalidad",""))
-                    e_car = st.text_input("Característica", value=jugador.get("Caracteristica",""))
-                    e_foto = st.text_input("URL de foto", value=str(jugador.get("URL_Foto","")))
-                    e_link = st.text_input("URL perfil", value=str(jugador.get("URL_Perfil","")))
+if st.session_state.editar_jugador:
+    st.markdown("### 📝 Editar información del jugador")
+    with st.form("editar_jugador_form", clear_on_submit=False):
+        e_nombre = st.text_input("Nombre completo", value=jugador.get("Nombre", ""))
+        e_fecha = st.text_input("Fecha de nacimiento (dd/mm/aaaa)", value=jugador.get("Fecha_Nac", ""))
+        try:
+            e_altura = st.number_input(
+                "Altura (cm)", min_value=140, max_value=210,
+                value=int(float(jugador.get("Altura", 175))) if str(jugador.get("Altura", "")).strip() else 175
+            )
+        except Exception:
+            e_altura = st.number_input("Altura (cm)", min_value=140, max_value=210, value=175)
 
-                    guardar_ed = st.form_submit_button("Guardar cambios")
+        e_pie = st.selectbox("Pie hábil", opciones_pies,
+                             index=opciones_pies.index(jugador["Pie_Hábil"]) if jugador["Pie_Hábil"] in opciones_pies else 0)
+        e_pos = st.selectbox("Posición", opciones_posiciones,
+                             index=opciones_posiciones.index(jugador["Posición"]) if jugador["Posición"] in opciones_posiciones else 0)
+        e_club = st.text_input("Club actual", value=jugador.get("Club", ""))
+        e_liga = st.selectbox("Liga", opciones_ligas,
+                              index=opciones_ligas.index(jugador["Liga"]) if jugador["Liga"] in opciones_ligas else 0)
+        e_nac = st.selectbox("Nacionalidad", opciones_paises,
+                             index=opciones_paises.index(jugador["Nacionalidad"]) if jugador["Nacionalidad"] in opciones_paises else 0)
+        e_seg = st.text_input("Segunda nacionalidad", value=jugador.get("Segunda_Nacionalidad", ""))
+        e_car = st.text_input("Característica distintiva", value=jugador.get("Caracteristica", ""))
+        e_foto = st.text_input("URL de foto (opcional)", value=str(jugador.get("URL_Foto", "")))
+        e_link = st.text_input("URL perfil (opcional)", value=str(jugador.get("URL_Perfil", "")))
 
-                    if guardar_ed:
-                        try:
-                            df_players.loc[df_players["ID_Jugador"] == id_jugador, [
-                                "Nombre","Fecha_Nac","Altura","Pie_Hábil","Posición",
-                                "Club","Liga","Nacionalidad","Segunda_Nacionalidad",
-                                "Caracteristica","URL_Foto","URL_Perfil"
-                            ]] = [
-                                e_nombre,e_fecha,e_altura,e_pie,e_pos,
-                                e_club,e_liga,e_nac,e_seg,e_car,e_foto,e_link
-                            ]
-                            actualizar_hoja("Jugadores", df_players)
-                            st.success("✅ Datos del jugador actualizados correctamente.")
-                            st.session_state.editar_jugador = False
-                            st.rerun()
-                        except Exception as e:
-                            st.error(f"⚠️ Error al guardar cambios: {e}")
+        guardar_ed = st.form_submit_button("💾 Guardar cambios")
+
+        if guardar_ed:
+            try:
+                # --- Actualizar DataFrame local ---
+                df_players.loc[df_players["ID_Jugador"] == id_jugador, [
+                    "Nombre", "Fecha_Nac", "Altura", "Pie_Hábil", "Posición",
+                    "Club", "Liga", "Nacionalidad", "Segunda_Nacionalidad",
+                    "Caracteristica", "URL_Foto", "URL_Perfil"
+                ]] = [
+                    e_nombre, e_fecha, e_altura, e_pie, e_pos,
+                    e_club, e_liga, e_nac, e_seg, e_car, e_foto, e_link
+                ]
+
+                # --- Subir a Google Sheets ---
+                actualizar_hoja("Jugadores", df_players)
+
+                # --- Volver a leer los datos actualizados desde Sheets ---
+                df_players = cargar_datos_sheets("Jugadores", list(df_players.columns))
+
+                # --- Reasignar el jugador actualizado ---
+                jugador = df_players[df_players["ID_Jugador"] == id_jugador].iloc[0]
+
+                st.success(f"✅ Datos de '{jugador['Nombre']}' actualizados correctamente.")
+                st.session_state.editar_jugador = False
+                st.experimental_rerun()
+
+            except Exception as e:
+                st.error(f"⚠️ Error al guardar cambios: {e}")
+
 
             # --- AGREGAR A LISTA CORTA ---
             if CURRENT_ROLE in ["admin","scout"]:
@@ -1057,3 +1076,4 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
