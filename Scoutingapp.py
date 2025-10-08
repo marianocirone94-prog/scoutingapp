@@ -23,28 +23,42 @@ import gspread
 from google.oauth2.service_account import Credentials
 
 # =========================================================
-# BLOQUE DE CONEXIÓN A GOOGLE SHEETS (VERSIÓN CORREGIDA)
+# BLOQUE DE CONEXIÓN A GOOGLE SHEETS (FINAL — LOCAL + CLOUD)
 # =========================================================
 
+import os, json
+import pandas as pd
+import gspread
+from google.oauth2.service_account import Credentials
+import streamlit as st
+
+# --- Configuración general ---
 SCOPE = [
     "https://www.googleapis.com/auth/spreadsheets",
     "https://www.googleapis.com/auth/drive"
 ]
-
-CREDS_PATH = os.path.join("credentials", "credentials.json")
 SHEET_ID = "1IInJ87xaaEwJfaz96mUlLLiX9_tk0HvqzoBoZGhrBi8"  # ID del archivo Scouting_DB
+CREDS_PATH = os.path.join("credentials", "credentials.json")
+
 
 def conectar_sheets():
     """
-    Conecta de forma segura con Google Sheets usando el service account.
-    Verifica existencia de credenciales y retorna el objeto workbook.
+    Conecta con Google Sheets.
+    Usa credenciales locales si existen (modo PC),
+    o st.secrets cuando se ejecuta en Streamlit Cloud.
     """
     try:
-        if not os.path.exists(CREDS_PATH):
-            st.error("❌ No se encontró el archivo credentials.json en /credentials.")
-            st.stop()
+        # --- Modo CLOUD ---
+        if "GOOGLE_SERVICE_ACCOUNT_JSON" in st.secrets:
+            creds_dict = json.loads(st.secrets["GOOGLE_SERVICE_ACCOUNT_JSON"])
+            creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPE)
+        else:
+            # --- Modo LOCAL ---
+            if not os.path.exists(CREDS_PATH):
+                st.error("❌ No se encontró el archivo credentials.json ni el secreto en Streamlit Cloud.")
+                st.stop()
+            creds = Credentials.from_service_account_file(CREDS_PATH, scopes=SCOPE)
 
-        creds = Credentials.from_service_account_file(CREDS_PATH, scopes=SCOPE)
         client = gspread.authorize(creds)
         book = client.open_by_key(SHEET_ID)
         return book
@@ -56,7 +70,7 @@ def conectar_sheets():
 
 def obtener_hoja(nombre_hoja: str, columnas_base: list = None):
     """
-    Devuelve la hoja solicitada; si no existe la crea con las columnas base.
+    Devuelve la hoja solicitada; si no existe, la crea con las columnas base.
     """
     try:
         book = conectar_sheets()
@@ -118,6 +132,7 @@ def agregar_fila(nombre_hoja: str, fila: list):
         st.success(f"✅ Fila agregada correctamente en '{nombre_hoja}'.")
     except Exception as e:
         st.error(f"⚠️ Error al agregar fila en '{nombre_hoja}': {e}")
+
 
 
 # =========================================================
