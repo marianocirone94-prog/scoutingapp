@@ -438,13 +438,13 @@ if menu == "Jugadores":
         "Alemania", "Portugal", "Otro"
     ]
 
-        # =========================================================
-    # BUSCADOR DE JUGADORES (predictivo, insensible a acentos y con Enter directo)
+           # =========================================================
+    # BUSCADOR DE JUGADORES (simple, insensible a acentos y mayúsculas)
     # =========================================================
     import unicodedata
 
     def normalizar_texto(txt):
-        """Elimina acentos, pasa a minúsculas y quita espacios extra."""
+        """Convierte texto a minúsculas y elimina acentos."""
         if not isinstance(txt, str):
             return ""
         txt = unicodedata.normalize("NFD", txt)
@@ -452,53 +452,31 @@ if menu == "Jugadores":
         return txt.lower().strip()
 
     if not df_players.empty:
-        # Diccionario: { "Nombre - Club": ID_Jugador }
-        opciones_dict = {
-            f"{row['Nombre']} - {row['Club']}": row["ID_Jugador"]
-            for _, row in df_players.iterrows()
-        }
+        # Diccionario { "Nombre - Club": ID_Jugador }
+        opciones_dict = {f"{row['Nombre']} - {row['Club']}": row["ID_Jugador"] for _, row in df_players.iterrows()}
         opciones_lista = list(opciones_dict.keys())
 
-        # Campo de búsqueda predictiva
-        texto_busqueda = st.text_input(
-            "🔍 Buscar jugador (nombre o club)",
-            placeholder="Ejemplo: adrian martinez o belgrano"
-        ).strip()
+        # Campo de texto para buscar (sin mostrar advertencias)
+        texto_busqueda = st.text_input("🔍 Buscar jugador (nombre o club)").strip()
+        texto_filtrado = normalizar_texto(texto_busqueda)
 
-        # Filtrado dinámico en tiempo real
-        if texto_busqueda:
-            texto_filtrado = normalizar_texto(texto_busqueda)
-            opciones_filtradas = [
-                opcion for opcion in opciones_lista
-                if texto_filtrado in normalizar_texto(opcion)
-            ]
+        # Filtrado sin acentos ni mayúsculas
+        if texto_filtrado:
+            opciones_filtradas = [op for op in opciones_lista if texto_filtrado in normalizar_texto(op)]
         else:
             opciones_filtradas = opciones_lista
 
-        # Si no hay resultados
-        if not opciones_filtradas:
-            st.warning("⚠️ No se encontraron jugadores con ese nombre o club.")
-            seleccion_jug = ""
-        else:
-            # Mostramos resultados predictivos
-            seleccion_jug = st.selectbox(
-                "Resultados:",
-                [""] + opciones_filtradas,
-                key="select_jugador"
-            )
+        # Selectbox con las coincidencias
+        seleccion_jug = st.selectbox("Resultados:", [""] + opciones_filtradas)
 
-            # Carga directa al presionar Enter
-            if texto_busqueda and len(opciones_filtradas) == 1:
-                seleccion_jug = opciones_filtradas[0]
-                st.session_state["select_jugador"] = seleccion_jug
-
-        # Mantenemos el ID si hay selección
+        # Obtenemos ID si hay selección
         if seleccion_jug:
             id_jugador = opciones_dict[seleccion_jug]
 
     else:
         st.info("ℹ️ No hay jugadores cargados en la base de datos.")
         seleccion_jug = ""
+
 
     # =========================================================
     # CREAR NUEVO JUGADOR
@@ -1218,6 +1196,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
