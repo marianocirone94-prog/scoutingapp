@@ -568,15 +568,12 @@ if menu == "Jugadores":
                             # Color tipo semáforo
                             if diff > 0.2:
                                 color = "#4CAF50"  # Verde
-                                emoji = "⬆️"
                                 texto = "Por encima del promedio"
                             elif diff < -0.2:
                                 color = "#D16C6C"  # Rojo
-                                emoji = "⬇️"
                                 texto = "Por debajo del promedio"
                             else:
                                 color = "#B8B78A"  # Amarillo
-                                emoji = "➡️"
                                 texto = "En línea con el promedio"
 
                             st.markdown(f"""
@@ -1159,6 +1156,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
