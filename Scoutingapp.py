@@ -567,32 +567,32 @@ if menu == "Jugadores":
 
                             # Color tipo semáforo
                             if diff > 0.2:
-                                color = "#3CB371"  # Verde
+                                color = "#4CAF50"  # Verde
                                 emoji = "⬆️"
                                 texto = "Por encima del promedio"
                             elif diff < -0.2:
-                                color = "#CD5C5C"  # Rojo
+                                color = "#D16C6C"  # Rojo
                                 emoji = "⬇️"
                                 texto = "Por debajo del promedio"
                             else:
-                                color = "#FFD700"  # Amarillo
+                                color = "#B8B78A"  # Amarillo
                                 emoji = "➡️"
                                 texto = "En línea con el promedio"
 
                             st.markdown(f"""
                             <div style="
-                                background-color:{color};
-                                border-radius:8px;
-                                padding:10px;
+                                background: linear-gradient(135deg, {color}, #1e3c72);
+                                border-radius:10px;
+                                padding:12px;
                                 margin-bottom:8px;
                                 text-align:center;
-                                color:black;
+                                color:white;
                                 font-weight:600;
-                                box-shadow:0 0 8px rgba(255,255,255,0.2);
+                                box-shadow:0 0 8px rgba(0,198,255,0.25);
                             ">
                                 <h5 style="margin:0; font-size:15px;">{nombre_grupo}</h5>
-                                <p style="margin:4px 0 0 0; font-size:18px;">{emoji} {prom_j:.2f}</p>
-                                <p style="margin:0; font-size:13px;">{texto}</p>
+                                <p style="margin:6px 0 0 0; font-size:20px;">{emoji} {prom_j:.2f}</p>
+                                <p style="margin:0; font-size:13px; color:#CFE3FF;">{texto}</p>
                             </div>
                             """, unsafe_allow_html=True)
 
@@ -1159,6 +1159,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
