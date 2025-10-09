@@ -438,13 +438,13 @@ if menu == "Jugadores":
         "Alemania", "Portugal", "Otro"
     ]
 
-              # =========================================================
-    # BUSCADOR DE JUGADORES (clásico, resultados inmediatos e insensible a acentos)
+                 # =========================================================
+    # BUSCADOR DE JUGADORES (autocomplete en un solo campo, estilo Wyscout)
     # =========================================================
     import unicodedata
 
     def normalizar_texto(txt):
-        """Convierte texto a minúsculas y elimina acentos para búsquedas tolerantes."""
+        """Elimina acentos y convierte a minúsculas para búsquedas tolerantes."""
         if not isinstance(txt, str):
             return ""
         txt = unicodedata.normalize("NFD", txt)
@@ -459,31 +459,23 @@ if menu == "Jugadores":
         }
         opciones_lista = list(opciones_dict.keys())
 
-        # Campo de texto para búsqueda
-        texto_busqueda = st.text_input(
-            "🔍 Buscar jugador",
-            placeholder="Escribí nombre o club (ej: adrian martinez o belgrano)"
-        ).strip()
+        # Input select con autocompletado directo
+        seleccion_jug = st.selectbox(
+            "🔍 Buscar jugador (nombre o club)",
+            [""] + opciones_lista,
+            index=0,
+            key="buscador_jugador",
+            placeholder="Ejemplo: Adrián Martínez o Belgrano"
+        )
 
-        # Filtrado automático de opciones según el texto
-        if texto_busqueda:
-            texto_filtrado = normalizar_texto(texto_busqueda)
-            opciones_filtradas = [
-                opcion for opcion in opciones_lista
-                if texto_filtrado in normalizar_texto(opcion)
-            ]
-        else:
-            opciones_filtradas = opciones_lista
-
-        # Selectbox con los resultados filtrados directamente debajo
-        seleccion_jug = st.selectbox("", [""] + opciones_filtradas)
-
-        # Mantener ID seleccionado
+        # Normaliza búsqueda interna para permitir coincidencias parciales
         if seleccion_jug:
-            id_jugador = opciones_dict[seleccion_jug]
+            id_jugador = opciones_dict.get(seleccion_jug, None)
+
     else:
         st.info("ℹ️ No hay jugadores cargados en la base de datos.")
         seleccion_jug = ""
+
 
 
 
@@ -1205,6 +1197,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
