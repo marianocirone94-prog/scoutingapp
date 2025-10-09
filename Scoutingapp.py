@@ -438,13 +438,13 @@ if menu == "Jugadores":
         "Alemania", "Portugal", "Otro"
     ]
 
-                 # =========================================================
-    # BUSCADOR DE JUGADORES (autocomplete en un solo campo, estilo Wyscout)
+        # =========================================================
+    # BUSCADOR DE JUGADORES (un solo campo, ignora acentos y mayúsculas)
     # =========================================================
     import unicodedata
 
     def normalizar_texto(txt):
-        """Elimina acentos y convierte a minúsculas para búsquedas tolerantes."""
+        """Convierte a minúsculas y elimina acentos para búsqueda flexible."""
         if not isinstance(txt, str):
             return ""
         txt = unicodedata.normalize("NFD", txt)
@@ -452,32 +452,40 @@ if menu == "Jugadores":
         return txt.lower().strip()
 
     if not df_players.empty:
-        # Diccionario { "Nombre - Club": ID_Jugador }
+        # Diccionario visible (Nombre real mostrado)
         opciones_dict = {
             f"{row['Nombre']} - {row['Club']}": row["ID_Jugador"]
             for _, row in df_players.iterrows()
         }
-        opciones_lista = list(opciones_dict.keys())
 
-        # Input select con autocompletado directo
-        seleccion_jug = st.selectbox(
+        # Creamos una versión normalizada de cada opción (para búsqueda)
+        opciones_visibles = list(opciones_dict.keys())
+        opciones_normalizadas = [normalizar_texto(x) for x in opciones_visibles]
+
+        # Campo de búsqueda tipo autocomplete
+        texto_busqueda = st.text_input(
             "🔍 Buscar jugador (nombre o club)",
-            [""] + opciones_lista,
-            index=0,
-            key="buscador_jugador",
-            placeholder="Ejemplo: Adrián Martínez o Belgrano"
+            placeholder="Ejemplo: adrian martinez o belgrano"
         )
 
-        # Normaliza búsqueda interna para permitir coincidencias parciales
-        if seleccion_jug:
-            id_jugador = opciones_dict.get(seleccion_jug, None)
+        seleccion_jug = ""
+        if texto_busqueda:
+            texto_normal = normalizar_texto(texto_busqueda)
+            coincidencias = [
+                opciones_visibles[i] for i, op_norm in enumerate(opciones_normalizadas)
+                if texto_normal in op_norm
+            ]
+        else:
+            coincidencias = opciones_visibles
 
+        # Mostramos resultados en el mismo campo, estilo Wyscout
+        seleccion_jug = st.selectbox("", [""] + coincidencias, index=0, key="buscador_jugador")
+
+        if seleccion_jug:
+            id_jugador = opciones_dict[seleccion_jug]
     else:
         st.info("ℹ️ No hay jugadores cargados en la base de datos.")
         seleccion_jug = ""
-
-
-
 
     # =========================================================
     # CREAR NUEVO JUGADOR
@@ -1197,6 +1205,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
