@@ -407,7 +407,7 @@ df_players, df_reports, df_short = cargar_datos()
 
 menu = st.sidebar.radio("📋 Menú principal", ["Jugadores", "Ver informes", "Lista corta"])
 # =========================================================
-# BLOQUE 3 / 5 — Sección Jugadores (versión final completa)
+# BLOQUE 3 / 5 — Sección Jugadores (versión final completa y funcional)
 # =========================================================
 
 if menu == "Jugadores":
@@ -501,7 +501,7 @@ if menu == "Jugadores":
         col1, col2 = st.columns([1.3, 2])
 
         # =========================================================
-        # FICHA DEL JUGADOR + DATOS
+        # FICHA DEL JUGADOR
         # =========================================================
         with col1:
             st.markdown(f"### {jugador['Nombre']}")
@@ -510,7 +510,6 @@ if menu == "Jugadores":
 
             edad = calcular_edad(jugador.get("Fecha_Nac"))
 
-            # Mostrar nacionalidades
             if jugador.get("Segunda_Nacionalidad", ""):
                 st.write(f"🌍 Nacionalidades: {jugador.get('Nacionalidad', '-')}, {jugador.get('Segunda_Nacionalidad', '-')}")
             else:
@@ -531,7 +530,7 @@ if menu == "Jugadores":
                     st.session_state.editar_jugador = not st.session_state.editar_jugador
 
         # =========================================================
-        # ANÁLISIS DEL JUGADOR (PROMEDIOS + RADAR)
+        # ANÁLISIS DEL JUGADOR (PROMEDIOS + TARJETAS + RADAR)
         # =========================================================
         with col2:
             st.markdown("### 📊 Análisis de rendimiento")
@@ -540,14 +539,26 @@ if menu == "Jugadores":
             prom_posicion = calcular_promedios_posicion(df_reports, df_players, jugador["Posición"])
 
             if prom_jugador:
-                col_izq, col_der = st.columns([1, 1.5])
-                with col_izq:
-                    st.markdown("**Promedios individuales**")
-                    prom_df = pd.DataFrame(prom_jugador.items(), columns=["Aspecto", "Promedio"])
-                    st.dataframe(prom_df.style.format({"Promedio": "{:.2f}"}), use_container_width=True)
-                with col_der:
-                    st.markdown("**Comparativo con promedio de su posición**")
-                    radar_chart(prom_jugador, prom_posicion)
+                # --- Tarjetas visuales ---
+                cols = st.columns(3)
+                for i, (atributo, valor) in enumerate(prom_jugador.items()):
+                    with cols[i % 3]:
+                        st.markdown(f"""
+                        <div style="
+                            background: linear-gradient(135deg, #1e3c72, #2a5298);
+                            border-radius: 10px;
+                            padding: 12px;
+                            margin-bottom: 10px;
+                            text-align: center;
+                            box-shadow: 0px 0px 8px rgba(0,198,255,0.5);
+                        ">
+                            <h5 style="color:white; font-size:15px; margin-bottom:4px;">{atributo.replace('_',' ')}</h5>
+                            <p style="color:#00c6ff; font-size:22px; margin:0;"><b>{valor:.2f}</b></p>
+                        </div>
+                        """, unsafe_allow_html=True)
+
+                st.markdown("**Radar comparativo con su posición**")
+                radar_chart(prom_jugador, prom_posicion)
             else:
                 st.info("ℹ️ Este jugador aún no tiene informes cargados para generar promedios.")
 
@@ -602,7 +613,7 @@ if menu == "Jugadores":
                     ]
                     df_short_local = cargar_datos_sheets("Lista corta", columnas_short)
                     if jugador["ID_Jugador"] not in df_short_local["ID_Jugador"].values:
-                        nuevo = pd.DataFrame([[ 
+                        nuevo = pd.DataFrame([[
                             jugador.get("ID_Jugador", ""), jugador.get("Nombre", ""), edad,
                             jugador.get("Altura", ""), jugador.get("Club", ""),
                             jugador.get("Posición", ""), jugador.get("URL_Foto", ""),
@@ -699,7 +710,7 @@ if menu == "Jugadores":
                 with col2:
                     movimientos = st.slider("Movimientos sin pelota",0.0,5.0,0.0,0.5)
 
-            if st.button("💾 Guardar informe"):
+           if st.button("💾 Guardar informe"):
     try:
         nuevo = [
             len(df_reports) + 1, id_jugador, scout, fecha_partido.strftime("%d/%m/%Y"),
@@ -1091,6 +1102,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
