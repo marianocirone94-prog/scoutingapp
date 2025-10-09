@@ -773,24 +773,65 @@ if menu == "Jugadores":
                 with col2:
                     movimientos = st.slider("Movimientos sin pelota", 0.0, 5.0, 0.0, 0.5)
 
-            # --- GUARDAR INFORME ---
+                        # =========================================================
+            # GUARDAR INFORME (corrige decimales y fechas)
+            # =========================================================
+
+            # --- Función para limpiar y convertir números correctamente ---
+            def to_float_safe(valor):
+                """Convierte valores tipo '2,5' o '2.5' en float (2.5) seguro."""
+                try:
+                    if isinstance(valor, str):
+                        valor = valor.replace(",", ".")
+                    return round(float(valor), 2)
+                except:
+                    return 0.0
+
             if st.button("💾 Guardar informe"):
                 try:
                     nuevo = [
-                        len(df_reports) + 1, id_jugador, scout, fecha_partido.strftime("%d/%m/%Y"),
-                        date.today().strftime("%d/%m/%Y"), equipos_resultados, formacion,
-                        observaciones, linea,
-                        controles, perfiles, pase_corto, pase_largo, pase_filtrado,
-                        v1_def, recuperacion, intercepciones, duelos_aereos,
-                        regate, velocidad, duelos_of,
-                        resiliencia, liderazgo, int_tactica, int_emocional,
-                        posicionamiento, vision, movimientos
+                        len(df_reports) + 1,
+                        id_jugador,
+                        scout,
+                        fecha_partido.strftime("%d/%m/%Y"),  # ✅ Fecha partido
+                        date.today().strftime("%d/%m/%Y"),   # ✅ Fecha informe
+                        equipos_resultados,
+                        formacion,
+                        observaciones,
+                        linea,
+                        # --- Evaluaciones normalizadas ---
+                        to_float_safe(controles),
+                        to_float_safe(perfiles),
+                        to_float_safe(pase_corto),
+                        to_float_safe(pase_largo),
+                        to_float_safe(pase_filtrado),
+                        to_float_safe(v1_def),
+                        to_float_safe(recuperacion),
+                        to_float_safe(intercepciones),
+                        to_float_safe(duelos_aereos),
+                        to_float_safe(regate),
+                        to_float_safe(velocidad),
+                        to_float_safe(duelos_of),
+                        to_float_safe(resiliencia),
+                        to_float_safe(liderazgo),
+                        to_float_safe(int_tactica),
+                        to_float_safe(int_emocional),
+                        to_float_safe(posicionamiento),
+                        to_float_safe(vision),
+                        to_float_safe(movimientos)
                     ]
+
+                    # Agregamos la fila nueva al DataFrame
                     df_reports.loc[len(df_reports)] = nuevo
+
+                    # Actualizamos la hoja de Google Sheets
                     actualizar_hoja("Informes", df_reports)
+
                     st.success("✅ Informe guardado correctamente.")
+
                 except Exception as e:
                     st.error(f"⚠️ Error al guardar el informe: {e}")
+
 
 # =========================================================
 # BLOQUE 4 / 5 — Ver Informes (filtros, edición, PDF)
@@ -1165,6 +1206,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
