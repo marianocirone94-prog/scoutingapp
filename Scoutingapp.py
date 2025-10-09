@@ -438,58 +438,13 @@ if menu == "Jugadores":
         "Alemania", "Portugal", "Otro"
     ]
 
-             # =========================================================
-    # BUSCADOR DE JUGADORES (una sola barra, autocomplete + sin acentos)
-    # =========================================================
-    import unicodedata
-
-    def normalizar_texto(txt):
-        """Elimina acentos y pasa a minúsculas para coincidencias flexibles."""
-        if not isinstance(txt, str):
-            return ""
-        txt = unicodedata.normalize("NFD", txt)
-        txt = "".join(c for c in txt if unicodedata.category(c) != "Mn")
-        return txt.lower().strip()
-
+              # --- BUSCADOR DE JUGADORES ---
     if not df_players.empty:
-        # Diccionario con clave visible
-        opciones_dict = {
-            f"{row['Nombre']} - {row['Club']}": row["ID_Jugador"]
-            for _, row in df_players.iterrows()
-        }
-
-        # Normalizamos todas las opciones para comparar internamente
-        opciones_visibles = list(opciones_dict.keys())
-        opciones_norm = [normalizar_texto(op) for op in opciones_visibles]
-
-        # Selectbox con autocompletado nativo de Streamlit
-        seleccion_temp = st.selectbox(
-            "🔍 Buscar jugador (nombre o club)",
-            [""] + opciones_visibles,
-            key="buscador_jugador",
-            placeholder="Ejemplo: adrian martinez o belgrano"
-        )
-
-        # Buscar coincidencia aunque el usuario no ponga acentos
-        if seleccion_temp:
-            texto_norm = normalizar_texto(seleccion_temp)
-            coincidencias = [
-                op for i, op in enumerate(opciones_visibles)
-                if texto_norm in opciones_norm[i]
-            ]
-            if coincidencias:
-                seleccion_jug = coincidencias[0]
-                id_jugador = opciones_dict[seleccion_jug]
-            else:
-                seleccion_jug = seleccion_temp
-                id_jugador = opciones_dict.get(seleccion_jug, None)
-        else:
-            seleccion_jug = ""
-            id_jugador = None
+        opciones = {f"{row['Nombre']} - {row['Club']}": row["ID_Jugador"] for _, row in df_players.iterrows()}
     else:
-        st.info("ℹ️ No hay jugadores cargados en la base de datos.")
-        seleccion_jug = ""
+        opciones = {}
 
+    seleccion_jug = st.selectbox("🔍 Buscar jugador", [""] + list(opciones.keys()))
 
 
     # =========================================================
@@ -1210,6 +1165,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
