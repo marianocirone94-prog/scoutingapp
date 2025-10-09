@@ -700,12 +700,22 @@ if menu == "Jugadores":
                     movimientos = st.slider("Movimientos sin pelota",0.0,5.0,0.0,0.5)
 
             if st.button("💾 Guardar informe"):
-                try:
-                    nuevo = [
-                        len(df_reports)+1, id_jugador, scout, fecha_partido.strftime("%d/%m/%Y"),
-                        date.today().strftime("%d/%m/%Y"), equipos_resultados, formacion,
-                        observaciones, linea,
-                        controles, perfiles, pase_corto, pase_largo
+    try:
+        nuevo = [
+            len(df_reports) + 1, id_jugador, scout, fecha_partido.strftime("%d/%m/%Y"),
+            date.today().strftime("%d/%m/%Y"), equipos_resultados, formacion,
+            observaciones, linea,
+            controles, perfiles, pase_corto, pase_largo, pase_filtrado,
+            v1_def, recuperacion, intercepciones, duelos_aereos,
+            regate, velocidad, duelos_of,
+            resiliencia, liderazgo, int_tactica, int_emocional,
+            posicionamiento, vision, movimientos
+        ]
+        df_reports.loc[len(df_reports)] = nuevo
+        actualizar_hoja("Informes", df_reports)
+        st.success("✅ Informe guardado correctamente.")
+    except Exception as e:
+        st.error(f"⚠️ Error al guardar el informe: {e}")
 
 
 # =========================================================
@@ -1081,6 +1091,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
