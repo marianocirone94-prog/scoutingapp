@@ -411,7 +411,7 @@ menu = st.sidebar.radio("📋 Menú principal", ["Jugadores", "Ver informes", "L
 # =========================================================
 
 if menu == "Jugadores":
-    st.subheader("🎯 Gestión de jugadores e informes individuales")
+    st.subheader("Gestión de jugadores e informes individuales")
 
     # --- OPCIONES PREDEFINIDAS ---
     opciones_pies = ["Derecho", "Izquierdo", "Ambidiestro"]
@@ -438,13 +438,13 @@ if menu == "Jugadores":
         "Alemania", "Portugal", "Otro"
     ]
 
-         # =========================================================
-    # BUSCADOR DE JUGADORES — una sola barra, autocomplete tipo Wyscout
+             # =========================================================
+    # BUSCADOR DE JUGADORES (una sola barra, autocomplete + sin acentos)
     # =========================================================
     import unicodedata
 
     def normalizar_texto(txt):
-        """Quita acentos y pasa a minúsculas para coincidencias flexibles."""
+        """Elimina acentos y pasa a minúsculas para coincidencias flexibles."""
         if not isinstance(txt, str):
             return ""
         txt = unicodedata.normalize("NFD", txt)
@@ -452,37 +452,44 @@ if menu == "Jugadores":
         return txt.lower().strip()
 
     if not df_players.empty:
-        # Preparamos las opciones visibles
+        # Diccionario con clave visible
         opciones_dict = {
             f"{row['Nombre']} - {row['Club']}": row["ID_Jugador"]
             for _, row in df_players.iterrows()
         }
 
-        # Convertimos las claves normalizadas para comparación interna
-        opciones_norm = {
-            normalizar_texto(k): k for k in opciones_dict.keys()
-        }
+        # Normalizamos todas las opciones para comparar internamente
+        opciones_visibles = list(opciones_dict.keys())
+        opciones_norm = [normalizar_texto(op) for op in opciones_visibles]
 
-        # Campo de selección único con autocompletado
-        seleccion_visible = st.selectbox(
+        # Selectbox con autocompletado nativo de Streamlit
+        seleccion_temp = st.selectbox(
             "🔍 Buscar jugador (nombre o club)",
-            [""] + list(opciones_dict.keys()),
-            index=0,
-            placeholder="Escribí un nombre o club (ej: adrian martinez)",
-            key="buscador_unico"
+            [""] + opciones_visibles,
+            key="buscador_jugador",
+            placeholder="Ejemplo: adrian martinez o belgrano"
         )
 
-        # Normalizamos lo que el usuario escribe
-        if seleccion_visible:
-            id_jugador = opciones_dict.get(seleccion_visible, None)
+        # Buscar coincidencia aunque el usuario no ponga acentos
+        if seleccion_temp:
+            texto_norm = normalizar_texto(seleccion_temp)
+            coincidencias = [
+                op for i, op in enumerate(opciones_visibles)
+                if texto_norm in opciones_norm[i]
+            ]
+            if coincidencias:
+                seleccion_jug = coincidencias[0]
+                id_jugador = opciones_dict[seleccion_jug]
+            else:
+                seleccion_jug = seleccion_temp
+                id_jugador = opciones_dict.get(seleccion_jug, None)
         else:
-            id_jugador = None
             seleccion_jug = ""
-        seleccion_jug = seleccion_visible
-
+            id_jugador = None
     else:
         st.info("ℹ️ No hay jugadores cargados en la base de datos.")
         seleccion_jug = ""
+
 
 
     # =========================================================
@@ -1203,6 +1210,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
