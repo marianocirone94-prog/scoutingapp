@@ -438,13 +438,13 @@ if menu == "Jugadores":
         "Alemania", "Portugal", "Otro"
     ]
 
-           # =========================================================
-    # BUSCADOR DE JUGADORES (simple, insensible a acentos y mayúsculas)
+              # =========================================================
+    # BUSCADOR DE JUGADORES (clásico, resultados inmediatos e insensible a acentos)
     # =========================================================
     import unicodedata
 
     def normalizar_texto(txt):
-        """Convierte texto a minúsculas y elimina acentos."""
+        """Convierte texto a minúsculas y elimina acentos para búsquedas tolerantes."""
         if not isinstance(txt, str):
             return ""
         txt = unicodedata.normalize("NFD", txt)
@@ -453,29 +453,38 @@ if menu == "Jugadores":
 
     if not df_players.empty:
         # Diccionario { "Nombre - Club": ID_Jugador }
-        opciones_dict = {f"{row['Nombre']} - {row['Club']}": row["ID_Jugador"] for _, row in df_players.iterrows()}
+        opciones_dict = {
+            f"{row['Nombre']} - {row['Club']}": row["ID_Jugador"]
+            for _, row in df_players.iterrows()
+        }
         opciones_lista = list(opciones_dict.keys())
 
-        # Campo de texto para buscar (sin mostrar advertencias)
-        texto_busqueda = st.text_input("🔍 Buscar jugador (nombre o club)").strip()
-        texto_filtrado = normalizar_texto(texto_busqueda)
+        # Campo de texto para búsqueda
+        texto_busqueda = st.text_input(
+            "🔍 Buscar jugador",
+            placeholder="Escribí nombre o club (ej: adrian martinez o belgrano)"
+        ).strip()
 
-        # Filtrado sin acentos ni mayúsculas
-        if texto_filtrado:
-            opciones_filtradas = [op for op in opciones_lista if texto_filtrado in normalizar_texto(op)]
+        # Filtrado automático de opciones según el texto
+        if texto_busqueda:
+            texto_filtrado = normalizar_texto(texto_busqueda)
+            opciones_filtradas = [
+                opcion for opcion in opciones_lista
+                if texto_filtrado in normalizar_texto(opcion)
+            ]
         else:
             opciones_filtradas = opciones_lista
 
-        # Selectbox con las coincidencias
-        seleccion_jug = st.selectbox("Resultados:", [""] + opciones_filtradas)
+        # Selectbox con los resultados filtrados directamente debajo
+        seleccion_jug = st.selectbox("", [""] + opciones_filtradas)
 
-        # Obtenemos ID si hay selección
+        # Mantener ID seleccionado
         if seleccion_jug:
             id_jugador = opciones_dict[seleccion_jug]
-
     else:
         st.info("ℹ️ No hay jugadores cargados en la base de datos.")
         seleccion_jug = ""
+
 
 
     # =========================================================
@@ -1196,6 +1205,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
