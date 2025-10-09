@@ -529,8 +529,8 @@ if menu == "Jugadores":
                 if st.button("✏️ Editar jugador"):
                     st.session_state.editar_jugador = not st.session_state.editar_jugador
 
-        # =========================================================
-        # ANÁLISIS DEL JUGADOR (PROMEDIOS + TARJETAS + RADAR)
+                # =========================================================
+        # ANÁLISIS DEL JUGADOR (PROMEDIOS AGRUPADOS + TARJETAS + RADAR + RESUMEN)
         # =========================================================
         with col2:
             st.markdown("### 📊 Análisis de rendimiento")
@@ -539,27 +539,85 @@ if menu == "Jugadores":
             prom_posicion = calcular_promedios_posicion(df_reports, df_players, jugador["Posición"])
 
             if prom_jugador:
-                cols = st.columns(3)
-                for i, (atributo, valor) in enumerate(prom_jugador.items()):
-                    with cols[i % 3]:
-                        st.markdown(f"""
-                        <div style="
-                            background: linear-gradient(135deg, #1e3c72, #2a5298);
-                            border-radius: 10px;
-                            padding: 12px;
-                            margin-bottom: 10px;
-                            text-align: center;
-                            box-shadow: 0px 0px 8px rgba(0,198,255,0.5);
-                        ">
-                            <h5 style="color:white; font-size:15px; margin-bottom:4px;">{atributo.replace('_',' ')}</h5>
-                            <p style="color:#00c6ff; font-size:22px; margin:0;"><b>{valor:.2f}</b></p>
-                        </div>
-                        """, unsafe_allow_html=True)
+                # --- Agrupar promedios en 4 bloques ---
+                grupos = {
+                    "Habilidades técnicas": ["Controles", "Perfiles", "Pase_corto", "Pase_largo", "Pase_filtrado"],
+                    "Aspectos defensivos": ["1v1_defensivo", "Recuperacion", "Intercepciones", "Duelos_aereos"],
+                    "Aspectos ofensivos": ["Regate", "Velocidad", "Duelos_ofensivos"],
+                    "Aspectos mentales / tácticos": ["Resiliencia", "Liderazgo", "Inteligencia_tactica",
+                                                     "Inteligencia_emocional", "Posicionamiento",
+                                                     "Vision_de_juego", "Movimientos_sin_pelota"]
+                }
 
-                st.markdown("**Radar comparativo con su posición**")
-                radar_chart(prom_jugador, prom_posicion)
+                col2_izq, col2_der = st.columns([1, 2])
+                resultados = {}
+
+                with col2_izq:
+                    st.markdown("#### Promedios por grupo")
+
+                    for nombre_grupo, atributos in grupos.items():
+                        valores_jug = [prom_jugador.get(a, 0) for a in atributos if a in prom_jugador]
+                        valores_pos = [prom_posicion.get(a, 0) for a in atributos if a in prom_posicion]
+
+                        if valores_jug and valores_pos:
+                            prom_j = np.mean(valores_jug)
+                            prom_p = np.mean(valores_pos)
+                            diff = prom_j - prom_p
+                            resultados[nombre_grupo] = diff
+
+                            # Color tipo semáforo
+                            if diff > 0.2:
+                                color = "#3CB371"  # Verde
+                                emoji = "⬆️"
+                                texto = "Por encima del promedio"
+                            elif diff < -0.2:
+                                color = "#CD5C5C"  # Rojo
+                                emoji = "⬇️"
+                                texto = "Por debajo del promedio"
+                            else:
+                                color = "#FFD700"  # Amarillo
+                                emoji = "➡️"
+                                texto = "En línea con el promedio"
+
+                            st.markdown(f"""
+                            <div style="
+                                background-color:{color};
+                                border-radius:8px;
+                                padding:10px;
+                                margin-bottom:8px;
+                                text-align:center;
+                                color:black;
+                                font-weight:600;
+                                box-shadow:0 0 8px rgba(255,255,255,0.2);
+                            ">
+                                <h5 style="margin:0; font-size:15px;">{nombre_grupo}</h5>
+                                <p style="margin:4px 0 0 0; font-size:18px;">{emoji} {prom_j:.2f}</p>
+                                <p style="margin:0; font-size:13px;">{texto}</p>
+                            </div>
+                            """, unsafe_allow_html=True)
+
+                with col2_der:
+                    st.markdown("#### Radar comparativo general")
+                    radar_chart(prom_jugador, prom_posicion)
+
+                # --- RESUMEN AUTOMÁTICO ---
+                if resultados:
+                    mejor = max(resultados, key=resultados.get)
+                    peor = min(resultados, key=resultados.get)
+                    diff_mejor = resultados[mejor]
+                    diff_peor = resultados[peor]
+
+                    if abs(diff_mejor) < 0.15 and abs(diff_peor) < 0.15:
+                        resumen = "El jugador mantiene un rendimiento equilibrado en todos los aspectos sin diferencias marcadas."
+                    else:
+                        resumen = f"Destaca principalmente en **{mejor.lower()}** (por encima del promedio de su posición, +{diff_mejor:.2f}), mientras que su punto a mejorar es **{peor.lower()}** ({diff_peor:.2f})."
+
+                    st.markdown("---")
+                    st.markdown(f"🧠 **Resumen automático:** {resumen}")
+
             else:
                 st.info("ℹ️ Este jugador aún no tiene informes cargados para generar promedios.")
+
 
         # =========================================================
         # FORMULARIO DE EDICIÓN
@@ -1101,6 +1159,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
