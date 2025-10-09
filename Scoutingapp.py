@@ -438,13 +438,67 @@ if menu == "Jugadores":
         "Alemania", "Portugal", "Otro"
     ]
 
-    # --- BUSCADOR DE JUGADORES ---
-    if not df_players.empty:
-        opciones = {f"{row['Nombre']} - {row['Club']}": row["ID_Jugador"] for _, row in df_players.iterrows()}
-    else:
-        opciones = {}
+        # =========================================================
+    # BUSCADOR DE JUGADORES (predictivo, insensible a acentos y con Enter directo)
+    # =========================================================
+    import unicodedata
 
-    seleccion_jug = st.selectbox("🔍 Buscar jugador", [""] + list(opciones.keys()))
+    def normalizar_texto(txt):
+        """Elimina acentos, pasa a minúsculas y quita espacios extra."""
+        if not isinstance(txt, str):
+            return ""
+        txt = unicodedata.normalize("NFD", txt)
+        txt = "".join(c for c in txt if unicodedata.category(c) != "Mn")
+        return txt.lower().strip()
+
+    if not df_players.empty:
+        # Diccionario: { "Nombre - Club": ID_Jugador }
+        opciones_dict = {
+            f"{row['Nombre']} - {row['Club']}": row["ID_Jugador"]
+            for _, row in df_players.iterrows()
+        }
+        opciones_lista = list(opciones_dict.keys())
+
+        # Campo de búsqueda predictiva
+        texto_busqueda = st.text_input(
+            "🔍 Buscar jugador (nombre o club)",
+            placeholder="Ejemplo: adrian martinez o belgrano"
+        ).strip()
+
+        # Filtrado dinámico en tiempo real
+        if texto_busqueda:
+            texto_filtrado = normalizar_texto(texto_busqueda)
+            opciones_filtradas = [
+                opcion for opcion in opciones_lista
+                if texto_filtrado in normalizar_texto(opcion)
+            ]
+        else:
+            opciones_filtradas = opciones_lista
+
+        # Si no hay resultados
+        if not opciones_filtradas:
+            st.warning("⚠️ No se encontraron jugadores con ese nombre o club.")
+            seleccion_jug = ""
+        else:
+            # Mostramos resultados predictivos
+            seleccion_jug = st.selectbox(
+                "Resultados:",
+                [""] + opciones_filtradas,
+                key="select_jugador"
+            )
+
+            # Carga directa al presionar Enter
+            if texto_busqueda and len(opciones_filtradas) == 1:
+                seleccion_jug = opciones_filtradas[0]
+                st.session_state["select_jugador"] = seleccion_jug
+
+        # Mantenemos el ID si hay selección
+        if seleccion_jug:
+            id_jugador = opciones_dict[seleccion_jug]
+
+    else:
+        st.info("ℹ️ No hay jugadores cargados en la base de datos.")
+        seleccion_jug = ""
 
     # =========================================================
     # CREAR NUEVO JUGADOR
@@ -538,7 +592,7 @@ if menu == "Jugadores":
         # ANÁLISIS DEL JUGADOR (PROMEDIOS AGRUPADOS + TARJETAS + RADAR + RESUMEN)
         # =========================================================
         with col2:
-            st.markdown("### 📊 Análisis de rendimiento")
+            st.markdown("### Análisis de rendimiento")
 
             prom_jugador = calcular_promedios_jugador(df_reports, id_jugador)
             prom_posicion = calcular_promedios_posicion(df_reports, df_players, jugador["Posición"])
@@ -1164,6 +1218,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
