@@ -407,7 +407,7 @@ df_players, df_reports, df_short = cargar_datos()
 
 menu = st.sidebar.radio("📋 Menú principal", ["Jugadores", "Ver informes", "Lista corta"])
 # =========================================================
-# BLOQUE 3 / 5 — Sección Jugadores (rehecha completa)
+# BLOQUE 3 / 5 — Sección Jugadores (versión final completa)
 # =========================================================
 
 if menu == "Jugadores":
@@ -425,7 +425,7 @@ if menu == "Jugadores":
         "Brasil - Serie A", "Chile - Primera División", "Uruguay - Primera División",
         "Paraguay - División Profesional", "Colombia - Categoría Primera A",
         "México - Liga MX", "España - LaLiga", "Italia - Serie A", "Inglaterra - Premier League",
-        "Francia - Ligue 1", "Alemania - Bundesliga", "Otro"
+        "Francia - Ligue 1", "Alemania - Bundesliga", "Portugal - Primeira Liga", "Otro"
     ]
     opciones_paises = [
         "Argentina", "Brasil", "Chile", "Uruguay", "Paraguay", "Colombia", "México",
@@ -500,24 +500,56 @@ if menu == "Jugadores":
 
         col1, col2 = st.columns([1.3, 2])
 
+        # =========================================================
+        # FICHA DEL JUGADOR + DATOS
+        # =========================================================
         with col1:
             st.markdown(f"### {jugador['Nombre']}")
             if pd.notna(jugador.get("URL_Foto")) and str(jugador["URL_Foto"]).startswith("http"):
-                st.image(jugador["URL_Foto"], width=150)
+                st.image(jugador["URL_Foto"], width=160)
 
             edad = calcular_edad(jugador.get("Fecha_Nac"))
+
+            # Mostrar nacionalidades
+            if jugador.get("Segunda_Nacionalidad", ""):
+                st.write(f"🌍 Nacionalidades: {jugador.get('Nacionalidad', '-')}, {jugador.get('Segunda_Nacionalidad', '-')}")
+            else:
+                st.write(f"🌍 Nacionalidad: {jugador.get('Nacionalidad', '-')}")
+
             st.write(f"📅 {jugador.get('Fecha_Nac', '')} ({edad} años)")
-            st.write(f"🌍 {jugador.get('Nacionalidad', '-')}")
-            st.write(f"📏 {jugador.get('Altura', '-') } cm · 👟 {jugador.get('Pie_Hábil', '-')}")
-            st.write(f"🎯 {jugador.get('Posición', '-')} · 🏟️ {jugador.get('Club', '-')} ({jugador.get('Liga', '-')})")
+            st.write(f"📏 Altura: {jugador.get('Altura', '-') } cm")
+            st.write(f"👟 Pie hábil: {jugador.get('Pie_Hábil', '-')}")
+            st.write(f"🎯 Posición: {jugador.get('Posición', '-')}")
+            st.write(f"🏟️ Club: {jugador.get('Club', '-')} ({jugador.get('Liga', '-')})")
 
             if pd.notna(jugador.get("URL_Perfil")) and str(jugador["URL_Perfil"]).startswith("http"):
-                st.markdown(f"[Perfil externo]({jugador['URL_Perfil']})", unsafe_allow_html=True)
+                st.markdown(f"[🌐 Perfil externo]({jugador['URL_Perfil']})", unsafe_allow_html=True)
 
             if CURRENT_ROLE in ["admin", "scout"]:
                 st.markdown("---")
                 if st.button("✏️ Editar jugador"):
                     st.session_state.editar_jugador = not st.session_state.editar_jugador
+
+        # =========================================================
+        # ANÁLISIS DEL JUGADOR (PROMEDIOS + RADAR)
+        # =========================================================
+        with col2:
+            st.markdown("### 📊 Análisis de rendimiento")
+
+            prom_jugador = calcular_promedios_jugador(df_reports, id_jugador)
+            prom_posicion = calcular_promedios_posicion(df_reports, df_players, jugador["Posición"])
+
+            if prom_jugador:
+                col_izq, col_der = st.columns([1, 1.5])
+                with col_izq:
+                    st.markdown("**Promedios individuales**")
+                    prom_df = pd.DataFrame(prom_jugador.items(), columns=["Aspecto", "Promedio"])
+                    st.dataframe(prom_df.style.format({"Promedio": "{:.2f}"}), use_container_width=True)
+                with col_der:
+                    st.markdown("**Comparativo con promedio de su posición**")
+                    radar_chart(prom_jugador, prom_posicion)
+            else:
+                st.info("ℹ️ Este jugador aún no tiene informes cargados para generar promedios.")
 
         # =========================================================
         # FORMULARIO DE EDICIÓN
@@ -673,17 +705,8 @@ if menu == "Jugadores":
                         len(df_reports)+1, id_jugador, scout, fecha_partido.strftime("%d/%m/%Y"),
                         date.today().strftime("%d/%m/%Y"), equipos_resultados, formacion,
                         observaciones, linea,
-                        controles, perfiles, pase_corto, pase_largo, pase_filtrado,
-                        v1_def, recuperacion, intercepciones, duelos_aereos,
-                        regate, velocidad, duelos_of,
-                        resiliencia, liderazgo, int_tactica, int_emocional,
-                        posicionamiento, vision, movimientos
-                    ]
-                    df_reports.loc[len(df_reports)] = nuevo
-                    actualizar_hoja("Informes", df_reports)
-                    st.success("✅ Informe guardado correctamente.")
-                except Exception as e:
-                    st.error(f"⚠️ Error al guardar el informe: {e}")
+                        controles, perfiles, pase_corto, pase_largo
+
 
 # =========================================================
 # BLOQUE 4 / 5 — Ver Informes (filtros, edición, PDF)
@@ -1058,6 +1081,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
