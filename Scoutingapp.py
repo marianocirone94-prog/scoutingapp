@@ -901,7 +901,7 @@ if menu == "Ver informes":
         st.markdown("### 📋 Tabla de informes filtrados")
 
         columnas_visibles = [
-            "Fecha_Partido","Nombre","Observaciones","Posición","Club","Línea","Scout","Equipos_Resultados"
+            "Fecha_Partido","Nombre","Observaciones","Posición","Línea","Club","Scout","Equipos_Resultados"
         ]
         columnas_presentes = [col for col in columnas_visibles if col in df_filtrado.columns]
         df_tabla = df_filtrado[columnas_presentes].copy()
@@ -917,7 +917,7 @@ if menu == "Ver informes":
             gridOptions=gridOptions,
             fit_columns_on_grid_load=True,
             theme="blue",
-            height=700,
+            height=600,
             custom_css={
                 ".ag-header": {"background-color": "#1e3c72", "color": "white", "font-weight": "bold"},
                 ".ag-row-even": {"background-color": "#2a5298 !important", "color": "white !important"},
@@ -1206,6 +1206,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
