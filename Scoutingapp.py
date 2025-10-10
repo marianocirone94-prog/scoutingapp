@@ -901,7 +901,7 @@ if menu == "Ver informes":
         st.markdown("### 📋 Tabla de informes filtrados")
 
         columnas_visibles = [
-            "Fecha_Partido","Nombre","Posición","Club","Línea","Scout","Equipos_Resultados","Observaciones"
+            "Fecha_Partido","Nombre","Observaciones","Posición","Club","Línea","Scout","Equipos_Resultados"
         ]
         columnas_presentes = [col for col in columnas_visibles if col in df_filtrado.columns]
         df_tabla = df_filtrado[columnas_presentes].copy()
@@ -1206,6 +1206,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
