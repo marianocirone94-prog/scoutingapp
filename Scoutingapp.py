@@ -945,8 +945,8 @@ if menu == "Ver informes":
 
         # Orden y columnas visibles
         columnas_visibles = [
-            "Fecha_Informe", "Nombre", "Posición", "Club", "Línea",
-            "Scout", "Equipos_Resultados", "Observaciones"
+            "Fecha_Informe", "Nombre", "Observaciones", "Club", "Línea",
+            "Scout", "Equipos_Resultados", "Posición"
         ]
         columnas_presentes = [col for col in columnas_visibles if col in df_filtrado.columns]
         df_tabla = df_filtrado[columnas_presentes].copy()
@@ -1283,6 +1283,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
