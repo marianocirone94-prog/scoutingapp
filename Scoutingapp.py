@@ -894,37 +894,71 @@ if menu == "Ver informes":
         except Exception as e:
             st.warning(f"⚠️ No se pudo calcular la edad correctamente: {e}")
 
-    # =========================================================
-    # TABLA PRINCIPAL
+       # =========================================================
+    # TABLA PRINCIPAL (ajustada visualmente)
     # =========================================================
     if not df_filtrado.empty:
         st.markdown("### 📋 Tabla de informes filtrados")
 
+        # Orden y columnas visibles
         columnas_visibles = [
-            "Fecha_Partido","Nombre","Observaciones","Posición","Línea","Club","Scout","Equipos_Resultados"
+            "Fecha_Informe", "Nombre", "Posición", "Club", "Línea",
+            "Scout", "Equipos_Resultados", "Observaciones"
         ]
         columnas_presentes = [col for col in columnas_visibles if col in df_filtrado.columns]
         df_tabla = df_filtrado[columnas_presentes].copy()
 
+        # Configuración de la tabla AgGrid
         gb = GridOptionsBuilder.from_dataframe(df_tabla)
-        gb.configure_column("Observaciones", wrapText=True, autoHeight=True)
+
+        # --- Columna de Observaciones más ancha y legible ---
+        gb.configure_column(
+            "Observaciones",
+            width=950,           # 🔧 Ajustá este ancho si querés más/menos (900–1000 es ideal)
+            wrapText=True,
+            autoHeight=True
+        )
+
+        # --- Configuración del resto de columnas ---
+        for col in df_tabla.columns:
+            if col != "Observaciones":
+                gb.configure_column(col, width=130)
+
         gb.configure_pagination(paginationAutoPageSize=True)
-        gb.configure_grid_options(domLayout='normal')
+        gb.configure_grid_options(domLayout="normal")
         gridOptions = gb.build()
 
+        # --- Renderizado final de la tabla ---
         AgGrid(
             df_tabla,
             gridOptions=gridOptions,
-            fit_columns_on_grid_load=True,
+            fit_columns_on_grid_load=False,  # ✅ desactivamos el auto-ajuste general
             theme="blue",
-            height=600,
+            height=750,  # 🔧 más alto para ver varios informes sin scroll
             custom_css={
-                ".ag-header": {"background-color": "#1e3c72", "color": "white", "font-weight": "bold"},
-                ".ag-row-even": {"background-color": "#2a5298 !important", "color": "white !important"},
-                ".ag-row-odd": {"background-color": "#3b6bbf !important", "color": "white !important"},
-                ".ag-cell": {"white-space": "normal !important", "line-height": "1.3", "padding": "6px"},
+                ".ag-header": {
+                    "background-color": "#1e3c72",
+                    "color": "white",
+                    "font-weight": "bold",
+                    "font-size": "14px"
+                },
+                ".ag-row-even": {
+                    "background-color": "#2a5298 !important",
+                    "color": "white !important"
+                },
+                ".ag-row-odd": {
+                    "background-color": "#3b6bbf !important",
+                    "color": "white !important"
+                },
+                ".ag-cell": {
+                    "white-space": "normal !important",
+                    "line-height": "1.4",
+                    "padding": "8px",
+                    "font-size": "14px"
+                }
             }
         )
+
 
         # =========================================================
         # INFORMES INDIVIDUALES
@@ -1206,6 +1240,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
