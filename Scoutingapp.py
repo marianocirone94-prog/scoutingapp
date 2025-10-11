@@ -234,7 +234,7 @@ st.markdown("---")
 # =========================================================
 
 # =========================================================
-# FUNCIONES AUXILIARES Y DE CÁLCULO
+# FUNCIONES AUXILIARES Y DE CÁLCULO (versión completa corregida)
 # =========================================================
 
 def calcular_edad(fecha_nac):
@@ -257,9 +257,10 @@ def generar_id_unico(df, columna="ID_Jugador"):
 
 
 def calcular_promedios_jugador(df_reports, id_jugador):
-    """Promedio de cada atributo de un jugador."""
+    """Calcula promedios reales (0-5) del jugador, corrigiendo decimales y tipos."""
     if df_reports.empty:
         return None
+
     df_reports["ID_Jugador"] = df_reports["ID_Jugador"].astype(str)
     informes = df_reports[df_reports["ID_Jugador"] == str(id_jugador)]
     if informes.empty:
@@ -272,13 +273,36 @@ def calcular_promedios_jugador(df_reports, id_jugador):
         "Inteligencia_tactica","Inteligencia_emocional","Posicionamiento",
         "Vision_de_juego","Movimientos_sin_pelota"
     ]
-    return {col: informes[col].mean() for col in columnas if col in informes.columns}
+
+    promedios = {}
+    for col in columnas:
+        if col in informes.columns:
+            try:
+                # Convertir valores a float válidos (2,5 → 2.5)
+                valores = (
+                    informes[col]
+                    .astype(str)
+                    .str.replace(",", ".", regex=False)
+                    .astype(float)
+                )
+                prom = valores.mean()
+
+                # Corrige casos donde vienen como 35 en lugar de 3.5
+                if prom > 5:
+                    prom = prom / 10
+
+                promedios[col] = round(prom, 2)
+            except:
+                promedios[col] = None
+
+    return promedios
 
 
 def calcular_promedios_posicion(df_reports, df_players, posicion):
-    """Promedio por posición, usado para comparar jugador vs media de su rol."""
+    """Promedio global de la posición, con corrección de decimales."""
     if df_players.empty or df_reports.empty:
         return None
+
     df_players["ID_Jugador"] = df_players["ID_Jugador"].astype(str)
     df_reports["ID_Jugador"] = df_reports["ID_Jugador"].astype(str)
 
@@ -295,7 +319,25 @@ def calcular_promedios_posicion(df_reports, df_players, posicion):
         "Inteligencia_tactica","Inteligencia_emocional","Posicionamiento",
         "Vision_de_juego","Movimientos_sin_pelota"
     ]
-    return {col: informes[col].mean() for col in columnas if col in informes.columns}
+
+    promedios = {}
+    for col in columnas:
+        if col in informes.columns:
+            try:
+                valores = (
+                    informes[col]
+                    .astype(str)
+                    .str.replace(",", ".", regex=False)
+                    .astype(float)
+                )
+                prom = valores.mean()
+                if prom > 5:
+                    prom = prom / 10
+                promedios[col] = round(prom, 2)
+            except:
+                promedios[col] = None
+
+    return promedios
 
 
 def radar_chart(prom_jugador, prom_posicion):
@@ -319,7 +361,7 @@ def radar_chart(prom_jugador, prom_posicion):
     ax.fill(angles, valores_pos, color="orange", alpha=0.25)
 
     ax.set_xticks(angles[:-1])
-    ax.set_xticklabels(categorias, color="white")
+    ax.set_xticklabels(categorias, color="white", fontsize=9)
     ax.tick_params(colors="white")
     ax.legend(loc="upper right", bbox_to_anchor=(1.2, 1.1), facecolor="#0e1117", labelcolor="white")
     st.pyplot(fig)
@@ -361,6 +403,7 @@ def generar_pdf_ficha(jugador, informes):
     pdf.output(buffer)
     buffer.seek(0)
     return buffer
+
 
 # =========================================================
 # CARGA DE DATOS DESDE GOOGLE SHEETS
@@ -1240,6 +1283,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
