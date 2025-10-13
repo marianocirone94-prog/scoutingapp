@@ -977,7 +977,7 @@ if menu == "Ver informes":
             gridOptions=gridOptions,
             fit_columns_on_grid_load=False,  # ✅ desactivamos el auto-ajuste general
             theme="blue",
-            height=750,  # 🔧 más alto para ver varios informes sin scroll
+            height=500,  # 🔧 más alto para ver varios informes sin scroll
             custom_css={
                 ".ag-header": {
                     "background-color": "#1e3c72",
@@ -1283,6 +1283,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
