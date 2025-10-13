@@ -877,12 +877,13 @@ if menu == "Jugadores":
 
 
 # =========================================================
-# BLOQUE 4 / 5 — Ver Informes (funcional, sin errores, ancho equilibrado)
+# BLOQUE 4 / 5 — Ver Informes (compacta, ficha arriba, exportar PDF)
 # =========================================================
 
 if menu == "Ver informes":
     st.subheader("📝 Informes cargados")
 
+    # --- Unificación de datos ---
     if "ID_Jugador" in df_reports.columns and "ID_Jugador" in df_players.columns:
         df_reports["ID_Jugador"] = df_reports["ID_Jugador"].astype(str)
         df_players["ID_Jugador"] = df_players["ID_Jugador"].astype(str)
@@ -891,11 +892,15 @@ if menu == "Ver informes":
         st.error("❌ Falta la columna 'ID_Jugador' en alguna hoja.")
         st.stop()
 
+    # --- Filtro por rol ---
     if CURRENT_ROLE == "scout":
         df_merged = df_merged[df_merged["Scout"] == CURRENT_USER]
     elif CURRENT_ROLE == "viewer":
         st.info("👀 Modo visualización: no podés editar informes.")
 
+    # =========================================================
+    # FILTROS
+    # =========================================================
     st.sidebar.markdown("### 🔎 Filtros")
     filtros = {
         "Scout": st.sidebar.multiselect("Scout", sorted(df_merged["Scout"].dropna().unique())),
@@ -910,6 +915,9 @@ if menu == "Ver informes":
         if vals:
             df_filtrado = df_filtrado[df_filtrado[col].isin(vals)]
 
+    # =========================================================
+    # TABLA PRINCIPAL + FICHA ARRIBA
+    # =========================================================
     if not df_filtrado.empty:
         st.markdown("### 📋 Tabla de informes filtrados")
 
@@ -920,31 +928,37 @@ if menu == "Ver informes":
         columnas_presentes = [c for c in columnas_visibles if c in df_filtrado.columns]
         df_tabla = df_filtrado[columnas_presentes].copy()
 
+        # --- Convertir fecha y ordenar descendente ---
         try:
             df_tabla["Fecha_dt"] = pd.to_datetime(df_tabla["Fecha_Informe"], format="%d/%m/%Y", errors="coerce")
             df_tabla = df_tabla.sort_values("Fecha_dt", ascending=False).drop(columns="Fecha_dt")
         except Exception:
             pass
 
+        # =========================================================
+        # CONFIGURACIÓN DE TABLA
+        # =========================================================
         gb = GridOptionsBuilder.from_dataframe(df_tabla)
         gb.configure_selection("single", use_checkbox=False)
         gb.configure_pagination(enabled=True, paginationAutoPageSize=True)
         gb.configure_grid_options(domLayout="autoHeight")
 
+        # Ajustes equilibrados (observaciones más ancho)
         widths = {
-            "Fecha_Informe": 90,
-            "Nombre": 160,
+            "Fecha_Informe": 95,
+            "Nombre": 150,
             "Observaciones": 400,
             "Club": 120,
-            "Línea": 115,
-            "Scout": 125,
-            "Equipos_Resultados": 140
+            "Línea": 110,
+            "Scout": 120,
+            "Equipos_Resultados": 130
         }
+
         for c in df_tabla.columns:
             if c == "Observaciones":
                 gb.configure_column(c, wrapText=True, autoHeight=True, width=widths[c])
             else:
-                gb.configure_column(c, width=widths.get(c, 120))
+                gb.configure_column(c, width=widths.get(c, 110))
 
         gridOptions = gb.build()
 
@@ -953,9 +967,9 @@ if menu == "Ver informes":
             gridOptions=gridOptions,
             fit_columns_on_grid_load=True,
             theme="blue",
-            height=300,
+            height=360,  # 👈 tabla más corta (antes 480)
             allow_unsafe_jscode=True,
-            update_mode="MODEL_CHANGED",  # 👈 fuerza reacción al clic
+            update_mode="MODEL_CHANGED",  # 👈 asegura que detecte clics
             custom_css={
                 ".ag-header": {"background-color": "#1e3c72", "color": "white", "font-weight": "bold", "font-size": "13px"},
                 ".ag-row-even": {"background-color": "#2a5298 !important", "color": "white !important"},
@@ -964,8 +978,11 @@ if menu == "Ver informes":
             },
         )
 
-        # --- Manejo robusto de selección ---
+        # =========================================================
+        # FICHA ARRIBA (clic funcional)
+        # =========================================================
         selected_data = grid_response.get("selected_rows", [])
+
         if isinstance(selected_data, pd.DataFrame):
             selected_data = selected_data.to_dict("records")
         elif not isinstance(selected_data, list):
@@ -998,10 +1015,47 @@ if menu == "Ver informes":
                 if pd.notna(j.get("URL_Foto")) and str(j["URL_Foto"]).startswith("http"):
                     st.image(j["URL_Foto"], width=150)
 
-                # --- Informes individuales del jugador ---
+                # =========================================================
+                # INFORMES DEL JUGADOR + PDF
+                # =========================================================
                 informes_sel = df_reports[df_reports["ID_Jugador"] == j["ID_Jugador"]]
                 if not informes_sel.empty:
                     st.markdown(f"### 📄 Informes de {j['Nombre']}")
+
+                    # === Botón para exportar PDF ===
+                    if CURRENT_ROLE in ["admin", "scout"]:
+                        if st.button("📥 Exportar informes en PDF"):
+                            try:
+                                pdf = FPDF(orientation="P", unit="mm", format="A4")
+                                pdf.add_page()
+                                pdf.set_font("Arial", "B", 16)
+                                pdf.cell(0, 10, f"Informes de {j['Nombre']}", ln=True, align="C")
+                                pdf.ln(5)
+                                pdf.set_font("Arial", "", 12)
+                                pdf.cell(0, 8, f"Club: {j.get('Club','')}", ln=True)
+                                pdf.cell(0, 8, f"Posición: {j.get('Posición','')}", ln=True)
+                                pdf.ln(8)
+                                for _, inf in informes_sel.iterrows():
+                                    pdf.set_font("Arial", "B", 12)
+                                    pdf.cell(0, 8, f"{inf.get('Fecha_Partido','')} | Scout: {inf.get('Scout','')} | Línea: {inf.get('Línea','')}", ln=True)
+                                    pdf.set_font("Arial", "I", 10)
+                                    pdf.cell(0, 6, f"{inf.get('Equipos_Resultados','')}", ln=True)
+                                    pdf.set_font("Arial", "", 10)
+                                    pdf.multi_cell(0, 6, f"{inf.get('Observaciones','')}")
+                                    pdf.ln(4)
+                                buffer = BytesIO()
+                                pdf.output(buffer)
+                                buffer.seek(0)
+                                st.download_button(
+                                    label="📄 Descargar PDF",
+                                    data=buffer,
+                                    file_name=f"Informes_{j['Nombre']}.pdf",
+                                    mime="application/pdf"
+                                )
+                            except Exception as e:
+                                st.error(f"⚠️ Error al generar PDF: {e}")
+
+                    # === Detalle de informes (expanders) ===
                     for _, inf in informes_sel.iterrows():
                         titulo = f"{inf.get('Fecha_Partido','')} | Scout: {inf.get('Scout','')} | Línea: {inf.get('Línea','')}"
                         with st.expander(titulo):
@@ -1011,6 +1065,7 @@ if menu == "Ver informes":
             st.info("📍 Seleccioná un registro para ver la ficha e informes.")
     else:
         st.warning("⚠️ No se encontraron informes con los filtros seleccionados.")
+
 
 # =========================================================
 # BLOQUE 5 / 5 — Lista corta + Cancha + Cierre
@@ -1206,6 +1261,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
