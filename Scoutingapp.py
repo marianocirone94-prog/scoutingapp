@@ -937,8 +937,8 @@ if menu == "Ver informes":
         except Exception as e:
             st.warning(f"⚠️ No se pudo calcular la edad correctamente: {e}")
 
-       # =========================================================
-# TABLA PRINCIPAL (ajustada visualmente, formato compacto)
+# =========================================================
+# TABLA PRINCIPAL (compacta, ordenada por fecha, ficha arriba)
 # =========================================================
 if not df_filtrado.empty:
     st.markdown("### 📋 Tabla de informes filtrados")
@@ -951,26 +951,21 @@ if not df_filtrado.empty:
     columnas_presentes = [col for col in columnas_visibles if col in df_filtrado.columns]
     df_tabla = df_filtrado[columnas_presentes].copy()
 
-    # --- Convertir fecha y ordenar de más reciente a más antigua ---
+    # --- Convertir fecha y ordenar descendente ---
     try:
         df_tabla["Fecha_Informe_dt"] = pd.to_datetime(df_tabla["Fecha_Informe"], format="%d/%m/%Y", errors="coerce")
         df_tabla = df_tabla.sort_values(by="Fecha_Informe_dt", ascending=False)
         df_tabla.drop(columns=["Fecha_Informe_dt"], inplace=True)
-    except Exception as e:
-        st.warning(f"⚠️ No se pudo ordenar por fecha: {e}")
+    except Exception:
+        pass
 
     # --- Configuración de AgGrid ---
     gb = GridOptionsBuilder.from_dataframe(df_tabla)
 
-    # Columna Observaciones: más angosta, multilinea
-    gb.configure_column(
-        "Observaciones",
-        width=380,     # 💡 ancho ideal tipo captura (probá entre 350–400)
-        wrapText=True,
-        autoHeight=True
-    )
+    # Observaciones más angosta y multilinea
+    gb.configure_column("Observaciones", width=320, wrapText=True, autoHeight=True)
 
-    # --- Anchos personalizados según la captura ---
+    # Anchos del resto de columnas
     widths = {
         "Fecha_Informe": 120,
         "Nombre": 200,
@@ -984,12 +979,12 @@ if not df_filtrado.empty:
         if col != "Observaciones":
             gb.configure_column(col, width=widths.get(col, 120))
 
+    gb.configure_selection("single", use_checkbox=False)  # una sola selección sin checkbox
     gb.configure_pagination(paginationAutoPageSize=True)
-    gb.configure_selection("single")  # permite seleccionar un jugador
     gb.configure_grid_options(domLayout="normal")
     gridOptions = gb.build()
 
-    # --- Renderizado de la tabla ---
+    # --- Renderizado de tabla ---
     grid_response = AgGrid(
         df_tabla,
         gridOptions=gridOptions,
@@ -998,39 +993,24 @@ if not df_filtrado.empty:
         height=720,
         allow_unsafe_jscode=True,
         custom_css={
-            ".ag-header": {
-                "background-color": "#1e3c72",
-                "color": "white",
-                "font-weight": "bold",
-                "font-size": "13px"
-            },
-            ".ag-row-even": {
-                "background-color": "#2a5298 !important",
-                "color": "white !important"
-            },
-            ".ag-row-odd": {
-                "background-color": "#3b6bbf !important",
-                "color": "white !important"
-            },
-            ".ag-cell": {
-                "white-space": "normal !important",
-                "line-height": "1.3",
-                "padding": "6px",
-                "font-size": "13px"
-            }
-        }
+            ".ag-header": {"background-color": "#1e3c72", "color": "white", "font-weight": "bold", "font-size": "13px"},
+            ".ag-row-even": {"background-color": "#2a5298 !important", "color": "white !important"},
+            ".ag-row-odd": {"background-color": "#3b6bbf !important", "color": "white !important"},
+            ".ag-cell": {"white-space": "normal !important", "line-height": "1.3", "padding": "6px", "font-size": "13px"},
+        },
     )
 
     # =========================================================
-    # TARJETA DETALLE (al seleccionar un jugador)
+    # FICHA DEL JUGADOR (aparece arriba de la tabla al hacer clic)
     # =========================================================
     selected = grid_response["selected_rows"]
-    if selected:
+    if isinstance(selected, list) and len(selected) > 0:
         jugador_sel = selected[0]
         nombre_jug = jugador_sel.get("Nombre", "")
-        jugador_data = df_players[df_players["Nombre"] == nombre_jug].iloc[0] if nombre_jug in df_players["Nombre"].values else None
 
-        if jugador_data is not None:
+        if nombre_jug in df_players["Nombre"].values:
+            jugador_data = df_players[df_players["Nombre"] == nombre_jug].iloc[0]
+
             st.markdown("---")
             st.markdown(f"### 🧾 Ficha del jugador: **{jugador_data['Nombre']}**")
 
@@ -1049,7 +1029,8 @@ if not df_filtrado.empty:
                 st.markdown(f"**Característica:** {jugador_data.get('Caracteristica','-')}")
 
             if pd.notna(jugador_data.get("URL_Foto")) and str(jugador_data["URL_Foto"]).startswith("http"):
-                st.image(jugador_data["URL_Foto"], width=180)
+                st.image(jugador_data["URL_Foto"], width=160)
+
 
         # =========================================================
         # INFORMES INDIVIDUALES
@@ -1331,6 +1312,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
