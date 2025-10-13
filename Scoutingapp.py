@@ -965,7 +965,7 @@ if menu == "Ver informes":
             height=480,
             fit_columns_on_grid_load=False,
             allow_unsafe_jscode=True,
-            update_mode="SELECTION_CHANGED",  # 👈 activa clic dinámico
+            update_mode="SELECTION_CHANGED",  # 👈 clic dinámico
             custom_css={
                 ".ag-header": {
                     "background-color": "#1e3c72",
@@ -1019,6 +1019,7 @@ if menu == "Ver informes":
                 informes_sel = df_reports[df_reports["ID_Jugador"] == j["ID_Jugador"]]
                 if not informes_sel.empty:
                     with st.expander("📄 Ver / editar informes"):
+                        # === Exportar a PDF ===
                         if CURRENT_ROLE in ["admin", "scout"]:
                             if st.button("📥 Exportar informes a PDF"):
                                 try:
@@ -1051,11 +1052,43 @@ if menu == "Ver informes":
                                 except Exception as e:
                                     st.error(f"⚠️ Error al generar PDF: {e}")
 
+                        # === Edición de informes ===
                         for _, inf in informes_sel.iterrows():
                             titulo = f"{inf.get('Fecha_Partido','')} | Scout: {inf.get('Scout','')} | Línea: {inf.get('Línea','')}"
                             with st.expander(titulo):
+                                if CURRENT_ROLE == "viewer":
+                                    st.write(f"**Equipos:** {inf.get('Equipos_Resultados','')}")
+                                    st.write(f"**Observaciones:** {inf.get('Observaciones','')}")
+                                else:
+                                    with st.form(f"edit_{inf['ID_Informe']}"):
+                                        e_scout = st.text_input("Scout", inf.get("Scout",""))
+                                        e_fecha = st.text_input("Fecha del partido", inf.get("Fecha_Partido",""))
+                                        e_equipos = st.text_input("Equipos y resultado", inf.get("Equipos_Resultados",""))
+                                        e_linea = st.selectbox(
+                                            "Línea",
+                                            ["1ra (Fichar)", "2da (Seguir)", "3ra (Ver más adelante)", "4ta (Descartar)", "Joven Promesa"],
+                                            index=["1ra (Fichar)", "2da (Seguir)", "3ra (Ver más adelante)", "4ta (Descartar)", "Joven Promesa"]
+                                            .index(inf.get("Línea", "3ra (Ver más adelante)"))
+                                        )
+                                        e_obs = st.text_area("Observaciones", inf.get("Observaciones", ""), height=120)
+                                        guardar = st.form_submit_button("💾 Guardar cambios")
 
+                                        if guardar:
+                                            try:
+                                                df_reports.loc[df_reports["ID_Informe"] == inf["ID_Informe"], [
+                                                    "Scout", "Fecha_Partido", "Equipos_Resultados", "Línea", "Observaciones"
+                                                ]] = [e_scout, e_fecha, e_equipos, e_linea, e_obs]
+                                                actualizar_hoja("Informes", df_reports)
+                                                st.success("✅ Informe actualizado correctamente.")
+                                                st.rerun()
+                                            except Exception as e:
+                                                st.error(f"⚠️ Error al actualizar: {e}")
 
+        else:
+            st.info("📍 Seleccioná un registro para ver la ficha e informes.")
+
+    else:
+        st.warning("⚠️ No se encontraron informes con los filtros seleccionados.")
 
 # =========================================================
 # BLOQUE 5 / 5 — Lista corta + Cancha + Cierre
@@ -1251,6 +1284,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
