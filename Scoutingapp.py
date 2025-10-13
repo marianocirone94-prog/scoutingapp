@@ -906,7 +906,6 @@ if menu == "Ver informes":
         "Scout": st.sidebar.multiselect("Scout", sorted(df_merged["Scout"].dropna().unique())),
         "Nombre": st.sidebar.multiselect("Jugador", sorted(df_merged["Nombre"].dropna().unique())),
         "Club": st.sidebar.multiselect("Club", sorted(df_merged["Club"].dropna().unique())),
-        "Posición": st.sidebar.multiselect("Posición", sorted(df_merged["Posición"].dropna().unique())),
         "Línea": st.sidebar.multiselect("Línea", sorted(df_merged["Línea"].dropna().unique())),
         "Nacionalidad": st.sidebar.multiselect("Nacionalidad", sorted(df_merged["Nacionalidad"].dropna().unique()))
     }
@@ -920,13 +919,11 @@ if menu == "Ver informes":
     # TABLA PRINCIPAL + FICHA (arriba)
     # =========================================================
     if not df_filtrado.empty:
-        # --- Ficha superior si hay selección previa ---
         st.markdown("### 📋 Tabla de informes filtrados")
 
-        # --- Tabla ordenada ---
         columnas_visibles = [
-            "Fecha_Informe", "Nombre", "Club", "Posición",
-            "Línea", "Scout", "Equipos_Resultados", "Observaciones"
+            "Fecha_Informe", "Nombre", "Observaciones",
+            "Club", "Línea", "Scout", "Equipos_Resultados"
         ]
         columnas_presentes = [c for c in columnas_visibles if c in df_filtrado.columns]
         df_tabla = df_filtrado[columnas_presentes].copy()
@@ -937,22 +934,21 @@ if menu == "Ver informes":
         except Exception:
             pass
 
-        # --- Configuración AgGrid compacta ---
+        # --- Configuración de AgGrid compacta ---
         gb = GridOptionsBuilder.from_dataframe(df_tabla)
         gb.configure_selection("single", use_checkbox=False)
         gb.configure_pagination(paginationAutoPageSize=True)
         gb.configure_grid_options(domLayout="normal")
 
-        # Ajustes visuales
+        # Ajuste de anchos para ocupar bien la pantalla (sin scroll lateral)
         widths = {
-            "Fecha_Informe": 100,
-            "Nombre": 170,
-            "Club": 130,
-            "Posición": 120,
-            "Línea": 120,
-            "Scout": 140,
-            "Equipos_Resultados": 150,
-            "Observaciones": 260
+            "Fecha_Informe": 105,
+            "Nombre": 165,
+            "Observaciones": 310,
+            "Club": 135,
+            "Línea": 125,
+            "Scout": 145,
+            "Equipos_Resultados": 160
         }
         for c in df_tabla.columns:
             if c == "Observaciones":
@@ -966,7 +962,7 @@ if menu == "Ver informes":
             df_tabla,
             gridOptions=gridOptions,
             theme="blue",
-            height=550,
+            height=600,
             fit_columns_on_grid_load=False,
             allow_unsafe_jscode=True,
             custom_css={
@@ -986,15 +982,15 @@ if menu == "Ver informes":
                 },
                 ".ag-cell": {
                     "white-space": "normal !important",
-                    "line-height": "1.3",
-                    "padding": "5px",
+                    "line-height": "1.35",
+                    "padding": "6px",
                     "font-size": "13px"
                 }
             },
         )
 
         # =========================================================
-        # FICHA DEL JUGADOR (arriba)
+        # FICHA DEL JUGADOR (arriba, estilo Power BI)
         # =========================================================
         selected = grid_response["selected_rows"]
         if isinstance(selected, list) and selected:
@@ -1004,98 +1000,91 @@ if menu == "Ver informes":
 
             if not jugador_data.empty:
                 j = jugador_data.iloc[0]
+
                 st.markdown("---")
                 st.markdown(f"### 🧾 Ficha del jugador: **{j['Nombre']}**")
 
-                col1, col2, col3 = st.columns(3)
-                with col1:
-                    st.markdown(f"**Club:** {j.get('Club','-')}")
-                    st.markdown(f"**Fecha de nacimiento:** {j.get('Fecha_Nac','-')}")
-                    st.markdown(f"**Altura:** {j.get('Altura','-')} cm")
-                with col2:
-                    st.markdown(f"**Posición:** {j.get('Posición','-')}")
+                # --- Fila 1: foto + datos principales ---
+                col_foto, col_datos = st.columns([1, 3])
+                with col_foto:
+                    if pd.notna(j.get("URL_Foto")) and str(j["URL_Foto"]).startswith("http"):
+                        st.image(j["URL_Foto"], width=160)
+                with col_datos:
+                    st.markdown(f"**Club:** {j.get('Club','-')}  |  **Liga:** {j.get('Liga','-')}")
+                    st.markdown(f"**Posición:** {j.get('Posición','-')}  |  **Característica:** {j.get('Caracteristica','-')}")
+                    st.markdown(f"**Fecha de nacimiento:** {j.get('Fecha_Nac','-')}  |  **Altura:** {j.get('Altura','-')} cm")
                     st.markdown(f"**Pie hábil:** {j.get('Pie_Hábil','-')}")
-                    st.markdown(f"**Nacionalidad:** {j.get('Nacionalidad','-')}")
-                with col3:
-                    st.markdown(f"**Segunda nacionalidad:** {j.get('Segunda_Nacionalidad','-')}")
-                    st.markdown(f"**Liga actual:** {j.get('Liga','-')}")
-                    st.markdown(f"**Característica:** {j.get('Caracteristica','-')}")
-
-                if pd.notna(j.get("URL_Foto")) and str(j["URL_Foto"]).startswith("http"):
-                    st.image(j["URL_Foto"], width=140)
+                    st.markdown(f"**Nacionalidad:** {j.get('Nacionalidad','-')}  |  **2ª Nacionalidad:** {j.get('Segunda_Nacionalidad','-')}")
 
                 # =========================================================
                 # INFORMES INDIVIDUALES
                 # =========================================================
                 informes_sel = df_reports[df_reports["ID_Jugador"] == j["ID_Jugador"]]
                 if not informes_sel.empty:
-                    st.markdown(f"### 📄 Informes de {j['Nombre']}")
-
-                    # --- Exportar todos en PDF ---
-                    if CURRENT_ROLE in ["admin", "scout"]:
-                        if st.button("📥 Exportar informes a PDF"):
-                            try:
-                                pdf = FPDF()
-                                pdf.add_page()
-                                pdf.set_font("Arial", "B", 16)
-                                pdf.cell(0, 10, f"Informes de {j['Nombre']}", ln=True, align="C")
-                                pdf.set_font("Arial", "", 11)
-                                pdf.ln(5)
-                                pdf.cell(0, 8, f"Club: {j.get('Club','')}", ln=True)
-                                pdf.cell(0, 8, f"Posición: {j.get('Posición','')}", ln=True)
-                                pdf.ln(8)
-
-                                for _, inf in informes_sel.iterrows():
-                                    pdf.set_font("Arial", "B", 12)
-                                    pdf.cell(0, 8, f"{inf.get('Fecha_Partido','')} | {inf.get('Scout','')} | {inf.get('Línea','')}", ln=True)
-                                    pdf.set_font("Arial", "I", 10)
-                                    pdf.cell(0, 6, f"{inf.get('Equipos_Resultados','')}", ln=True)
-                                    pdf.set_font("Arial", "", 10)
-                                    pdf.multi_cell(0, 6, f"{inf.get('Observaciones','')}")
-                                    pdf.ln(4)
-                                buffer = BytesIO()
-                                pdf.output(buffer)
-                                buffer.seek(0)
-                                st.download_button(
-                                    label="📄 Descargar PDF",
-                                    data=buffer,
-                                    file_name=f"Informes_{j['Nombre']}.pdf",
-                                    mime="application/pdf"
-                                )
-                            except Exception as e:
-                                st.error(f"⚠️ Error al generar PDF: {e}")
-
-                    # --- Edición individual ---
-                    for _, inf in informes_sel.iterrows():
-                        titulo = f"{inf.get('Fecha_Partido','')} | Scout: {inf.get('Scout','')} | Línea: {inf.get('Línea','')}"
-                        with st.expander(titulo):
-                            if CURRENT_ROLE == "viewer":
-                                st.write(f"**Equipos:** {inf.get('Equipos_Resultados','')}")
-                                st.write(f"**Observaciones:** {inf.get('Observaciones','')}")
-                            else:
-                                with st.form(f"edit_{inf['ID_Informe']}"):
-                                    e_scout = st.text_input("Scout", inf.get("Scout",""))
-                                    e_fecha = st.text_input("Fecha del partido", inf.get("Fecha_Partido",""))
-                                    e_equipos = st.text_input("Equipos y resultado", inf.get("Equipos_Resultados",""))
-                                    e_linea = st.selectbox(
-                                        "Línea",
-                                        ["1ra (Fichar)","2da (Seguir)","3ra (Ver más adelante)","4ta (Descartar)","Joven Promesa"],
-                                        index=["1ra (Fichar)","2da (Seguir)","3ra (Ver más adelante)","4ta (Descartar)","Joven Promesa"]
-                                        .index(inf.get("Línea","3ra (Ver más adelante)"))
+                    with st.expander("📄 Ver / editar informes individuales"):
+                        # --- Exportar todos en PDF ---
+                        if CURRENT_ROLE in ["admin", "scout"]:
+                            if st.button("📥 Exportar informes a PDF"):
+                                try:
+                                    pdf = FPDF()
+                                    pdf.add_page()
+                                    pdf.set_font("Arial", "B", 16)
+                                    pdf.cell(0, 10, f"Informes de {j['Nombre']}", ln=True, align="C")
+                                    pdf.set_font("Arial", "", 11)
+                                    pdf.ln(5)
+                                    pdf.cell(0, 8, f"Club: {j.get('Club','')}", ln=True)
+                                    pdf.cell(0, 8, f"Posición: {j.get('Posición','')}", ln=True)
+                                    pdf.ln(8)
+                                    for _, inf in informes_sel.iterrows():
+                                        pdf.set_font("Arial", "B", 12)
+                                        pdf.cell(0, 8, f"{inf.get('Fecha_Partido','')} | {inf.get('Scout','')} | {inf.get('Línea','')}", ln=True)
+                                        pdf.set_font("Arial", "I", 10)
+                                        pdf.cell(0, 6, f"{inf.get('Equipos_Resultados','')}", ln=True)
+                                        pdf.set_font("Arial", "", 10)
+                                        pdf.multi_cell(0, 6, f"{inf.get('Observaciones','')}")
+                                        pdf.ln(4)
+                                    buffer = BytesIO()
+                                    pdf.output(buffer)
+                                    buffer.seek(0)
+                                    st.download_button(
+                                        label="📄 Descargar PDF",
+                                        data=buffer,
+                                        file_name=f"Informes_{j['Nombre']}.pdf",
+                                        mime="application/pdf"
                                     )
-                                    e_obs = st.text_area("Observaciones", inf.get("Observaciones",""), height=120)
-                                    guardar = st.form_submit_button("💾 Guardar cambios")
+                                except Exception as e:
+                                    st.error(f"⚠️ Error al generar PDF: {e}")
 
-                                    if guardar:
-                                        try:
-                                            df_reports.loc[df_reports["ID_Informe"] == inf["ID_Informe"], [
-                                                "Scout","Fecha_Partido","Equipos_Resultados","Línea","Observaciones"
-                                            ]] = [e_scout, e_fecha, e_equipos, e_linea, e_obs]
-                                            actualizar_hoja("Informes", df_reports)
-                                            st.success("✅ Informe actualizado correctamente.")
-                                            st.rerun()
-                                        except Exception as e:
-                                            st.error(f"⚠️ Error al actualizar: {e}")
+                        # --- Edición individual ---
+                        for _, inf in informes_sel.iterrows():
+                            titulo = f"{inf.get('Fecha_Partido','')} | Scout: {inf.get('Scout','')} | Línea: {inf.get('Línea','')}"
+                            with st.expander(titulo):
+                                if CURRENT_ROLE == "viewer":
+                                    st.write(f"**Equipos:** {inf.get('Equipos_Resultados','')}")
+                                    st.write(f"**Observaciones:** {inf.get('Observaciones','')}")
+                                else:
+                                    with st.form(f"edit_{inf['ID_Informe']}"):
+                                        e_scout = st.text_input("Scout", inf.get("Scout",""))
+                                        e_fecha = st.text_input("Fecha del partido", inf.get("Fecha_Partido",""))
+                                        e_equipos = st.text_input("Equipos y resultado", inf.get("Equipos_Resultados",""))
+                                        e_linea = st.selectbox(
+                                            "Línea",
+                                            ["1ra (Fichar)","2da (Seguir)","3ra (Ver más adelante)","4ta (Descartar)","Joven Promesa"],
+                                            index=["1ra (Fichar)","2da (Seguir)","3ra (Ver más adelante)","4ta (Descartar)","Joven Promesa"]
+                                            .index(inf.get("Línea","3ra (Ver más adelante)"))
+                                        )
+                                        e_obs = st.text_area("Observaciones", inf.get("Observaciones",""), height=120)
+                                        guardar = st.form_submit_button("💾 Guardar cambios")
+                                        if guardar:
+                                            try:
+                                                df_reports.loc[df_reports["ID_Informe"] == inf["ID_Informe"], [
+                                                    "Scout","Fecha_Partido","Equipos_Resultados","Línea","Observaciones"
+                                                ]] = [e_scout, e_fecha, e_equipos, e_linea, e_obs]
+                                                actualizar_hoja("Informes", df_reports)
+                                                st.success("✅ Informe actualizado correctamente.")
+                                                st.rerun()
+                                            except Exception as e:
+                                                st.error(f"⚠️ Error al actualizar: {e}")
         else:
             st.info("📍 Seleccioná un registro para ver la ficha e informes.")
     else:
@@ -1296,6 +1285,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
