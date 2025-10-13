@@ -877,7 +877,7 @@ if menu == "Jugadores":
 
 
 # =========================================================
-# BLOQUE 4 / 5 — Ver Informes (compacta, ficha arriba, exportar PDF, altura reducida)
+# BLOQUE 4 / 5 — Ver Informes (compacta, ficha arriba, exportar PDF, altura fija)
 # =========================================================
 
 if menu == "Ver informes":
@@ -940,7 +940,7 @@ if menu == "Ver informes":
         gb = GridOptionsBuilder.from_dataframe(df_tabla)
         gb.configure_selection("single", use_checkbox=False)
         gb.configure_pagination(enabled=True, paginationAutoPageSize=True)
-        gb.configure_grid_options(domLayout="autoHeight")
+        gb.configure_grid_options(domLayout="normal")  # 👈 evita que se estire por autoHeight
 
         widths = {
             "Fecha_Informe": 90,
@@ -965,7 +965,7 @@ if menu == "Ver informes":
             gridOptions=gridOptions,
             fit_columns_on_grid_load=True,
             theme="blue",
-            height=240,  # 👈 tabla mucho más corta
+            height=260,  # 👈 altura fija, compacta
             allow_unsafe_jscode=True,
             update_mode="MODEL_CHANGED",
             custom_css={
@@ -980,8 +980,6 @@ if menu == "Ver informes":
         # FICHA ARRIBA (clic funcional)
         # =========================================================
         selected_data = grid_response.get("selected_rows", [])
-
-        # --- corregimos posible error de tipo ---
         if isinstance(selected_data, pd.DataFrame):
             selected_data = selected_data.to_dict("records")
         elif isinstance(selected_data, dict):
@@ -1064,7 +1062,6 @@ if menu == "Ver informes":
             st.info("📍 Seleccioná un registro para ver la ficha e informes.")
     else:
         st.warning("⚠️ No se encontraron informes con los filtros seleccionados.")
-
 
 
 # =========================================================
@@ -1261,6 +1258,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
