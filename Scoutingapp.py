@@ -965,7 +965,7 @@ if menu == "Ver informes":
         # --- Configuración del resto de columnas ---
         for col in df_tabla.columns:
             if col != "Observaciones":
-                gb.configure_column(col, width=130)
+                gb.configure_column(col, width=90)
 
         gb.configure_pagination(paginationAutoPageSize=True)
         gb.configure_grid_options(domLayout="normal")
@@ -977,7 +977,7 @@ if menu == "Ver informes":
             gridOptions=gridOptions,
             fit_columns_on_grid_load=False,  # ✅ desactivamos el auto-ajuste general
             theme="blue",
-            height=500,  # 🔧 más alto para ver varios informes sin scroll
+            height=800,  # 🔧 más alto para ver varios informes sin scroll
             custom_css={
                 ".ag-header": {
                     "background-color": "#1e3c72",
@@ -1283,6 +1283,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
