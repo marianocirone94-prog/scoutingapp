@@ -967,7 +967,7 @@ if menu == "Ver informes":
             gridOptions=gridOptions,
             fit_columns_on_grid_load=True,
             theme="blue",
-            height=360,  # 👈 tabla más corta (antes 480)
+            height=200,  # 👈 tabla más corta (antes 480)
             allow_unsafe_jscode=True,
             update_mode="MODEL_CHANGED",  # 👈 asegura que detecte clics
             custom_css={
@@ -1261,6 +1261,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
