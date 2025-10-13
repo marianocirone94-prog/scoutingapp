@@ -877,7 +877,7 @@ if menu == "Jugadores":
 
 
 # =========================================================
-# BLOQUE 4 / 5 — Ver Informes (compacta, ficha arriba, exportar PDF)
+# BLOQUE 4 / 5 — Ver Informes (compacta, ficha arriba, exportar PDF, altura reducida)
 # =========================================================
 
 if menu == "Ver informes":
@@ -928,7 +928,6 @@ if menu == "Ver informes":
         columnas_presentes = [c for c in columnas_visibles if c in df_filtrado.columns]
         df_tabla = df_filtrado[columnas_presentes].copy()
 
-        # --- Convertir fecha y ordenar descendente ---
         try:
             df_tabla["Fecha_dt"] = pd.to_datetime(df_tabla["Fecha_Informe"], format="%d/%m/%Y", errors="coerce")
             df_tabla = df_tabla.sort_values("Fecha_dt", ascending=False).drop(columns="Fecha_dt")
@@ -943,9 +942,8 @@ if menu == "Ver informes":
         gb.configure_pagination(enabled=True, paginationAutoPageSize=True)
         gb.configure_grid_options(domLayout="autoHeight")
 
-        # Ajustes equilibrados (observaciones más ancho)
         widths = {
-            "Fecha_Informe": 95,
+            "Fecha_Informe": 90,
             "Nombre": 150,
             "Observaciones": 400,
             "Club": 120,
@@ -967,9 +965,9 @@ if menu == "Ver informes":
             gridOptions=gridOptions,
             fit_columns_on_grid_load=True,
             theme="blue",
-            height=200,  # 👈 tabla más corta (antes 480)
+            height=240,  # 👈 tabla mucho más corta
             allow_unsafe_jscode=True,
-            update_mode="MODEL_CHANGED",  # 👈 asegura que detecte clics
+            update_mode="MODEL_CHANGED",
             custom_css={
                 ".ag-header": {"background-color": "#1e3c72", "color": "white", "font-weight": "bold", "font-size": "13px"},
                 ".ag-row-even": {"background-color": "#2a5298 !important", "color": "white !important"},
@@ -983,10 +981,11 @@ if menu == "Ver informes":
         # =========================================================
         selected_data = grid_response.get("selected_rows", [])
 
+        # --- corregimos posible error de tipo ---
         if isinstance(selected_data, pd.DataFrame):
             selected_data = selected_data.to_dict("records")
-        elif not isinstance(selected_data, list):
-            selected_data = list(selected_data)
+        elif isinstance(selected_data, dict):
+            selected_data = [selected_data]
 
         if len(selected_data) > 0:
             jugador_sel = selected_data[0]
@@ -1065,6 +1064,7 @@ if menu == "Ver informes":
             st.info("📍 Seleccioná un registro para ver la ficha e informes.")
     else:
         st.warning("⚠️ No se encontraron informes con los filtros seleccionados.")
+
 
 
 # =========================================================
@@ -1261,6 +1261,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
