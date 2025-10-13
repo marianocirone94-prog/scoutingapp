@@ -957,7 +957,7 @@ if menu == "Ver informes":
         # --- Columna de Observaciones más ancha y legible ---
         gb.configure_column(
             "Observaciones",
-            width=950,           # 🔧 Ajustá este ancho si querés más/menos (900–1000 es ideal)
+            width=750,           # 🔧 Ajustá este ancho si querés más/menos (900–1000 es ideal)
             wrapText=True,
             autoHeight=True
         )
@@ -1283,6 +1283,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
