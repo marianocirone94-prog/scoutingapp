@@ -953,7 +953,7 @@ if menu == "Ver informes":
             gridOptions=gridOptions,
             fit_columns_on_grid_load=True,
             theme="blue",
-            height=480,
+            height=300,
             allow_unsafe_jscode=True,
             update_mode="MODEL_CHANGED",  # 👈 fuerza reacción al clic
             custom_css={
@@ -1206,6 +1206,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
