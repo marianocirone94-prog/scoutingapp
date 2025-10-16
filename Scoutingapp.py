@@ -23,7 +23,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 
 # =========================================================
-# BLOQUE DE CONEXIÓN A GOOGLE SHEETS (OPTIMIZADO MULTIUSUARIO + REFRESCO MANUAL)
+# BLOQUE DE CONEXIÓN A GOOGLE SHEETS (ESTABLE Y RÁPIDO)
 # =========================================================
 
 import os, json, time
@@ -31,28 +31,32 @@ import pandas as pd
 import gspread
 from google.oauth2.service_account import Credentials
 import streamlit as st
+from datetime import datetime, timedelta
 
 # --- Configuración general ---
 SCOPE = [
     "https://www.googleapis.com/auth/spreadsheets",
     "https://www.googleapis.com/auth/drive"
 ]
-SHEET_ID = "1IInJ87xaaEwJfaz96mUlLLiX9_tk0HvqzoBoZGhrBi8"  # ID del archivo Scouting_DB
+SHEET_ID = "1IInJ87xaaEwJfaz96mUlLLiX9_tk0HvqzoBoZGhrBi8"
 CREDS_PATH = os.path.join("credentials", "credentials.json")
 
+# Control de lecturas para evitar exceso
+if "ultima_lectura" not in st.session_state:
+    st.session_state["ultima_lectura"] = datetime.now() - timedelta(seconds=5)
+
 
 # =========================================================
-# FUNCIÓN PRINCIPAL DE CONEXIÓN
+# CONECTAR CON GOOGLE SHEETS
 # =========================================================
 def conectar_sheets():
-    """Conecta con Google Sheets (modo local o cloud)."""
     try:
         if "GOOGLE_SERVICE_ACCOUNT_JSON" in st.secrets:
             creds_dict = json.loads(st.secrets["GOOGLE_SERVICE_ACCOUNT_JSON"])
             creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPE)
         else:
             if not os.path.exists(CREDS_PATH):
-                st.error("❌ No se encontró el archivo credentials.json ni el secreto en Streamlit Cloud.")
+                st.error("❌ Falta credentials.json o secreto en Streamlit Cloud.")
                 st.stop()
             creds = Credentials.from_service_account_file(CREDS_PATH, scopes=SCOPE)
 
@@ -67,7 +71,6 @@ def conectar_sheets():
 # OBTENER O CREAR HOJA
 # =========================================================
 def obtener_hoja(nombre_hoja: str, columnas_base: list = None):
-    """Devuelve la hoja solicitada; si no existe, la crea con las columnas base."""
     try:
         book = conectar_sheets()
         hojas = [ws.title for ws in book.worksheets()]
@@ -75,90 +78,79 @@ def obtener_hoja(nombre_hoja: str, columnas_base: list = None):
             ws = book.add_worksheet(title=nombre_hoja, rows=200, cols=20)
             if columnas_base:
                 ws.append_row(columnas_base)
-            st.warning(f"⚠️ Hoja '{nombre_hoja}' creada automáticamente en Scouting_DB.")
+            st.warning(f"⚠️ Hoja '{nombre_hoja}' creada automáticamente.")
             return ws
         return book.worksheet(nombre_hoja)
     except Exception as e:
-        st.error(f"⚠️ Error al obtener o crear la hoja '{nombre_hoja}': {e}")
+        st.error(f"⚠️ Error al obtener hoja '{nombre_hoja}': {e}")
         st.stop()
 
 
 # =========================================================
-# CARGAR DATOS EN VIVO (sin caché)
+# CARGAR DATOS (optimizado, controlado)
 # =========================================================
+@st.cache_data(ttl=25)
+def _leer_datos(nombre_hoja: str):
+    ws = obtener_hoja(nombre_hoja)
+    return ws.get_all_records()
+
 def cargar_datos_sheets(nombre_hoja: str, columnas_base: list = None) -> pd.DataFrame:
-    """
-    Carga SIEMPRE la versión más actualizada desde Google Sheets (sin cachear).
-    Ideal para varios scouts trabajando en simultáneo.
-    """
     try:
-        st.cache_data.clear()  # 🔄 Fuerza lectura nueva
-        ws = obtener_hoja(nombre_hoja, columnas_base)
-        data = ws.get_all_records()
+        ahora = datetime.now()
+        if ahora - st.session_state["ultima_lectura"] < timedelta(seconds=2):
+            time.sleep(1)
+        st.session_state["ultima_lectura"] = ahora
+
+        data = _leer_datos(nombre_hoja)
         df = pd.DataFrame(data)
         if df.empty and columnas_base:
             df = pd.DataFrame(columns=columnas_base)
         return df
     except Exception as e:
-        st.error(f"⚠️ Error al cargar la hoja '{nombre_hoja}': {e}")
+        st.error(f"⚠️ Error al cargar '{nombre_hoja}': {e}")
         return pd.DataFrame(columns=columnas_base or [])
 
 
 # =========================================================
-# ACTUALIZAR HOJA (sin pisar a otros usuarios)
+# ACTUALIZAR HOJA (seguro)
 # =========================================================
 def actualizar_hoja(nombre_hoja: str, df: pd.DataFrame):
-    """
-    Actualiza el contenido de una hoja de forma segura.
-    Limpia y reescribe los datos sin borrar estructura.
-    """
     try:
         ws = obtener_hoja(nombre_hoja, list(df.columns))
         ws.clear()
         if not df.empty:
             ws.update([df.columns.values.tolist()] + df.values.tolist())
-        st.toast(f"💾 '{nombre_hoja}' actualizada correctamente.", icon="✅")
-        time.sleep(0.8)
+        st.toast(f"💾 '{nombre_hoja}' actualizada.", icon="✅")
         st.cache_data.clear()
+        time.sleep(0.5)
         st.experimental_rerun()
     except Exception as e:
         st.error(f"⚠️ Error al actualizar '{nombre_hoja}': {e}")
 
 
 # =========================================================
-# AGREGAR FILA NUEVA (seguro y simultáneo)
+# AGREGAR FILA NUEVA (seguro y rápido)
 # =========================================================
 def agregar_fila(nombre_hoja: str, fila: list):
-    """
-    Agrega una nueva fila sin pisar datos de otros scouts.
-    Perfecto para informes y jugadores nuevos.
-    """
     try:
         ws = obtener_hoja(nombre_hoja)
         ws.append_row(fila, value_input_option="USER_ENTERED")
         st.toast(f"🟢 Nueva fila agregada en '{nombre_hoja}'.", icon="🟢")
-        time.sleep(0.8)
         st.cache_data.clear()
+        time.sleep(0.5)
         st.experimental_rerun()
     except Exception as e:
         st.error(f"⚠️ Error al agregar fila en '{nombre_hoja}': {e}")
 
 
 # =========================================================
-# BOTÓN MANUAL DE REFRESCO (para scouts)
+# BOTÓN MANUAL DE REFRESCO
 # =========================================================
 def boton_refrescar_datos():
-    """
-    Muestra un botón para actualizar manualmente los datos desde Google Sheets.
-    Ideal cuando un scout acaba de cargar algo y quiere verlo al instante.
-    """
     st.markdown("---")
-    if st.button("🔄 Actualizar datos (traer última versión de Google Sheets)"):
+    if st.button("🔄 Actualizar datos (refrescar desde Google Sheets)"):
         st.cache_data.clear()
         st.experimental_rerun()
-
-
-
 
 # =========================================================
 # CONFIGURACIÓN INICIAL DE LA APP
@@ -1294,6 +1286,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
