@@ -467,7 +467,7 @@ df_players, df_reports, df_short = cargar_datos()
 
 menu = st.sidebar.radio("📋 Menú principal", ["Jugadores", "Ver informes", "Lista corta"])
 # =========================================================
-# BLOQUE 3 / 5 — Sección Jugadores (versión final completa y funcional)
+# BLOQUE 3 / 5 — Sección Jugadores (versión estable sin recargas en informes)
 # =========================================================
 
 if menu == "Jugadores":
@@ -498,14 +498,13 @@ if menu == "Jugadores":
         "Alemania", "Portugal", "Otro"
     ]
 
-              # --- BUSCADOR DE JUGADORES ---
+    # --- BUSCADOR DE JUGADORES ---
     if not df_players.empty:
         opciones = {f"{row['Nombre']} - {row['Club']}": row["ID_Jugador"] for _, row in df_players.iterrows()}
     else:
         opciones = {}
 
     seleccion_jug = st.selectbox("🔍 Buscar jugador", [""] + list(opciones.keys()))
-
 
     # =========================================================
     # CREAR NUEVO JUGADOR
@@ -580,7 +579,6 @@ if menu == "Jugadores":
                 st.write(f"🌍 Nacionalidades: {jugador.get('Nacionalidad', '-')}, {jugador.get('Segunda_Nacionalidad', '-')}")
             else:
                 st.write(f"🌍 Nacionalidad: {jugador.get('Nacionalidad', '-')}")
-
             st.write(f"📅 {jugador.get('Fecha_Nac', '')} ({edad} años)")
             st.write(f"📏 Altura: {jugador.get('Altura', '-') } cm")
             st.write(f"👟 Pie hábil: {jugador.get('Pie_Hábil', '-')}")
@@ -595,95 +593,48 @@ if menu == "Jugadores":
                 if st.button("✏️ Editar jugador"):
                     st.session_state.editar_jugador = not st.session_state.editar_jugador
 
-                # =========================================================
-        # ANÁLISIS DEL JUGADOR (PROMEDIOS AGRUPADOS + TARJETAS + RADAR + RESUMEN)
+        # =========================================================
+        # ANÁLISIS DEL JUGADOR + PROMEDIOS
         # =========================================================
         with col2:
             st.markdown("### Análisis de rendimiento")
-
             prom_jugador = calcular_promedios_jugador(df_reports, id_jugador)
             prom_posicion = calcular_promedios_posicion(df_reports, df_players, jugador["Posición"])
 
             if prom_jugador:
-                # --- Agrupar promedios en 4 bloques ---
-                grupos = {
-                    "Habilidades técnicas": ["Controles", "Perfiles", "Pase_corto", "Pase_largo", "Pase_filtrado"],
-                    "Aspectos defensivos": ["1v1_defensivo", "Recuperacion", "Intercepciones", "Duelos_aereos"],
-                    "Aspectos ofensivos": ["Regate", "Velocidad", "Duelos_ofensivos"],
-                    "Aspectos mentales / tácticos": ["Resiliencia", "Liderazgo", "Inteligencia_tactica",
-                                                     "Inteligencia_emocional", "Posicionamiento",
-                                                     "Vision_de_juego", "Movimientos_sin_pelota"]
-                }
-
-                col2_izq, col2_der = st.columns([1, 2])
-                resultados = {}
-
-                with col2_izq:
+                col_izq, col_der = st.columns([1, 2])
+                with col_izq:
                     st.markdown("#### Promedios por grupo")
-
-                    for nombre_grupo, atributos in grupos.items():
-                        valores_jug = [prom_jugador.get(a, 0) for a in atributos if a in prom_jugador]
-                        valores_pos = [prom_posicion.get(a, 0) for a in atributos if a in prom_posicion]
-
-                        if valores_jug and valores_pos:
-                            prom_j = np.mean(valores_jug)
-                            prom_p = np.mean(valores_pos)
-                            diff = prom_j - prom_p
-                            resultados[nombre_grupo] = diff
-
-                            # Color tipo semáforo
-                            if diff > 0.2:
-                                color = "#4CAF50"  # Verde
-                                emoji = "⬆️"
-                                texto = "Por encima del promedio"
-                            elif diff < -0.2:
-                                color = "#D16C6C"  # Rojo
-                                emoji = "⬇️"
-                                texto = "Por debajo del promedio"
-                            else:
-                                color = "#B8B78A"  # Amarillo
-                                emoji = "➡️"
-                                texto = "En línea con el promedio"
-
+                    grupos = {
+                        "Habilidades técnicas": ["Controles", "Perfiles", "Pase_corto", "Pase_largo", "Pase_filtrado"],
+                        "Aspectos defensivos": ["1v1_defensivo", "Recuperacion", "Intercepciones", "Duelos_aereos"],
+                        "Aspectos ofensivos": ["Regate", "Velocidad", "Duelos_ofensivos"],
+                        "Aspectos mentales / tácticos": [
+                            "Resiliencia", "Liderazgo", "Inteligencia_tactica", "Inteligencia_emocional",
+                            "Posicionamiento", "Vision_de_juego", "Movimientos_sin_pelota"
+                        ]
+                    }
+                    resultados = {}
+                    for grupo, attrs in grupos.items():
+                        val_j = [prom_jugador.get(a, 0) for a in attrs if a in prom_jugador]
+                        val_p = [prom_posicion.get(a, 0) for a in attrs if a in prom_posicion]
+                        if val_j and val_p:
+                            diff = np.mean(val_j) - np.mean(val_p)
+                            resultados[grupo] = diff
+                            color = "#4CAF50" if diff > 0.2 else "#D16C6C" if diff < -0.2 else "#B8B78A"
+                            emoji = "⬆️" if diff > 0.2 else "⬇️" if diff < -0.2 else "➡️"
                             st.markdown(f"""
-                            <div style="
-                                background: linear-gradient(135deg, {color}, #1e3c72);
-                                border-radius:10px;
-                                padding:12px;
-                                margin-bottom:8px;
-                                text-align:center;
-                                color:white;
-                                font-weight:600;
-                                box-shadow:0 0 8px rgba(0,198,255,0.25);
-                            ">
-                                <h5 style="margin:0; font-size:15px;">{nombre_grupo}</h5>
-                                <p style="margin:6px 0 0 0; font-size:20px;">{emoji} {prom_j:.2f}</p>
-                                <p style="margin:0; font-size:13px; color:#CFE3FF;">{texto}</p>
+                            <div style='background: linear-gradient(135deg,{color},#1e3c72);
+                                border-radius:10px;padding:10px;margin-bottom:6px;text-align:center;color:white;font-weight:600'>
+                                <h5 style='margin:0;font-size:15px;'>{grupo}</h5>
+                                <p style='margin:5px 0;font-size:20px;'>{emoji} {np.mean(val_j):.2f}</p>
                             </div>
                             """, unsafe_allow_html=True)
-
-                with col2_der:
+                with col_der:
                     st.markdown("#### Radar comparativo general")
                     radar_chart(prom_jugador, prom_posicion)
-
-                # --- RESUMEN AUTOMÁTICO ---
-                if resultados:
-                    mejor = max(resultados, key=resultados.get)
-                    peor = min(resultados, key=resultados.get)
-                    diff_mejor = resultados[mejor]
-                    diff_peor = resultados[peor]
-
-                    if abs(diff_mejor) < 0.15 and abs(diff_peor) < 0.15:
-                        resumen = "El jugador mantiene un rendimiento equilibrado en todos los aspectos sin diferencias marcadas."
-                    else:
-                        resumen = f"Destaca principalmente en **{mejor.lower()}** (por encima del promedio de su posición, +{diff_mejor:.2f}), mientras que su punto a mejorar es **{peor.lower()}** ({diff_peor:.2f})."
-
-                    st.markdown("---")
-                    st.markdown(f"🧠 **Resumen automático:** {resumen}")
-
             else:
-                st.info("ℹ️ Este jugador aún no tiene informes cargados para generar promedios.")
-
+                st.info("ℹ️ Este jugador aún no tiene informes cargados.")
 
         # =========================================================
         # FORMULARIO DE EDICIÓN
@@ -693,12 +644,17 @@ if menu == "Jugadores":
             with st.form("editar_jugador_form", clear_on_submit=False):
                 e_nombre = st.text_input("Nombre completo", value=jugador.get("Nombre", ""))
                 e_fecha = st.text_input("Fecha de nacimiento (dd/mm/aaaa)", value=jugador.get("Fecha_Nac", ""))
-                e_altura = st.number_input("Altura (cm)", 140, 210, int(float(jugador.get("Altura", 175))) if str(jugador.get("Altura", "")).strip() else 175)
-                e_pie = st.selectbox("Pie hábil", opciones_pies, index=opciones_pies.index(jugador["Pie_Hábil"]) if jugador["Pie_Hábil"] in opciones_pies else 0)
-                e_pos = st.selectbox("Posición", opciones_posiciones, index=opciones_posiciones.index(jugador["Posición"]) if jugador["Posición"] in opciones_posiciones else 0)
+                e_altura = st.number_input("Altura (cm)", 140, 210,
+                                           int(float(jugador.get("Altura", 175))) if str(jugador.get("Altura", "")).strip() else 175)
+                e_pie = st.selectbox("Pie hábil", opciones_pies,
+                                     index=opciones_pies.index(jugador["Pie_Hábil"]) if jugador["Pie_Hábil"] in opciones_pies else 0)
+                e_pos = st.selectbox("Posición", opciones_posiciones,
+                                     index=opciones_posiciones.index(jugador["Posición"]) if jugador["Posición"] in opciones_posiciones else 0)
                 e_club = st.text_input("Club actual", value=jugador.get("Club", ""))
-                e_liga = st.selectbox("Liga", opciones_ligas, index=opciones_ligas.index(jugador["Liga"]) if jugador["Liga"] in opciones_ligas else 0)
-                e_nac = st.selectbox("Nacionalidad", opciones_paises, index=opciones_paises.index(jugador["Nacionalidad"]) if jugador["Nacionalidad"] in opciones_paises else 0)
+                e_liga = st.selectbox("Liga", opciones_ligas,
+                                      index=opciones_ligas.index(jugador["Liga"]) if jugador["Liga"] in opciones_ligas else 0)
+                e_nac = st.selectbox("Nacionalidad", opciones_paises,
+                                     index=opciones_paises.index(jugador["Nacionalidad"]) if jugador["Nacionalidad"] in opciones_paises else 0)
                 e_seg = st.text_input("Segunda nacionalidad", value=jugador.get("Segunda_Nacionalidad", ""))
                 e_car = st.text_input("Característica distintiva", value=jugador.get("Caracteristica", ""))
                 e_foto = st.text_input("URL de foto", value=str(jugador.get("URL_Foto", "")))
@@ -772,120 +728,40 @@ if menu == "Jugadores":
                     st.warning("Debes marcar la casilla de confirmación antes de eliminar.")
 
         # =========================================================
-# CARGAR NUEVO INFORME (solo se guarda al enviar)
-# =========================================================
-if CURRENT_ROLE in ["admin", "scout"]:
-    st.markdown("---")
-    st.subheader(f"📝 Cargar nuevo informe para {jugador['Nombre']}")
+        # CARGAR NUEVO INFORME (usando st.form para evitar recargas)
+        # =========================================================
+        if CURRENT_ROLE in ["admin", "scout"]:
+            st.markdown("---")
+            st.subheader(f"📝 Cargar nuevo informe para {jugador['Nombre']}")
 
-    with st.form("nuevo_informe_form", clear_on_submit=True):
-        scout = CURRENT_USER
-        fecha_partido = st.date_input("Fecha del partido", format="DD/MM/YYYY")
-        equipos_resultados = st.text_input("Equipos y resultado")
-        formacion = st.selectbox("Formación", ["4-2-3-1","4-3-1-2","4-4-2","4-3-3","3-5-2","3-4-3","5-3-2"])
-        observaciones = st.text_area("Observaciones generales")
-        linea = st.selectbox(
-            "Línea de seguimiento",
-            ["1ra (Fichar)", "2da (Seguir)", "3ra (Ver más adelante)", "4ta (Descartar)", "Joven Promesa"]
-        )
+            with st.form("nuevo_informe_form", clear_on_submit=True):
+                scout = CURRENT_USER
+                fecha_partido = st.date_input("Fecha del partido", format="DD/MM/YYYY")
+                equipos_resultados = st.text_input("Equipos y resultado")
+                formacion = st.selectbox("Formación", ["4-2-3-1","4-3-1-2","4-4-2","4-3-3","3-5-2","3-4-3","5-3-2"])
+                observaciones = st.text_area("Observaciones generales")
+                linea = st.selectbox(
+                    "Línea de seguimiento",
+                    ["1ra (Fichar)", "2da (Seguir)", "3ra (Ver más adelante)", "4ta (Descartar)", "Joven Promesa"]
+                )
 
-        st.markdown("### Evaluación técnica (0 a 5)")
+                st.write("### Evaluación técnica (0 a 5)")
+                with st.expander("Habilidades técnicas"):
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        controles = st.slider("Controles", 0.0, 5.0, 0.0, 0.5)
+                        perfiles = st.slider("Perfiles", 0.0, 5.0, 0.0, 0.5)
+                    with col2:
+                        pase_corto = st.slider("Pase corto", 0.0, 5.0, 0.0, 0.5)
+                        pase_largo = st.slider("Pase largo", 0.0, 5.0, 0.0, 0.5)
+                    with col3:
+                        pase_filtrado = st.slider("Pase filtrado", 0.0, 5.0, 0.0, 0.5)
 
-        with st.expander("Habilidades técnicas"):
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                controles = st.slider("Controles", 0.0, 5.0, 0.0, 0.5)
-                perfiles = st.slider("Perfiles", 0.0, 5.0, 0.0, 0.5)
-            with col2:
-                pase_corto = st.slider("Pase corto", 0.0, 5.0, 0.0, 0.5)
-                pase_largo = st.slider("Pase largo", 0.0, 5.0, 0.0, 0.5)
-            with col3:
-                pase_filtrado = st.slider("Pase filtrado", 0.0, 5.0, 0.0, 0.5)
-
-        with st.expander("Aspectos defensivos"):
-            col1, col2 = st.columns(2)
-            with col1:
-                v1_def = st.slider("1v1 defensivo", 0.0, 5.0, 0.0, 0.5)
-                recuperacion = st.slider("Recuperación", 0.0, 5.0, 0.0, 0.5)
-            with col2:
-                intercepciones = st.slider("Intercepciones", 0.0, 5.0, 0.0, 0.5)
-                duelos_aereos = st.slider("Duelos aéreos", 0.0, 5.0, 0.0, 0.5)
-
-        with st.expander("Aspectos ofensivos"):
-            col1, col2 = st.columns(2)
-            with col1:
-                regate = st.slider("Regate", 0.0, 5.0, 0.0, 0.5)
-                velocidad = st.slider("Velocidad", 0.0, 5.0, 0.0, 0.5)
-            with col2:
-                duelos_of = st.slider("Duelos ofensivos", 0.0, 5.0, 0.0, 0.5)
-
-        with st.expander("Aspectos mentales / psicológicos"):
-            col1, col2 = st.columns(2)
-            with col1:
-                resiliencia = st.slider("Resiliencia", 0.0, 5.0, 0.0, 0.5)
-                liderazgo = st.slider("Liderazgo", 0.0, 5.0, 0.0, 0.5)
-            with col2:
-                int_tactica = st.slider("Inteligencia táctica", 0.0, 5.0, 0.0, 0.5)
-                int_emocional = st.slider("Inteligencia emocional", 0.0, 5.0, 0.0, 0.5)
-
-        with st.expander("Aspectos tácticos"):
-            col1, col2 = st.columns(2)
-            with col1:
-                posicionamiento = st.slider("Posicionamiento", 0.0, 5.0, 0.0, 0.5)
-                vision = st.slider("Visión de juego", 0.0, 5.0, 0.0, 0.5)
-            with col2:
-                movimientos = st.slider("Movimientos sin pelota", 0.0, 5.0, 0.0, 0.5)
-
-        # Botón de envío del formulario
-        guardar_informe = st.form_submit_button("💾 Guardar informe")
-
-        if guardar_informe:
-            try:
-                def to_float_safe(valor):
-                    try:
-                        if isinstance(valor, str):
-                            valor = valor.replace(",", ".")
-                        return round(float(valor), 2)
-                    except:
-                        return 0.0
-
-                nuevo = [
-                    len(df_reports) + 1,
-                    id_jugador,
-                    scout,
-                    fecha_partido.strftime("%d/%m/%Y"),
-                    date.today().strftime("%d/%m/%Y"),
-                    equipos_resultados,
-                    formacion,
-                    observaciones,
-                    linea,
-                    to_float_safe(controles),
-                    to_float_safe(perfiles),
-                    to_float_safe(pase_corto),
-                    to_float_safe(pase_largo),
-                    to_float_safe(pase_filtrado),
-                    to_float_safe(v1_def),
-                    to_float_safe(recuperacion),
-                    to_float_safe(intercepciones),
-                    to_float_safe(duelos_aereos),
-                    to_float_safe(regate),
-                    to_float_safe(velocidad),
-                    to_float_safe(duelos_of),
-                    to_float_safe(resiliencia),
-                    to_float_safe(liderazgo),
-                    to_float_safe(int_tactica),
-                    to_float_safe(int_emocional),
-                    to_float_safe(posicionamiento),
-                    to_float_safe(vision),
-                    to_float_safe(movimientos)
-                ]
-
-                df_reports.loc[len(df_reports)] = nuevo
-                actualizar_hoja("Informes", df_reports)
-                st.success("✅ Informe guardado correctamente.")
-            except Exception as e:
-                st.error(f"⚠️ Error al guardar el informe: {e}")
-
+                with st.expander("Aspectos defensivos"):
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        v1_def = st.slider("1v1 defensivo", 0.0, 5.0, 0.0, 0.5)
+                        recuperacion = st.slider("Recuperación", 0.0, 5.0, 0.0, 0.5
 
 # =========================================================
 # BLOQUE 4 / 5 — Ver Informes (compacta, ficha arriba, exportar PDF, edición habilitada)
@@ -1280,6 +1156,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
