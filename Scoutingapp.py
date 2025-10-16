@@ -772,125 +772,119 @@ if menu == "Jugadores":
                     st.warning("Debes marcar la casilla de confirmación antes de eliminar.")
 
         # =========================================================
-        # CARGAR NUEVO INFORME
-        # =========================================================
-        if CURRENT_ROLE in ["admin", "scout"]:
-            st.markdown("---")
-            st.subheader(f"📝 Cargar nuevo informe para {jugador['Nombre']}")
+# CARGAR NUEVO INFORME (solo se guarda al enviar)
+# =========================================================
+if CURRENT_ROLE in ["admin", "scout"]:
+    st.markdown("---")
+    st.subheader(f"📝 Cargar nuevo informe para {jugador['Nombre']}")
 
-            scout = CURRENT_USER
-            fecha_partido = st.date_input("Fecha del partido", format="DD/MM/YYYY")
-            equipos_resultados = st.text_input("Equipos y resultado")
-            formacion = st.selectbox("Formación", ["4-2-3-1","4-3-1-2","4-4-2","4-3-3","3-5-2","3-4-3","5-3-2"])
-            observaciones = st.text_area("Observaciones generales")
-            linea = st.selectbox("Línea de seguimiento", [
-                "1ra (Fichar)","2da (Seguir)","3ra (Ver más adelante)","4ta (Descartar)","Joven Promesa"
-            ])
+    with st.form("nuevo_informe_form", clear_on_submit=True):
+        scout = CURRENT_USER
+        fecha_partido = st.date_input("Fecha del partido", format="DD/MM/YYYY")
+        equipos_resultados = st.text_input("Equipos y resultado")
+        formacion = st.selectbox("Formación", ["4-2-3-1","4-3-1-2","4-4-2","4-3-3","3-5-2","3-4-3","5-3-2"])
+        observaciones = st.text_area("Observaciones generales")
+        linea = st.selectbox(
+            "Línea de seguimiento",
+            ["1ra (Fichar)", "2da (Seguir)", "3ra (Ver más adelante)", "4ta (Descartar)", "Joven Promesa"]
+        )
 
-            st.write("### Evaluación técnica (0 a 5)")
-            with st.expander("Habilidades técnicas"):
-                col1, col2, col3 = st.columns(3)
-                with col1:
-                    controles = st.slider("Controles", 0.0, 5.0, 0.0, 0.5)
-                    perfiles = st.slider("Perfiles", 0.0, 5.0, 0.0, 0.5)
-                with col2:
-                    pase_corto = st.slider("Pase corto", 0.0, 5.0, 0.0, 0.5)
-                    pase_largo = st.slider("Pase largo", 0.0, 5.0, 0.0, 0.5)
-                with col3:
-                    pase_filtrado = st.slider("Pase filtrado", 0.0, 5.0, 0.0, 0.5)
+        st.markdown("### Evaluación técnica (0 a 5)")
 
-            with st.expander("Aspectos defensivos"):
-                col1, col2 = st.columns(2)
-                with col1:
-                    v1_def = st.slider("1v1 defensivo", 0.0, 5.0, 0.0, 0.5)
-                    recuperacion = st.slider("Recuperación", 0.0, 5.0, 0.0, 0.5)
-                with col2:
-                    intercepciones = st.slider("Intercepciones", 0.0, 5.0, 0.0, 0.5)
-                    duelos_aereos = st.slider("Duelos aéreos", 0.0, 5.0, 0.0, 0.5)
+        with st.expander("Habilidades técnicas"):
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                controles = st.slider("Controles", 0.0, 5.0, 0.0, 0.5)
+                perfiles = st.slider("Perfiles", 0.0, 5.0, 0.0, 0.5)
+            with col2:
+                pase_corto = st.slider("Pase corto", 0.0, 5.0, 0.0, 0.5)
+                pase_largo = st.slider("Pase largo", 0.0, 5.0, 0.0, 0.5)
+            with col3:
+                pase_filtrado = st.slider("Pase filtrado", 0.0, 5.0, 0.0, 0.5)
 
-            with st.expander("Aspectos ofensivos"):
-                col1, col2 = st.columns(2)
-                with col1:
-                    regate = st.slider("Regate", 0.0, 5.0, 0.0, 0.5)
-                    velocidad = st.slider("Velocidad", 0.0, 5.0, 0.0, 0.5)
-                with col2:
-                    duelos_of = st.slider("Duelos ofensivos", 0.0, 5.0, 0.0, 0.5)
+        with st.expander("Aspectos defensivos"):
+            col1, col2 = st.columns(2)
+            with col1:
+                v1_def = st.slider("1v1 defensivo", 0.0, 5.0, 0.0, 0.5)
+                recuperacion = st.slider("Recuperación", 0.0, 5.0, 0.0, 0.5)
+            with col2:
+                intercepciones = st.slider("Intercepciones", 0.0, 5.0, 0.0, 0.5)
+                duelos_aereos = st.slider("Duelos aéreos", 0.0, 5.0, 0.0, 0.5)
 
-            with st.expander("Aspectos mentales / psicológicos"):
-                col1, col2 = st.columns(2)
-                with col1:
-                    resiliencia = st.slider("Resiliencia", 0.0, 5.0, 0.0, 0.5)
-                    liderazgo = st.slider("Liderazgo", 0.0, 5.0, 0.0, 0.5)
-                with col2:
-                    int_tactica = st.slider("Inteligencia táctica", 0.0, 5.0, 0.0, 0.5)
-                    int_emocional = st.slider("Inteligencia emocional", 0.0, 5.0, 0.0, 0.5)
+        with st.expander("Aspectos ofensivos"):
+            col1, col2 = st.columns(2)
+            with col1:
+                regate = st.slider("Regate", 0.0, 5.0, 0.0, 0.5)
+                velocidad = st.slider("Velocidad", 0.0, 5.0, 0.0, 0.5)
+            with col2:
+                duelos_of = st.slider("Duelos ofensivos", 0.0, 5.0, 0.0, 0.5)
 
-            with st.expander("Aspectos tácticos"):
-                col1, col2 = st.columns(2)
-                with col1:
-                    posicionamiento = st.slider("Posicionamiento", 0.0, 5.0, 0.0, 0.5)
-                    vision = st.slider("Visión de juego", 0.0, 5.0, 0.0, 0.5)
-                with col2:
-                    movimientos = st.slider("Movimientos sin pelota", 0.0, 5.0, 0.0, 0.5)
+        with st.expander("Aspectos mentales / psicológicos"):
+            col1, col2 = st.columns(2)
+            with col1:
+                resiliencia = st.slider("Resiliencia", 0.0, 5.0, 0.0, 0.5)
+                liderazgo = st.slider("Liderazgo", 0.0, 5.0, 0.0, 0.5)
+            with col2:
+                int_tactica = st.slider("Inteligencia táctica", 0.0, 5.0, 0.0, 0.5)
+                int_emocional = st.slider("Inteligencia emocional", 0.0, 5.0, 0.0, 0.5)
 
-                        # =========================================================
-            # GUARDAR INFORME (corrige decimales y fechas)
-            # =========================================================
+        with st.expander("Aspectos tácticos"):
+            col1, col2 = st.columns(2)
+            with col1:
+                posicionamiento = st.slider("Posicionamiento", 0.0, 5.0, 0.0, 0.5)
+                vision = st.slider("Visión de juego", 0.0, 5.0, 0.0, 0.5)
+            with col2:
+                movimientos = st.slider("Movimientos sin pelota", 0.0, 5.0, 0.0, 0.5)
 
-            # --- Función para limpiar y convertir números correctamente ---
-            def to_float_safe(valor):
-                """Convierte valores tipo '2,5' o '2.5' en float (2.5) seguro."""
-                try:
-                    if isinstance(valor, str):
-                        valor = valor.replace(",", ".")
-                    return round(float(valor), 2)
-                except:
-                    return 0.0
+        # Botón de envío del formulario
+        guardar_informe = st.form_submit_button("💾 Guardar informe")
 
-            if st.button("💾 Guardar informe"):
-                try:
-                    nuevo = [
-                        len(df_reports) + 1,
-                        id_jugador,
-                        scout,
-                        fecha_partido.strftime("%d/%m/%Y"),  # ✅ Fecha partido
-                        date.today().strftime("%d/%m/%Y"),   # ✅ Fecha informe
-                        equipos_resultados,
-                        formacion,
-                        observaciones,
-                        linea,
-                        # --- Evaluaciones normalizadas ---
-                        to_float_safe(controles),
-                        to_float_safe(perfiles),
-                        to_float_safe(pase_corto),
-                        to_float_safe(pase_largo),
-                        to_float_safe(pase_filtrado),
-                        to_float_safe(v1_def),
-                        to_float_safe(recuperacion),
-                        to_float_safe(intercepciones),
-                        to_float_safe(duelos_aereos),
-                        to_float_safe(regate),
-                        to_float_safe(velocidad),
-                        to_float_safe(duelos_of),
-                        to_float_safe(resiliencia),
-                        to_float_safe(liderazgo),
-                        to_float_safe(int_tactica),
-                        to_float_safe(int_emocional),
-                        to_float_safe(posicionamiento),
-                        to_float_safe(vision),
-                        to_float_safe(movimientos)
-                    ]
+        if guardar_informe:
+            try:
+                def to_float_safe(valor):
+                    try:
+                        if isinstance(valor, str):
+                            valor = valor.replace(",", ".")
+                        return round(float(valor), 2)
+                    except:
+                        return 0.0
 
-                    # Agregamos la fila nueva al DataFrame
-                    df_reports.loc[len(df_reports)] = nuevo
+                nuevo = [
+                    len(df_reports) + 1,
+                    id_jugador,
+                    scout,
+                    fecha_partido.strftime("%d/%m/%Y"),
+                    date.today().strftime("%d/%m/%Y"),
+                    equipos_resultados,
+                    formacion,
+                    observaciones,
+                    linea,
+                    to_float_safe(controles),
+                    to_float_safe(perfiles),
+                    to_float_safe(pase_corto),
+                    to_float_safe(pase_largo),
+                    to_float_safe(pase_filtrado),
+                    to_float_safe(v1_def),
+                    to_float_safe(recuperacion),
+                    to_float_safe(intercepciones),
+                    to_float_safe(duelos_aereos),
+                    to_float_safe(regate),
+                    to_float_safe(velocidad),
+                    to_float_safe(duelos_of),
+                    to_float_safe(resiliencia),
+                    to_float_safe(liderazgo),
+                    to_float_safe(int_tactica),
+                    to_float_safe(int_emocional),
+                    to_float_safe(posicionamiento),
+                    to_float_safe(vision),
+                    to_float_safe(movimientos)
+                ]
 
-                    # Actualizamos la hoja de Google Sheets
-                    actualizar_hoja("Informes", df_reports)
-
-                    st.success("✅ Informe guardado correctamente.")
-
-                except Exception as e:
-                    st.error(f"⚠️ Error al guardar el informe: {e}")
+                df_reports.loc[len(df_reports)] = nuevo
+                actualizar_hoja("Informes", df_reports)
+                st.success("✅ Informe guardado correctamente.")
+            except Exception as e:
+                st.error(f"⚠️ Error al guardar el informe: {e}")
 
 
 # =========================================================
@@ -1286,6 +1280,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
