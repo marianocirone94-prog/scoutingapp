@@ -736,7 +736,7 @@ if menu == "Jugadores":
         # =========================================================
         # ELIMINAR JUGADOR
         # =========================================================
-        if CURRENT_ROLE == "admin":
+        if CURRENT_ROLE in ["admin", "scout"]:
             st.markdown("---")
             eliminar_confirm = st.checkbox("Confirmar eliminación del jugador")
             if st.button("🗑️ Eliminar jugador permanentemente"):
@@ -956,7 +956,7 @@ if menu == "Ver informes":
             gridOptions=gridOptions,
             fit_columns_on_grid_load=True,
             theme="blue",
-            height=260,  # 👈 altura fija
+            height=600,  # 👈 altura fija
             allow_unsafe_jscode=True,
             update_mode="MODEL_CHANGED",
             custom_css={
@@ -1269,6 +1269,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
