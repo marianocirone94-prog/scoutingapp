@@ -111,21 +111,32 @@ def cargar_datos_sheets(nombre_hoja: str, columnas_base: list = None) -> pd.Data
         return pd.DataFrame(columns=columnas_base or [])
 
 
-# =========================================================
-# ACTUALIZAR HOJA (seguro)
-# =========================================================
 def actualizar_hoja(nombre_hoja: str, df: pd.DataFrame):
+    """
+    Actualiza la hoja en Google Sheets sin borrar todo si el DataFrame está vacío.
+    Protege contra sobrescrituras accidentales.
+    """
     try:
         ws = obtener_hoja(nombre_hoja, list(df.columns))
+        
+        # 🚫 Prevención: no borrar si el DF está vacío
+        if df.empty:
+            st.warning(f"⚠️ No se actualizó '{nombre_hoja}' porque el DataFrame está vacío (protección activada).")
+            return
+
+        # ✅ Actualización segura
         ws.clear()
-        if not df.empty:
-            ws.update([df.columns.values.tolist()] + df.values.tolist())
-        st.toast(f"💾 '{nombre_hoja}' actualizada.", icon="✅")
+        ws.update([df.columns.values.tolist()] + df.values.tolist())
+        st.toast(f"💾 '{nombre_hoja}' actualizada correctamente.", icon="✅")
+
+        # 🔄 Refresco y cache
         st.cache_data.clear()
         time.sleep(0.5)
-        st.experimental_rerun()
+        st.rerun()
+
     except Exception as e:
         st.error(f"⚠️ Error al actualizar '{nombre_hoja}': {e}")
+
 
 
 # =========================================================
@@ -1244,6 +1255,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
