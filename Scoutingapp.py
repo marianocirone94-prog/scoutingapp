@@ -461,18 +461,23 @@ def cargar_datos():
 
 
 # =========================================================
-# MENÚ PRINCIPAL + FILTRO POR ROL
+# MENÚ PRINCIPAL + FILTRO POR ROL Y USUARIO
 # =========================================================
 df_players, df_reports, df_short = cargar_datos()
 
-# --- Filtro automático según el rol del usuario ---
+# --- Filtro automático según el usuario y su rol ---
 if CURRENT_ROLE == "scout":
-    # Solo ve y edita sus propios informes
+    # Los scouts solo ven sus propios informes
     df_reports = df_reports[df_reports["Scout"] == CURRENT_USER].copy()
+
+elif CURRENT_ROLE == "admin":
+    # Solo Mariano y Dario ven todos los informes
+    if CURRENT_USER not in ["Mariano Cirone", "Dario Marra"]:
+        df_reports = df_reports[df_reports["Scout"] == CURRENT_USER].copy()
+
 elif CURRENT_ROLE == "viewer":
-    # Solo visualiza, sin posibilidad de editar
+    # Los viewer solo visualizan, sin editar
     st.info("👀 Estás en modo visualización: solo podés ver los datos.")
-# Los admin ven todo (sin filtro)
 
 # --- Menú lateral principal ---
 menu = st.sidebar.radio(
@@ -1232,6 +1237,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
