@@ -461,22 +461,28 @@ def cargar_datos():
 
 
 # =========================================================
-# MENÚ PRINCIPAL + FILTRO POR ROL Y USUARIO
+# MENÚ PRINCIPAL + FILTRO POR ROL Y USUARIO (robusto)
 # =========================================================
 df_players, df_reports, df_short = cargar_datos()
 
-# --- Filtro automático según el usuario y su rol ---
-if CURRENT_ROLE == "scout":
-    # Los scouts solo ven sus propios informes
-    df_reports = df_reports[df_reports["Scout"] == CURRENT_USER].copy()
+# Normalizamos texto
+if "Scout" in df_reports.columns:
+    df_reports["Scout"] = df_reports["Scout"].astype(str).str.strip().str.lower()
 
-elif CURRENT_ROLE == "admin":
-    # Solo Mariano y Dario ven todos los informes
-    if CURRENT_USER not in ["Mariano Cirone", "Dario Marra"]:
-        df_reports = df_reports[df_reports["Scout"] == CURRENT_USER].copy()
+usuario_actual = str(CURRENT_USER).strip().lower()
+
+# --- Lógica de acceso ---
+if CURRENT_ROLE == "admin":
+    # Mariano y Dario ven todo
+    if usuario_actual not in ["mariano cirone", "dario marra"]:
+        df_reports = df_reports[df_reports["Scout"].str.contains(usuario_actual, na=False)].copy()
+
+elif CURRENT_ROLE == "scout":
+    # Cada scout ve solo sus informes
+    df_reports = df_reports[df_reports["Scout"].str.contains(usuario_actual, na=False)].copy()
 
 elif CURRENT_ROLE == "viewer":
-    # Los viewer solo visualizan, sin editar
+    # Solo modo lectura
     st.info("👀 Estás en modo visualización: solo podés ver los datos.")
 
 # --- Menú lateral principal ---
@@ -1237,6 +1243,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
