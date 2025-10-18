@@ -780,7 +780,7 @@ if menu == "Jugadores":
                     st.error(f"⚠️ Error al agregar a la lista corta: {e}")
 
        # =========================================================
-# ELIMINAR JUGADOR (INSTANTÁNEO Y SEGURO)
+# ELIMINAR JUGADOR (FUNCIONA AL INSTANTE Y SIN BORRAR DEMÁS DATOS)
 # =========================================================
 if CURRENT_ROLE in ["admin", "scout"]:
     st.markdown("---")
@@ -788,31 +788,34 @@ if CURRENT_ROLE in ["admin", "scout"]:
     if st.button("🗑️ Eliminar jugador permanentemente"):
         if eliminar_confirm:
             try:
-                # ✅ 1. Elimina del DataFrame local
-                df_players = df_players[df_players["ID_Jugador"] != id_jugador]
-
-                # ✅ 2. Sube la versión filtrada directamente SIN clear()
+                # ✅ 1. Cargar la hoja actual directamente
                 ws = obtener_hoja("Jugadores")
-                if not df_players.empty:
-                    ws.update([df_players.columns.values.tolist()] + df_players.values.tolist())
+                data_actual = ws.get_all_records()
+                df_actual = pd.DataFrame(data_actual)
+
+                # ✅ 2. Eliminar solo el jugador con ese ID
+                df_actual = df_actual[df_actual["ID_Jugador"].astype(str) != str(id_jugador)]
+
+                # ✅ 3. Subir la hoja actualizada (sin tocar el resto)
+                if not df_actual.empty:
+                    ws.update([df_actual.columns.values.tolist()] + df_actual.values.tolist())
                 else:
                     ws.clear()
-                    ws.append_row(list(df_players.columns))
+                    ws.append_row(list(df_actual.columns))
 
-                # ✅ 3. También elimina del listado corto si existe
+                # ✅ 4. Eliminar también de lista corta si existía
                 try:
-                    df_short_local = cargar_datos_sheets("Lista corta")
-                    df_short_local = df_short_local[df_short_local["ID_Jugador"] != id_jugador]
                     ws_short = obtener_hoja("Lista corta")
-                    if not df_short_local.empty:
-                        ws_short.update([df_short_local.columns.values.tolist()] + df_short_local.values.tolist())
-                    else:
-                        ws_short.clear()
-                        ws_short.append_row(list(df_short_local.columns))
-                except:
+                    data_short = ws_short.get_all_records()
+                    df_short_local = pd.DataFrame(data_short)
+                    df_short_local = df_short_local[df_short_local["ID_Jugador"].astype(str) != str(id_jugador)]
+                    ws_short.update([df_short_local.columns.values.tolist()] + df_short_local.values.tolist())
+                except Exception:
                     pass
 
+                # ✅ 5. Mensaje y recarga inmediata
                 st.success(f"✅ Jugador '{jugador['Nombre']}' eliminado correctamente.")
+                st.cache_data.clear()
                 st.rerun()
 
             except Exception as e:
@@ -1310,6 +1313,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
