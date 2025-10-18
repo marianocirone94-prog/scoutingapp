@@ -23,7 +23,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 
 # =========================================================
-# BLOQUE DE CONEXIÓN A GOOGLE SHEETS (ESTABLE Y RÁPIDO)
+# BLOQUE DE CONEXIÓN A GOOGLE SHEETS (FINAL - SEGURO Y MULTIUSUARIO)
 # =========================================================
 
 import os, json, time
@@ -33,7 +33,7 @@ from google.oauth2.service_account import Credentials
 import streamlit as st
 from datetime import datetime, timedelta
 
-# --- Configuración general ---
+# --- CONFIGURACIÓN GENERAL ---
 SCOPE = [
     "https://www.googleapis.com/auth/spreadsheets",
     "https://www.googleapis.com/auth/drive"
@@ -41,13 +41,13 @@ SCOPE = [
 SHEET_ID = "1IInJ87xaaEwJfaz96mUlLLiX9_tk0HvqzoBoZGhrBi8"
 CREDS_PATH = os.path.join("credentials", "credentials.json")
 
-# Control de lecturas para evitar exceso
+# Control de lectura para evitar exceso de requests
 if "ultima_lectura" not in st.session_state:
     st.session_state["ultima_lectura"] = datetime.now() - timedelta(seconds=5)
 
 
 # =========================================================
-# CONECTAR CON GOOGLE SHEETS
+# CONEXIÓN
 # =========================================================
 def conectar_sheets():
     try:
@@ -75,7 +75,7 @@ def obtener_hoja(nombre_hoja: str, columnas_base: list = None):
         book = conectar_sheets()
         hojas = [ws.title for ws in book.worksheets()]
         if nombre_hoja not in hojas:
-            ws = book.add_worksheet(title=nombre_hoja, rows=200, cols=20)
+            ws = book.add_worksheet(title=nombre_hoja, rows=500, cols=20)
             if columnas_base:
                 ws.append_row(columnas_base)
             st.warning(f"⚠️ Hoja '{nombre_hoja}' creada automáticamente.")
@@ -87,12 +87,13 @@ def obtener_hoja(nombre_hoja: str, columnas_base: list = None):
 
 
 # =========================================================
-# CARGAR DATOS (optimizado, controlado)
+# CARGAR DATOS (con control de tiempo)
 # =========================================================
-@st.cache_data(ttl=25)
+@st.cache_data(ttl=30)
 def _leer_datos(nombre_hoja: str):
     ws = obtener_hoja(nombre_hoja)
     return ws.get_all_records()
+
 
 def cargar_datos_sheets(nombre_hoja: str, columnas_base: list = None) -> pd.DataFrame:
     try:
@@ -111,45 +112,80 @@ def cargar_datos_sheets(nombre_hoja: str, columnas_base: list = None) -> pd.Data
         return pd.DataFrame(columns=columnas_base or [])
 
 
+# =========================================================
+# ACTUALIZAR HOJA (BLINDADA - SIN BORRAR)
+# =========================================================
 def actualizar_hoja(nombre_hoja: str, df: pd.DataFrame):
     """
-    Actualiza la hoja en Google Sheets sin borrar todo si el DataFrame está vacío.
-    Protege contra sobrescrituras accidentales.
+    Actualiza sin borrar datos previos.
+    Si existe el ID, actualiza esa fila. Si no, la agrega.
+    Nunca borra toda la hoja.
     """
     try:
         ws = obtener_hoja(nombre_hoja, list(df.columns))
-        
-        # 🚫 Prevención: no borrar si el DF está vacío
-        if df.empty:
-            st.warning(f"⚠️ No se actualizó '{nombre_hoja}' porque el DataFrame está vacío (protección activada).")
+        data_actual = ws.get_all_records()
+        df_actual = pd.DataFrame(data_actual)
+
+        # Si la hoja está vacía, crea desde cero
+        if df_actual.empty:
+            ws.update([df.columns.values.tolist()] + df.values.tolist())
+            st.toast(f"✅ Hoja '{nombre_hoja}' creada y actualizada.", icon="💾")
             return
 
-        # ✅ Actualización segura
-        ws.clear()
-        ws.update([df.columns.values.tolist()] + df.values.tolist())
-        st.toast(f"💾 '{nombre_hoja}' actualizada correctamente.", icon="✅")
+        # Detectar columna de ID
+        id_col = None
+        for posible in ["ID_Jugador", "ID_Informe"]:
+            if posible in df.columns:
+                id_col = posible
+                break
 
-        # 🔄 Refresco y cache
-        st.cache_data.clear()
-        time.sleep(0.5)
-        st.rerun()
+        # Fusión segura sin borrar
+        if id_col:
+            df_actual[id_col] = df_actual[id_col].astype(str)
+            df[id_col] = df[id_col].astype(str)
+            df_fusion = pd.concat([df_actual, df]).drop_duplicates(subset=[id_col], keep="last")
+        else:
+            df_fusion = pd.concat([df_actual, df]).drop_duplicates(keep="last")
+
+        # Subir a Sheets
+        ws.update([df_fusion.columns.values.tolist()] + df_fusion.values.tolist())
+        st.toast(f"💾 '{nombre_hoja}' actualizada correctamente (sin borrar datos).", icon="✅")
 
     except Exception as e:
         st.error(f"⚠️ Error al actualizar '{nombre_hoja}': {e}")
 
 
+# =========================================================
+# ELIMINAR FILA SEGURA (CONTROLADO)
+# =========================================================
+def eliminar_por_id(nombre_hoja: str, id_col: str, id_valor):
+    """
+    Elimina una fila específica por ID, sin tocar el resto.
+    """
+    try:
+        ws = obtener_hoja(nombre_hoja)
+        data_actual = ws.get_all_records()
+        df = pd.DataFrame(data_actual)
+        if id_col not in df.columns:
+            st.error(f"⚠️ La hoja '{nombre_hoja}' no tiene la columna '{id_col}'.")
+            return
+        df = df[df[id_col].astype(str) != str(id_valor)]
+        ws.update([df.columns.values.tolist()] + df.values.tolist())
+        st.success(f"🗑️ Registro con {id_col}={id_valor} eliminado correctamente.")
+    except Exception as e:
+        st.error(f"⚠️ Error al eliminar en '{nombre_hoja}': {e}")
+
 
 # =========================================================
-# AGREGAR FILA NUEVA (seguro y rápido)
+# AGREGAR FILA NUEVA (SEGURA)
 # =========================================================
 def agregar_fila(nombre_hoja: str, fila: list):
+    """Agrega una nueva fila sin tocar el resto."""
     try:
         ws = obtener_hoja(nombre_hoja)
         ws.append_row(fila, value_input_option="USER_ENTERED")
         st.toast(f"🟢 Nueva fila agregada en '{nombre_hoja}'.", icon="🟢")
         st.cache_data.clear()
-        time.sleep(0.5)
-        st.experimental_rerun()
     except Exception as e:
         st.error(f"⚠️ Error al agregar fila en '{nombre_hoja}': {e}")
 
@@ -161,7 +197,7 @@ def boton_refrescar_datos():
     st.markdown("---")
     if st.button("🔄 Actualizar datos (refrescar desde Google Sheets)"):
         st.cache_data.clear()
-        st.experimental_rerun()
+        st.rerun()
 
 # =========================================================
 # CONFIGURACIÓN INICIAL DE LA APP
@@ -1255,6 +1291,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
