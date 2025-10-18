@@ -556,7 +556,7 @@ if menu == "Jugadores":
     opciones_ligas = [
         "Argentina - LPF", "Argentina - Primera Nacional", "Argentina - Federal A",
         "Brasil - Serie A (Brasileirão)", "Brasil - Serie B", "Chile - Primera División",
-        "Uruguay - Primera División", "Paraguay - División Profesional", "Colombia - Categoría Primera A",
+        "Uruguay - Primera División", "Uruguay - Segunda División", "Paraguay - División Profesional", "Colombia - Categoría Primera A",
         "Ecuador - LigaPro Serie A", "Perú - Liga 1", "Venezuela - Liga FUTVE", "México - Liga MX",
         "España - LaLiga", "España - LaLiga 2", "Italia - Serie A", "Italia - Serie B",
         "Inglaterra - Premier League", "Inglaterra - Championship", "Francia - Ligue 1",
@@ -1313,6 +1313,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
