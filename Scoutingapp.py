@@ -779,27 +779,46 @@ if menu == "Jugadores":
                 except Exception as e:
                     st.error(f"⚠️ Error al agregar a la lista corta: {e}")
 
-        # =========================================================
-        # ELIMINAR JUGADOR
-        # =========================================================
-        if CURRENT_ROLE in ["admin", "scout"]:
-            st.markdown("---")
-            eliminar_confirm = st.checkbox("Confirmar eliminación del jugador")
-            if st.button("🗑️ Eliminar jugador permanentemente"):
-                if eliminar_confirm:
-                    try:
-                        df_players = df_players[df_players["ID_Jugador"] != id_jugador]
-                        actualizar_hoja("Jugadores", df_players)
-                        df_short_local = cargar_datos_sheets("Lista corta")
-                        df_short_local = df_short_local[df_short_local["ID_Jugador"] != id_jugador]
-                        actualizar_hoja("Lista corta", df_short_local)
-                        st.success(f"Jugador '{jugador['Nombre']}' eliminado correctamente.")
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"⚠️ Error al eliminar el jugador: {e}")
-                else:
-                    st.warning("Debes marcar la casilla de confirmación antes de eliminar.")
+       # =========================================================
+# ELIMINAR JUGADOR (INSTANTÁNEO Y SEGURO)
+# =========================================================
+if CURRENT_ROLE in ["admin", "scout"]:
+    st.markdown("---")
+    eliminar_confirm = st.checkbox("Confirmar eliminación del jugador")
+    if st.button("🗑️ Eliminar jugador permanentemente"):
+        if eliminar_confirm:
+            try:
+                # ✅ 1. Elimina del DataFrame local
+                df_players = df_players[df_players["ID_Jugador"] != id_jugador]
 
+                # ✅ 2. Sube la versión filtrada directamente SIN clear()
+                ws = obtener_hoja("Jugadores")
+                if not df_players.empty:
+                    ws.update([df_players.columns.values.tolist()] + df_players.values.tolist())
+                else:
+                    ws.clear()
+                    ws.append_row(list(df_players.columns))
+
+                # ✅ 3. También elimina del listado corto si existe
+                try:
+                    df_short_local = cargar_datos_sheets("Lista corta")
+                    df_short_local = df_short_local[df_short_local["ID_Jugador"] != id_jugador]
+                    ws_short = obtener_hoja("Lista corta")
+                    if not df_short_local.empty:
+                        ws_short.update([df_short_local.columns.values.tolist()] + df_short_local.values.tolist())
+                    else:
+                        ws_short.clear()
+                        ws_short.append_row(list(df_short_local.columns))
+                except:
+                    pass
+
+                st.success(f"✅ Jugador '{jugador['Nombre']}' eliminado correctamente.")
+                st.rerun()
+
+            except Exception as e:
+                st.error(f"⚠️ Error al eliminar el jugador: {e}")
+        else:
+            st.warning("Debes marcar la casilla de confirmación antes de eliminar.")
 
         # =========================================================
         # CARGAR NUEVO INFORME (ahora dentro de formulario para evitar recargas)
@@ -1291,6 +1310,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
