@@ -565,7 +565,7 @@ menu = st.sidebar.radio(
 )
 
 # =========================================================
-# BLOQUE 3 / 5 — Sección Jugadores (versión final con actualización automática)
+# BLOQUE 3 / 5 — Sección Jugadores (versión final con edición puntual y refresco)
 # =========================================================
 
 if menu == "Jugadores":
@@ -638,12 +638,10 @@ if menu == "Jugadores":
                         ws.append_row(fila, value_input_option="USER_ENTERED")
 
                         st.info("⏳ Guardando y sincronizando datos...", icon="💾")
-                        import time; time.sleep(2)
-
+                        import time; time.sleep(1.5)
                         df_players = actualizar_dataframe("Jugadores", df_players)
                         st.toast(f"✅ Jugador '{nuevo_nombre}' agregado correctamente.", icon="✅")
                         st.rerun()
-
                     except Exception as e:
                         st.error(f"⚠️ Error al agregar el jugador: {e}")
 
@@ -708,7 +706,7 @@ if menu == "Jugadores":
         # === RADAR ===
         with col3:
             if prom_jugador:
-                st.markdown("### 📊 Radar comparativo")
+                st.markdown("### Radar comparativo")
                 radar_chart(prom_jugador, prom_posicion)
             else:
                 st.info("📉 No hay suficientes informes para generar el radar.")
@@ -741,27 +739,30 @@ if menu == "Jugadores":
                     e_foto = st.text_input("URL de foto", value=str(jugador.get("URL_Foto", "")))
                     e_link = st.text_input("URL perfil externo", value=str(jugador.get("URL_Perfil", "")))
                     guardar_ed = st.form_submit_button("💾 Guardar cambios")
+
                     if guardar_ed:
                         try:
-                            df_players.loc[df_players["ID_Jugador"] == id_jugador, [
-                                "Nombre","Fecha_Nac","Altura","Pie_Hábil","Posición",
-                                "Club","Liga","Nacionalidad","Segunda_Nacionalidad",
-                                "Caracteristica","URL_Foto","URL_Perfil"
-                            ]] = [
-                                e_nombre,e_fecha,e_altura,e_pie,e_pos,
-                                e_club,e_liga,e_nac,e_seg,e_car,e_foto,e_link
-                            ]
+                            # ✅ Actualiza solo la fila del jugador en la hoja, sin duplicar
                             ws = obtener_hoja("Jugadores")
-                            ws.update([df_players.columns.values.tolist()] + df_players.values.tolist())
+                            data = ws.get_all_records()
+                            df_actual = pd.DataFrame(data)
+                            index_row = df_actual.index[df_actual["ID_Jugador"].astype(str) == str(id_jugador)]
 
-                            import time; time.sleep(2)
-                            df_players = actualizar_dataframe("Jugadores", df_players)
-                            jugador = df_players[df_players["ID_Jugador"] == id_jugador].iloc[0]
-
-                            st.toast("✅ Datos actualizados y sincronizados.", icon="✅")
-                            st.session_state.editar_jugador = False
-                            st.rerun()
-
+                            if not index_row.empty:
+                                row_number = index_row[0] + 2  # +2 por encabezado
+                                valores = [
+                                    id_jugador, e_nombre, e_fecha, e_nac, e_seg,
+                                    e_altura, e_pie, e_pos, e_car,
+                                    e_club, e_liga, "", e_foto, e_link
+                                ]
+                                ws.update(f"A{row_number}:N{row_number}", [valores])
+                                import time; time.sleep(1.5)
+                                df_players = actualizar_dataframe("Jugadores", df_players)
+                                st.toast("✅ Datos actualizados correctamente.", icon="✅")
+                                st.session_state.editar_jugador = False
+                                st.rerun()
+                            else:
+                                st.warning("⚠️ No se encontró el jugador en la hoja.")
                         except Exception as e:
                             st.error(f"⚠️ Error al guardar: {e}")
 
@@ -782,27 +783,15 @@ if menu == "Jugadores":
                         ws_jug.append_row(list(df_jug_actual.columns))
                         if not df_jug_actual.empty:
                             ws_jug.update([df_jug_actual.columns.values.tolist()] + df_jug_actual.values.tolist())
-
-                        ws_short = obtener_hoja("Lista corta")
-                        data_short = ws_short.get_all_records()
-                        df_short_actual = pd.DataFrame(data_short)
-                        df_short_actual = df_short_actual[df_short_actual["ID_Jugador"].astype(str) != str(id_jugador)]
-                        ws_short.clear()
-                        ws_short.append_row(list(df_short_actual.columns))
-                        if not df_short_actual.empty:
-                            ws_short.update([df_short_actual.columns.values.tolist()] + df_short_actual.values.tolist())
-
-                        import time; time.sleep(2)
+                        import time; time.sleep(1.5)
                         df_players = actualizar_dataframe("Jugadores", df_players)
-                        df_short = actualizar_dataframe("Lista corta", df_short)
-
                         st.toast(f"🗑️ Jugador '{jugador['Nombre']}' eliminado correctamente.", icon="🗑️")
                         st.rerun()
-
                     except Exception as e:
                         st.error(f"⚠️ Error al eliminar el jugador: {e}")
                 else:
                     st.warning("Debes marcar la casilla antes de eliminar.")
+
 
 # =========================================================
 # BLOQUE 4 / 5 — Ver Informes (única tabla + ficha clickeable)
@@ -1207,6 +1196,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
