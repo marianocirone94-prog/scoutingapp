@@ -540,7 +540,7 @@ menu = st.sidebar.radio(
 )
 
 # =========================================================
-# BLOQUE 3 / 5 — Sección Jugadores (versión final estable y rápida)
+# BLOQUE 3 / 5 — Sección Jugadores (versión final completa y estable)
 # =========================================================
 
 if menu == "Jugadores":
@@ -556,14 +556,15 @@ if menu == "Jugadores":
     opciones_ligas = [
         "Argentina - LPF", "Argentina - Primera Nacional", "Argentina - Federal A",
         "Brasil - Serie A (Brasileirão)", "Brasil - Serie B", "Chile - Primera División",
-        "Uruguay - Primera División", "Uruguay - Segunda División", "Uruguay - Segunda División Profesional",
-        "Paraguay - División Profesional", "Colombia - Categoría Primera A", "Ecuador - LigaPro Serie A",
-        "Perú - Liga 1", "Venezuela - Liga FUTVE", "México - Liga MX", "España - LaLiga",
-        "España - LaLiga 2", "Italia - Serie A", "Italia - Serie B", "Inglaterra - Premier League",
-        "Inglaterra - Championship", "Francia - Ligue 1", "Alemania - Bundesliga",
-        "Portugal - Primeira Liga", "Países Bajos - Eredivisie", "Suiza - Super League",
-        "Bélgica - Pro League", "Grecia - Super League", "Turquía - Süper Lig",
-        "Arabia Saudita - Saudi Pro League", "Estados Unidos - MLS", "Otro / Sin especificar"
+        "Uruguay - Primera División", "Uruguay - Segunda División Profesional",
+        "Paraguay - División Profesional", "Colombia - Categoría Primera A",
+        "Ecuador - LigaPro Serie A", "Perú - Liga 1", "Venezuela - Liga FUTVE", "México - Liga MX",
+        "España - LaLiga", "España - LaLiga 2", "Italia - Serie A", "Italia - Serie B",
+        "Inglaterra - Premier League", "Inglaterra - Championship", "Francia - Ligue 1",
+        "Alemania - Bundesliga", "Portugal - Primeira Liga", "Países Bajos - Eredivisie",
+        "Suiza - Super League", "Bélgica - Pro League", "Grecia - Super League",
+        "Turquía - Süper Lig", "Arabia Saudita - Saudi Pro League", "Estados Unidos - MLS",
+        "Otro / Sin especificar"
     ]
     opciones_paises = [
         "Argentina", "Brasil", "Chile", "Uruguay", "Paraguay", "Colombia", "México",
@@ -623,9 +624,10 @@ if menu == "Jugadores":
         id_jugador = opciones[seleccion_jug]
         jugador = df_players[df_players["ID_Jugador"] == id_jugador].iloc[0]
 
-        col1, col2 = st.columns([1.3, 2])
+        # --- ESTRUCTURA EN TRES COLUMNAS ---
+        col1, col2, col3 = st.columns([1.2, 1.2, 1.6])
 
-        # --- FICHA DEL JUGADOR ---
+        # === COLUMNA IZQUIERDA: FICHA ===
         with col1:
             st.markdown(f"### {jugador['Nombre']}")
             if pd.notna(jugador.get("URL_Foto")) and str(jugador["URL_Foto"]).startswith("http"):
@@ -633,28 +635,63 @@ if menu == "Jugadores":
 
             edad = calcular_edad(jugador.get("Fecha_Nac"))
             st.write(f"📅 {jugador.get('Fecha_Nac', '')} ({edad} años)")
-            st.write(f"🌍 Nacionalidad: {jugador.get('Nacionalidad', '-')}")
-            st.write(f"📏 Altura: {jugador.get('Altura', '-') } cm")
-            st.write(f"👟 Pie hábil: {jugador.get('Pie_Hábil', '-')}")
-            st.write(f"🎯 Posición: {jugador.get('Posición', '-')}")
-            st.write(f"🏟️ Club: {jugador.get('Club', '-')} ({jugador.get('Liga', '-')})")
+            st.write(f"🌍 {jugador.get('Nacionalidad', '-')}")
+            if jugador.get("Segunda_Nacionalidad"):
+                st.write(f"🪪 {jugador['Segunda_Nacionalidad']}")
+            st.write(f"📏 {jugador.get('Altura', '-') } cm")
+            st.write(f"👟 {jugador.get('Pie_Hábil', '-')}")
+            st.write(f"🎯 {jugador.get('Posición', '-')}")
+            st.write(f"🏟️ {jugador.get('Club', '-')} ({jugador.get('Liga', '-')})")
 
             if pd.notna(jugador.get("URL_Perfil")) and str(jugador["URL_Perfil"]).startswith("http"):
                 st.markdown(f"[🌐 Perfil externo]({jugador['URL_Perfil']})", unsafe_allow_html=True)
 
-        # --- ANÁLISIS DEL JUGADOR ---
+        # === COLUMNA CENTRAL: COMPARATIVA POR GRUPOS ===
         with col2:
-            st.markdown("### Análisis de rendimiento")
+            st.markdown("### 🔍 Comparativa por grupos")
             prom_jugador = calcular_promedios_jugador(df_reports, id_jugador)
             prom_posicion = calcular_promedios_posicion(df_reports, df_players, jugador["Posición"])
+
+            if prom_jugador and prom_posicion:
+                grupos = {
+                    "Habilidades técnicas": ["Controles", "Perfiles", "Pase_corto", "Pase_largo", "Pase_filtrado"],
+                    "Aspectos defensivos": ["1v1_defensivo", "Recuperacion", "Intercepciones", "Duelos_aereos"],
+                    "Aspectos ofensivos": ["Regate", "Velocidad", "Duelos_ofensivos"],
+                    "Aspectos mentales / tácticos": [
+                        "Resiliencia", "Liderazgo", "Inteligencia_tactica", "Inteligencia_emocional",
+                        "Posicionamiento", "Vision_de_juego", "Movimientos_sin_pelota"
+                    ]
+                }
+
+                for grupo, atributos in grupos.items():
+                    val_j = [prom_jugador.get(a, 0) for a in atributos if a in prom_jugador]
+                    val_p = [prom_posicion.get(a, 0) for a in atributos if a in prom_posicion]
+                    if val_j and val_p:
+                        diff = np.mean(val_j) - np.mean(val_p)
+                        color = "#4CAF50" if diff > 0.2 else "#D16C6C" if diff < -0.2 else "#B8B78A"
+                        emoji = "⬆️" if diff > 0.2 else "⬇️" if diff < -0.2 else "➡️"
+                        st.markdown(f"""
+                        <div style='background: linear-gradient(135deg,{color},#1e3c72);
+                            border-radius:10px;padding:10px;margin-bottom:6px;text-align:center;color:white;font-weight:600'>
+                            <h5 style='margin:0;font-size:15px;'>{grupo}</h5>
+                            <p style='margin:5px 0;font-size:20px;'>{emoji} {np.mean(val_j):.2f}</p>
+                        </div>
+                        """, unsafe_allow_html=True)
+            else:
+                st.info("ℹ️ Aún no hay informes cargados para este jugador.")
+
+        # === COLUMNA DERECHA: RADAR COMPARATIVO ===
+        with col3:
             if prom_jugador:
+                st.markdown("### 📊 Radar comparativo")
                 radar_chart(prom_jugador, prom_posicion)
             else:
-                st.info("ℹ️ Este jugador aún no tiene informes cargados.")
+                st.info("📉 No hay suficientes informes para generar el radar.")
+
         # =========================================================
-        # CARGAR NUEVO INFORME (estética original — grupos separados y 3 columnas)
+        # CARGAR NUEVO INFORME (por grupos)
         # =========================================================
-        if 'jugador' in locals() and CURRENT_ROLE in ["admin", "scout"]:
+        if CURRENT_ROLE in ["admin", "scout"]:
             st.markdown("---")
             st.subheader(f"📝 Cargar nuevo informe para {jugador['Nombre']}")
 
@@ -662,21 +699,15 @@ if menu == "Jugadores":
                 scout = CURRENT_USER
                 fecha_partido = st.date_input("Fecha del partido", format="DD/MM/YYYY")
                 equipos_resultados = st.text_input("Equipos y resultado")
-                formacion = st.selectbox(
-                    "Formación",
-                    ["4-2-3-1", "4-3-1-2", "4-1-4-1", "4-4-2", "4-3-3", "3-5-2", "3-4-3", "5-3-2"]
-                )
+                formacion = st.selectbox("Formación", ["4-2-3-1","4-3-1-2","4-4-2","4-3-3","3-5-2","3-4-3","5-3-2"])
                 observaciones = st.text_area("Observaciones generales", height=100)
-                linea = st.selectbox(
-                    "Línea de seguimiento",
-                    ["1ra (Fichar)", "2da (Seguir)", "3ra (Ver más adelante)", "4ta (Descartar)", "Joven Promesa"]
+                linea = st.selectbox("Línea de seguimiento",
+                    ["1ra (Fichar)","2da (Seguir)","3ra (Ver más adelante)","4ta (Descartar)","Joven Promesa"]
                 )
 
                 st.markdown("### Evaluación técnica (0 a 5)")
 
-                # ---------------------------------------------------------
-                # HABILIDADES TÉCNICAS
-                # ---------------------------------------------------------
+                # --- HABILIDADES TÉCNICAS ---
                 with st.expander("🎯 Habilidades técnicas"):
                     col1, col2, col3 = st.columns(3)
                     with col1:
@@ -688,9 +719,7 @@ if menu == "Jugadores":
                     with col3:
                         pase_filtrado = st.slider("Pase filtrado", 0.0, 5.0, 0.0, 0.5)
 
-                # ---------------------------------------------------------
-                # ASPECTOS DEFENSIVOS
-                # ---------------------------------------------------------
+                # --- ASPECTOS DEFENSIVOS ---
                 with st.expander("🛡️ Aspectos defensivos"):
                     col1, col2 = st.columns(2)
                     with col1:
@@ -700,9 +729,7 @@ if menu == "Jugadores":
                         intercepciones = st.slider("Intercepciones", 0.0, 5.0, 0.0, 0.5)
                         duelos_aereos = st.slider("Duelos aéreos", 0.0, 5.0, 0.0, 0.5)
 
-                # ---------------------------------------------------------
-                # ASPECTOS OFENSIVOS
-                # ---------------------------------------------------------
+                # --- ASPECTOS OFENSIVOS ---
                 with st.expander("⚡ Aspectos ofensivos"):
                     col1, col2 = st.columns(2)
                     with col1:
@@ -711,9 +738,7 @@ if menu == "Jugadores":
                     with col2:
                         duelos_of = st.slider("Duelos ofensivos", 0.0, 5.0, 0.0, 0.5)
 
-                # ---------------------------------------------------------
-                # ASPECTOS MENTALES / PSICOLÓGICOS
-                # ---------------------------------------------------------
+                # --- ASPECTOS MENTALES / PSICOLÓGICOS ---
                 with st.expander("🧠 Aspectos mentales / psicológicos"):
                     col1, col2 = st.columns(2)
                     with col1:
@@ -723,9 +748,7 @@ if menu == "Jugadores":
                         int_tactica = st.slider("Inteligencia táctica", 0.0, 5.0, 0.0, 0.5)
                         int_emocional = st.slider("Inteligencia emocional", 0.0, 5.0, 0.0, 0.5)
 
-                # ---------------------------------------------------------
-                # ASPECTOS TÁCTICOS
-                # ---------------------------------------------------------
+                # --- ASPECTOS TÁCTICOS ---
                 with st.expander("📐 Aspectos tácticos"):
                     col1, col2 = st.columns(2)
                     with col1:
@@ -734,9 +757,6 @@ if menu == "Jugadores":
                     with col2:
                         movimientos = st.slider("Movimientos sin pelota", 0.0, 5.0, 0.0, 0.5)
 
-                # ---------------------------------------------------------
-                # BOTÓN DE GUARDADO
-                # ---------------------------------------------------------
                 guardar_informe = st.form_submit_button("💾 Guardar informe")
 
                 if guardar_informe:
@@ -765,7 +785,6 @@ if menu == "Jugadores":
 
                         ws_inf = obtener_hoja("Informes")
                         ws_inf.append_row(nuevo, value_input_option="USER_ENTERED")
-
                         df_reports.loc[len(df_reports)] = nuevo
                         st.toast(f"✅ Informe guardado correctamente para {jugador['Nombre']}", icon="✅")
 
@@ -1234,6 +1253,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
