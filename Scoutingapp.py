@@ -77,79 +77,6 @@ def leer_hoja(nombre_hoja: str):
     """Alias para lectura directa (evita errores en bloques posteriores)."""
     return _leer_datos(nombre_hoja)
 
-def cargar_datos_sheets(nombre_hoja: str, columnas_base: list = None) -> pd.DataFrame:
-    try:
-        ahora = datetime.now()
-        if ahora - st.session_state["ultima_lectura"] < timedelta(seconds=2):
-            time.sleep(1)
-        st.session_state["ultima_lectura"] = ahora
-
-        data = _leer_datos(nombre_hoja)
-        df = pd.DataFrame(data)
-        if df.empty and columnas_base:
-            df = pd.DataFrame(columns=columnas_base)
-        return df
-    except Exception as e:
-        st.error(f"⚠️ Error al cargar '{nombre_hoja}': {e}")
-        return pd.DataFrame(columns=columnas_base or [])
-
-# =========================================================
-# ACTUALIZAR / AGREGAR / ELIMINAR SEGURO
-# =========================================================
-def actualizar_hoja(nombre_hoja: str, df: pd.DataFrame):
-    """Actualiza filas por ID sin borrar la hoja completa."""
-    try:
-        ws = obtener_hoja(nombre_hoja, list(df.columns))
-        data_actual = ws.get_all_records()
-        df_actual = pd.DataFrame(data_actual)
-
-        if df_actual.empty:
-            ws.update([df.columns.values.tolist()] + df.values.tolist())
-            st.toast(f"✅ Hoja '{nombre_hoja}' creada y actualizada.", icon="💾")
-            return
-
-        id_col = None
-        for posible in ["ID_Jugador", "ID_Informe"]:
-            if posible in df.columns:
-                id_col = posible
-                break
-
-        if id_col:
-            df_actual[id_col] = df_actual[id_col].astype(str)
-            df[id_col] = df[id_col].astype(str)
-            df_fusion = pd.concat([df_actual, df]).drop_duplicates(subset=[id_col], keep="last")
-        else:
-            df_fusion = pd.concat([df_actual, df]).drop_duplicates(keep="last")
-
-        ws.update([df_fusion.columns.values.tolist()] + df_fusion.values.tolist())
-        st.toast(f"💾 '{nombre_hoja}' actualizada correctamente (sin borrar datos).", icon="✅")
-
-    except Exception as e:
-        st.error(f"⚠️ Error al actualizar '{nombre_hoja}': {e}")
-
-def eliminar_por_id(nombre_hoja: str, id_col: str, id_valor):
-    """Elimina una fila específica por ID sin afectar el resto."""
-    try:
-        ws = obtener_hoja(nombre_hoja)
-        data_actual = ws.get_all_records()
-        df = pd.DataFrame(data_actual)
-        if id_col not in df.columns:
-            st.error(f"⚠️ La hoja '{nombre_hoja}' no tiene la columna '{id_col}'.")
-            return
-        df = df[df[id_col].astype(str) != str(id_valor)]
-        ws.update([df.columns.values.tolist()] + df.values.tolist())
-        st.toast(f"🗑️ Registro con {id_col}={id_valor} eliminado correctamente.", icon="🗑️")
-    except Exception as e:
-        st.error(f"⚠️ Error al eliminar en '{nombre_hoja}': {e}")
-
-def agregar_fila(nombre_hoja: str, fila: list):
-    """Agrega nueva fila sin borrar ni tocar otras."""
-    try:
-        ws = obtener_hoja(nombre_hoja)
-        ws.append_row(fila, value_input_option="USER_ENTERED")
-        st.toast(f"🟢 Nueva fila agregada en '{nombre_hoja}'.", icon="🟢")
-    except Exception as e:
-        st.error(f"⚠️ Error al agregar fila en '{nombre_hoja}': {e}")
 
 # =========================================================
 # BOTÓN DE REFRESCO CONTROLADO
@@ -1262,6 +1189,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
