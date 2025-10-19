@@ -651,9 +651,8 @@ if menu == "Jugadores":
                 radar_chart(prom_jugador, prom_posicion)
             else:
                 st.info("ℹ️ Este jugador aún no tiene informes cargados.")
-
-                # =========================================================
-        # CARGAR NUEVO INFORME (con sliders en 3 columnas — versión estable)
+        # =========================================================
+        # CARGAR NUEVO INFORME (estética original — grupos separados y 3 columnas)
         # =========================================================
         if 'jugador' in locals() and CURRENT_ROLE in ["admin", "scout"]:
             st.markdown("---")
@@ -665,7 +664,7 @@ if menu == "Jugadores":
                 equipos_resultados = st.text_input("Equipos y resultado")
                 formacion = st.selectbox(
                     "Formación",
-                    ["4-2-3-1", "4-3-1-2", "4-4-2", "4-3-3", "3-5-2", "3-4-3", "5-3-2"]
+                    ["4-2-3-1", "4-3-1-2", "4-1-4-1", "4-4-2", "4-3-3", "3-5-2", "3-4-3", "5-3-2"]
                 )
                 observaciones = st.text_area("Observaciones generales", height=100)
                 linea = st.selectbox(
@@ -675,33 +674,69 @@ if menu == "Jugadores":
 
                 st.markdown("### Evaluación técnica (0 a 5)")
 
-                colA, colB, colC = st.columns(3)
+                # ---------------------------------------------------------
+                # HABILIDADES TÉCNICAS
+                # ---------------------------------------------------------
+                with st.expander("🎯 Habilidades técnicas"):
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        controles = st.slider("Controles", 0.0, 5.0, 0.0, 0.5)
+                        perfiles = st.slider("Perfiles", 0.0, 5.0, 0.0, 0.5)
+                    with col2:
+                        pase_corto = st.slider("Pase corto", 0.0, 5.0, 0.0, 0.5)
+                        pase_largo = st.slider("Pase largo", 0.0, 5.0, 0.0, 0.5)
+                    with col3:
+                        pase_filtrado = st.slider("Pase filtrado", 0.0, 5.0, 0.0, 0.5)
 
-                with colA:
-                    controles = st.slider("Controles", 0.0, 5.0, 0.0, 0.5)
-                    perfiles = st.slider("Perfiles", 0.0, 5.0, 0.0, 0.5)
-                    pase_corto = st.slider("Pase corto", 0.0, 5.0, 0.0, 0.5)
-                    pase_largo = st.slider("Pase largo", 0.0, 5.0, 0.0, 0.5)
-                    pase_filtrado = st.slider("Pase filtrado", 0.0, 5.0, 0.0, 0.5)
-                    v1_def = st.slider("1v1 defensivo", 0.0, 5.0, 0.0, 0.5)
+                # ---------------------------------------------------------
+                # ASPECTOS DEFENSIVOS
+                # ---------------------------------------------------------
+                with st.expander("🛡️ Aspectos defensivos"):
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        v1_def = st.slider("1v1 defensivo", 0.0, 5.0, 0.0, 0.5)
+                        recuperacion = st.slider("Recuperación", 0.0, 5.0, 0.0, 0.5)
+                    with col2:
+                        intercepciones = st.slider("Intercepciones", 0.0, 5.0, 0.0, 0.5)
+                        duelos_aereos = st.slider("Duelos aéreos", 0.0, 5.0, 0.0, 0.5)
 
-                with colB:
-                    recuperacion = st.slider("Recuperación", 0.0, 5.0, 0.0, 0.5)
-                    intercepciones = st.slider("Intercepciones", 0.0, 5.0, 0.0, 0.5)
-                    duelos_aereos = st.slider("Duelos aéreos", 0.0, 5.0, 0.0, 0.5)
-                    regate = st.slider("Regate", 0.0, 5.0, 0.0, 0.5)
-                    velocidad = st.slider("Velocidad", 0.0, 5.0, 0.0, 0.5)
-                    duelos_of = st.slider("Duelos ofensivos", 0.0, 5.0, 0.0, 0.5)
+                # ---------------------------------------------------------
+                # ASPECTOS OFENSIVOS
+                # ---------------------------------------------------------
+                with st.expander("⚡ Aspectos ofensivos"):
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        regate = st.slider("Regate", 0.0, 5.0, 0.0, 0.5)
+                        velocidad = st.slider("Velocidad", 0.0, 5.0, 0.0, 0.5)
+                    with col2:
+                        duelos_of = st.slider("Duelos ofensivos", 0.0, 5.0, 0.0, 0.5)
 
-                with colC:
-                    resiliencia = st.slider("Resiliencia", 0.0, 5.0, 0.0, 0.5)
-                    liderazgo = st.slider("Liderazgo", 0.0, 5.0, 0.0, 0.5)
-                    int_tactica = st.slider("Inteligencia táctica", 0.0, 5.0, 0.0, 0.5)
-                    int_emocional = st.slider("Inteligencia emocional", 0.0, 5.0, 0.0, 0.5)
-                    posicionamiento = st.slider("Posicionamiento", 0.0, 5.0, 0.0, 0.5)
-                    vision = st.slider("Visión de juego", 0.0, 5.0, 0.0, 0.5)
-                    movimientos = st.slider("Movimientos sin pelota", 0.0, 5.0, 0.0, 0.5)
+                # ---------------------------------------------------------
+                # ASPECTOS MENTALES / PSICOLÓGICOS
+                # ---------------------------------------------------------
+                with st.expander("🧠 Aspectos mentales / psicológicos"):
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        resiliencia = st.slider("Resiliencia", 0.0, 5.0, 0.0, 0.5)
+                        liderazgo = st.slider("Liderazgo", 0.0, 5.0, 0.0, 0.5)
+                    with col2:
+                        int_tactica = st.slider("Inteligencia táctica", 0.0, 5.0, 0.0, 0.5)
+                        int_emocional = st.slider("Inteligencia emocional", 0.0, 5.0, 0.0, 0.5)
 
+                # ---------------------------------------------------------
+                # ASPECTOS TÁCTICOS
+                # ---------------------------------------------------------
+                with st.expander("📐 Aspectos tácticos"):
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        posicionamiento = st.slider("Posicionamiento", 0.0, 5.0, 0.0, 0.5)
+                        vision = st.slider("Visión de juego", 0.0, 5.0, 0.0, 0.5)
+                    with col2:
+                        movimientos = st.slider("Movimientos sin pelota", 0.0, 5.0, 0.0, 0.5)
+
+                # ---------------------------------------------------------
+                # BOTÓN DE GUARDADO
+                # ---------------------------------------------------------
                 guardar_informe = st.form_submit_button("💾 Guardar informe")
 
                 if guardar_informe:
@@ -736,6 +771,7 @@ if menu == "Jugadores":
 
                     except Exception as e:
                         st.error(f"⚠️ Error al guardar el informe: {e}")
+
 
         # =========================================================
         # AGREGAR A LISTA CORTA
@@ -796,7 +832,7 @@ if menu == "Jugadores":
 
 
 # =========================================================
-# BLOQUE 4 / 5 — Ver Informes (ficha al click, edición completa, PDF)
+# BLOQUE 4 / 5 — Ver Informes (ficha funcional al clic + edición completa)
 # =========================================================
 
 if menu == "Ver informes":
@@ -814,35 +850,32 @@ if menu == "Ver informes":
     # =========================================================
     # FILTROS LATERALES
     # =========================================================
-    st.sidebar.markdown("<h4 style='color:#00c6ff'>🔎 Filtros de búsqueda</h4>", unsafe_allow_html=True)
-
-    filtros = {
-        "Scout": st.sidebar.multiselect("Scout", sorted(df_merged["Scout"].dropna().unique()), key="filtro_scout"),
-        "Nombre": st.sidebar.multiselect("Jugador", sorted(df_merged["Nombre"].dropna().unique()), key="filtro_jugador"),
-        "Club": st.sidebar.multiselect("Club", sorted(df_merged["Club"].dropna().unique()), key="filtro_club"),
-        "Línea": st.sidebar.multiselect("Línea", sorted(df_merged["Línea"].dropna().unique()), key="filtro_linea"),
-        "Nacionalidad": st.sidebar.multiselect("Nacionalidad", sorted(df_merged["Nacionalidad"].dropna().unique()), key="filtro_nac")
-    }
+    st.sidebar.markdown("<h4 style='color:#00c6ff'>🔎 Filtros</h4>", unsafe_allow_html=True)
+    filtro_scout = st.sidebar.multiselect("Scout", sorted(df_merged["Scout"].dropna().unique()), key="filtro_scout")
+    filtro_jugador = st.sidebar.multiselect("Jugador", sorted(df_merged["Nombre"].dropna().unique()), key="filtro_jugador")
+    filtro_club = st.sidebar.multiselect("Club", sorted(df_merged["Club"].dropna().unique()), key="filtro_club")
+    filtro_linea = st.sidebar.multiselect("Línea", sorted(df_merged["Línea"].dropna().unique()), key="filtro_linea")
+    filtro_nac = st.sidebar.multiselect("Nacionalidad", sorted(df_merged["Nacionalidad"].dropna().unique()), key="filtro_nac")
 
     df_filtrado = df_merged.copy()
-    for col, vals in filtros.items():
-        if vals:
-            df_filtrado = df_filtrado[df_filtrado[col].isin(vals)]
+    if filtro_scout: df_filtrado = df_filtrado[df_filtrado["Scout"].isin(filtro_scout)]
+    if filtro_jugador: df_filtrado = df_filtrado[df_filtrado["Nombre"].isin(filtro_jugador)]
+    if filtro_club: df_filtrado = df_filtrado[df_filtrado["Club"].isin(filtro_club)]
+    if filtro_linea: df_filtrado = df_filtrado[df_filtrado["Línea"].isin(filtro_linea)]
+    if filtro_nac: df_filtrado = df_filtrado[df_filtrado["Nacionalidad"].isin(filtro_nac)]
 
     # =========================================================
-    # TABLA PRINCIPAL (AGGRID)
+    # TABLA PRINCIPAL CON UNA SOLA VISUALIZACIÓN
     # =========================================================
     if not df_filtrado.empty:
-        st.markdown("### 📋 Tabla de informes filtrados")
+        st.markdown("### 📋 Informes disponibles")
 
         columnas_visibles = [
-            "Fecha_Informe", "Nombre", "Observaciones",
-            "Club", "Línea", "Scout", "Equipos_Resultados"
+            "Fecha_Informe", "Nombre", "Club", "Línea", "Scout", "Equipos_Resultados", "Observaciones"
         ]
         columnas_presentes = [c for c in columnas_visibles if c in df_filtrado.columns]
         df_tabla = df_filtrado[columnas_presentes].copy()
 
-        # Ordenar por fecha
         try:
             df_tabla["Fecha_dt"] = pd.to_datetime(df_tabla["Fecha_Informe"], format="%d/%m/%Y", errors="coerce")
             df_tabla = df_tabla.sort_values("Fecha_dt", ascending=False).drop(columns="Fecha_dt")
@@ -855,15 +888,15 @@ if menu == "Ver informes":
         gb.configure_grid_options(domLayout="normal")
 
         widths = {
-            "Fecha_Informe": 90, "Nombre": 150, "Observaciones": 400,
-            "Club": 120, "Línea": 110, "Scout": 120, "Equipos_Resultados": 130
+            "Fecha_Informe": 100, "Nombre": 160, "Club": 130, "Línea": 120,
+            "Scout": 120, "Equipos_Resultados": 150, "Observaciones": 420
         }
 
         for c in df_tabla.columns:
             if c == "Observaciones":
                 gb.configure_column(c, wrapText=True, autoHeight=True, width=widths[c])
             else:
-                gb.configure_column(c, width=widths.get(c, 110))
+                gb.configure_column(c, width=widths.get(c, 120))
 
         grid_response = AgGrid(
             df_tabla,
@@ -872,6 +905,7 @@ if menu == "Ver informes":
             theme="blue",
             height=600,
             allow_unsafe_jscode=True,
+            update_mode="MODEL_CHANGED",
             custom_css={
                 ".ag-header": {"background-color": "#1e3c72", "color": "white", "font-weight": "bold", "font-size": "13px"},
                 ".ag-row-even": {"background-color": "#2a5298 !important", "color": "white !important"},
@@ -881,16 +915,11 @@ if menu == "Ver informes":
         )
 
         # =========================================================
-        # FICHA DEL JUGADOR SELECCIONADO
+        # FICHA DEL JUGADOR AL CLIC
         # =========================================================
-        selected_data = grid_response.get("selected_rows", [])
-        if isinstance(selected_data, dict):
-            selected_data = [selected_data]
-        elif not isinstance(selected_data, list):
-            selected_data = []
-
-        if len(selected_data) > 0:
-            jugador_sel = selected_data[0]
+        selected = grid_response.get("selected_rows", [])
+        if selected:
+            jugador_sel = selected[0]
             nombre_jug = jugador_sel.get("Nombre", "")
             jugador_data = df_players[df_players["Nombre"] == nombre_jug]
 
@@ -901,28 +930,28 @@ if menu == "Ver informes":
 
                 col1, col2, col3 = st.columns([1, 1, 1])
                 with col1:
-                    st.markdown(f"**Club:** {j.get('Club','-')}")
-                    st.markdown(f"**Posición:** {j.get('Posición','-')}")
-                    st.markdown(f"**Altura:** {j.get('Altura','-')} cm")
+                    st.markdown(f"**📍 Club:** {j.get('Club','-')}")
+                    st.markdown(f"**🎯 Posición:** {j.get('Posición','-')}")
+                    st.markdown(f"**📏 Altura:** {j.get('Altura','-')} cm")
                 with col2:
-                    st.markdown(f"**Pie hábil:** {j.get('Pie_Hábil','-')}")
-                    st.markdown(f"**Nacionalidad:** {j.get('Nacionalidad','-')}")
-                    st.markdown(f"**Liga:** {j.get('Liga','-')}")
+                    st.markdown(f"**👟 Pie hábil:** {j.get('Pie_Hábil','-')}")
+                    st.markdown(f"**🌍 Nacionalidad:** {j.get('Nacionalidad','-')}")
+                    st.markdown(f"**🏆 Liga:** {j.get('Liga','-')}")
                 with col3:
-                    st.markdown(f"**Segunda Nac.:** {j.get('Segunda_Nacionalidad','-')}")
-                    st.markdown(f"**Característica:** {j.get('Caracteristica','-')}")
+                    st.markdown(f"**2ª Nacionalidad:** {j.get('Segunda_Nacionalidad','-')}")
+                    st.markdown(f"**🧠 Característica:** {j.get('Caracteristica','-')}")
                     if pd.notna(j.get("URL_Foto")) and str(j["URL_Foto"]).startswith("http"):
-                        st.image(j["URL_Foto"], width=120)
+                        st.image(j["URL_Foto"], width=130)
 
                 # =========================================================
-                # INFORMES DEL JUGADOR
+                # INFORMES ASOCIADOS AL JUGADOR
                 # =========================================================
                 informes_sel = df_reports[df_reports["ID_Jugador"] == j["ID_Jugador"]]
                 if not informes_sel.empty:
                     st.markdown(f"### 📄 Informes de {j['Nombre']}")
 
                     # --- Exportar PDF ---
-                    if st.button("📥 Exportar informes en PDF", key="btn_pdf"):
+                    if st.button("📥 Exportar todos los informes en PDF", key="btn_pdf_unique"):
                         try:
                             pdf = FPDF(orientation="P", unit="mm", format="A4")
                             pdf.add_page()
@@ -953,10 +982,10 @@ if menu == "Ver informes":
                         except Exception as e:
                             st.error(f"⚠️ Error al generar PDF: {e}")
 
-                    # --- Editar informes ---
+                    # --- Edición completa de informes ---
                     for _, inf in informes_sel.iterrows():
                         titulo = f"{inf.get('Fecha_Partido','')} | Scout: {inf.get('Scout','')} | Línea: {inf.get('Línea','')}"
-                        with st.expander(titulo):
+                        with st.expander(titulo, expanded=False):
                             with st.form(f"edit_inf_{inf['ID_Informe']}"):
                                 nuevo_scout = st.text_input("Scout", inf.get("Scout",""), key=f"scout_{inf['ID_Informe']}")
                                 nueva_fecha = st.text_input("Fecha del partido", inf.get("Fecha_Partido",""), key=f"fecha_{inf['ID_Informe']}")
@@ -979,13 +1008,12 @@ if menu == "Ver informes":
 
                                         ws_inf = obtener_hoja("Informes")
                                         ws_inf.update([df_reports.columns.values.tolist()] + df_reports.values.tolist())
-
-                                        st.toast(f"✅ Informe actualizado correctamente para {j['Nombre']}", icon="✅")
+                                        st.toast(f"✅ Informe actualizado correctamente.", icon="✅")
                                     except Exception as e:
                                         st.error(f"⚠️ Error al actualizar el informe: {e}")
 
         else:
-            st.info("📍 Seleccioná un registro para ver la ficha e informes.")
+            st.info("📍 Seleccioná un informe para ver la ficha e informes del jugador.")
     else:
         st.warning("⚠️ No se encontraron informes con los filtros seleccionados.")
 
@@ -1386,6 +1414,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
