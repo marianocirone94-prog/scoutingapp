@@ -294,7 +294,10 @@ CURRENT_ROLE = st.session_state["role"]
 st.markdown(f"### 👤 {CURRENT_USER} ({CURRENT_ROLE})")
 st.markdown("---")
 # =========================================================
-# BLOQUE 2 / 5 — Funciones base + carga de datos + menú
+# BLOQUE 2 / 5 — Funciones base + carga de datos + menú (OPTIMIZADO)
+# =========================================================
+# - Misma estructura y lógica original
+# - Se agregan controles de cache granular y sincronización inmediata
 # =========================================================
 
 # =========================================================
@@ -324,7 +327,6 @@ def calcular_promedios_jugador(df_reports, id_jugador):
     """Calcula promedios reales (0-5) del jugador, corrigiendo decimales y tipos."""
     if df_reports.empty:
         return None
-
     df_reports["ID_Jugador"] = df_reports["ID_Jugador"].astype(str)
     informes = df_reports[df_reports["ID_Jugador"] == str(id_jugador)]
     if informes.empty:
@@ -352,7 +354,7 @@ def calcular_promedios_jugador(df_reports, id_jugador):
                 if prom > 5:
                     prom = prom / 10
                 promedios[col] = round(prom, 2)
-            except:
+            except Exception:
                 promedios[col] = None
     return promedios
 
@@ -361,7 +363,6 @@ def calcular_promedios_posicion(df_reports, df_players, posicion):
     """Promedio global de la posición, con corrección de decimales."""
     if df_players.empty or df_reports.empty:
         return None
-
     df_players["ID_Jugador"] = df_players["ID_Jugador"].astype(str)
     df_reports["ID_Jugador"] = df_reports["ID_Jugador"].astype(str)
 
@@ -393,7 +394,7 @@ def calcular_promedios_posicion(df_reports, df_players, posicion):
                 if prom > 5:
                     prom = prom / 10
                 promedios[col] = round(prom, 2)
-            except:
+            except Exception:
                 promedios[col] = None
     return promedios
 
@@ -470,40 +471,33 @@ def generar_pdf_ficha(jugador, informes):
     buffer.seek(0)
     return buffer
 
-
 # =========================================================
-# REFRESCO AUTOMÁTICO DE DATAFRAMES (nuevo)
+# REFRESCO AUTOMÁTICO DE DATAFRAMES (nuevo, mejorado)
 # =========================================================
 def actualizar_dataframe(nombre_hoja, df_local):
-    """Recarga solo la hoja indicada sin limpiar caché ni reiniciar la app."""
+    """🔧 Recarga solo la hoja indicada sin limpiar toda la cache."""
     try:
-        ws = obtener_hoja(nombre_hoja)
-        data = ws.get_all_records()
-        if not data:
+        df_nuevo = leer_hoja(nombre_hoja)  # usa la cache granular
+        if df_nuevo.empty:
             return df_local
-        df_nuevo = pd.DataFrame(data)
         if nombre_hoja == "Jugadores":
-            global df_players
-            df_players = df_nuevo
+            st.session_state["df_players"] = df_nuevo
         elif nombre_hoja == "Informes":
-            global df_reports
-            df_reports = df_nuevo
+            st.session_state["df_reports"] = df_nuevo
         elif nombre_hoja == "Lista corta":
-            global df_short
-            df_short = df_nuevo
+            st.session_state["df_short"] = df_nuevo
+        st.session_state["last_update"] = time.time()
         return df_nuevo
     except Exception as e:
-        st.warning(f"⚠️ No se pudo refrescar la hoja '{nombre_hoja}': {e}")
+        st.warning(f"⚠️ No se pudo refrescar '{nombre_hoja}': {e}")
         return df_local
 
-
 # =========================================================
-# CARGA DE DATOS DESDE GOOGLE SHEETS
+# CARGA DE DATOS DESDE GOOGLE SHEETS (memoria sincronizada)
 # =========================================================
-
-@st.cache_data(ttl=300)
+@st.cache_data(ttl=120)
 def cargar_datos():
-    """Carga los tres datasets principales desde Google Sheets."""
+    """Carga los tres datasets principales desde Google Sheets (optimizada)."""
     columnas_jug = [
         "ID_Jugador","Nombre","Fecha_Nac","Nacionalidad","Segunda_Nacionalidad",
         "Altura","Pie_Hábil","Posición","Caracteristica","Club","Liga","Sexo",
@@ -530,32 +524,47 @@ def cargar_datos():
     for df in [df_players, df_reports, df_short]:
         if "ID_Jugador" in df.columns:
             df["ID_Jugador"] = df["ID_Jugador"].astype(str)
+
     return df_players, df_reports, df_short
 
-# =========================================================
-# MENÚ PRINCIPAL + FILTRO POR ROL Y USUARIO (versión final)
-# =========================================================
-df_players, df_reports, df_short = cargar_datos()
 
-# Normalizamos texto
+# =========================================================
+# SINCRONIZACIÓN DE MEMORIA LOCAL CON CACHE
+# =========================================================
+def sincronizar_memoria():
+    """Mantiene la memoria (session_state) sincronizada con cache cada 60s."""
+    if "last_sync" not in st.session_state:
+        st.session_state["last_sync"] = time.time()
+
+    if time.time() - st.session_state["last_sync"] > 60:
+        st.session_state["df_players"], st.session_state["df_reports"], st.session_state["df_short"] = cargar_datos()
+        st.session_state["last_sync"] = time.time()
+        st.toast("♻️ Datos sincronizados automáticamente.", icon="🔁")
+
+# =========================================================
+# MENÚ PRINCIPAL + FILTRO POR ROL Y USUARIO (versión final optimizada)
+# =========================================================
+st.session_state["df_players"], st.session_state["df_reports"], st.session_state["df_short"] = cargar_datos()
+df_players = st.session_state["df_players"]
+df_reports = st.session_state["df_reports"]
+df_short = st.session_state["df_short"]
+
+# 🔄 Mantiene sincronía automática
+sincronizar_memoria()
+
+# Normalizamos texto (sin cambios)
 if "Scout" in df_reports.columns:
     df_reports["Scout"] = df_reports["Scout"].astype(str).str.strip()
 
 # --- Lógica de acceso ---
 if CURRENT_ROLE == "admin":
-    # ✅ Mariano y Dario ven todos los informes
     if CURRENT_USER in ["Mariano Cirone", "Dario Marra"]:
-        pass  # No filtramos nada
+        pass  # sin filtro
     else:
-        # Otros admins (si existieran) solo ven los suyos
         df_reports = df_reports[df_reports["Scout"] == CURRENT_USER]
-
 elif CURRENT_ROLE == "scout":
-    # Cada scout solo ve sus propios informes
     df_reports = df_reports[df_reports["Scout"] == CURRENT_USER]
-
 elif CURRENT_ROLE == "viewer":
-    # Solo visualizan, sin edición
     st.info("👀 Estás en modo visualización: solo podés ver los datos.")
 
 # --- Menú lateral principal ---
@@ -563,6 +572,7 @@ menu = st.sidebar.radio(
     "📋 Menú principal",
     ["Jugadores", "Ver informes", "Lista corta"]
 )
+
 
 # =========================================================
 # BLOQUE 3 / 5 — Sección Jugadores (versión completa y estable con edición, informes y refresco)
@@ -1269,78 +1279,6 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
