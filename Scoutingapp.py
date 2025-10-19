@@ -576,7 +576,7 @@ menu = st.sidebar.radio(
 
 
 # =========================================================
-# BLOQUE 3 / 5 — Sección Jugadores (optimizado, mismo diseño y estructura)
+# BLOQUE 3 / 5 — Sección Jugadores (editable + eliminar para todos)
 # =========================================================
 
 if menu == "Jugadores":
@@ -647,11 +647,8 @@ if menu == "Jugadores":
                         ]
                         ws = obtener_hoja("Jugadores")
                         ws.append_row(fila, value_input_option="USER_ENTERED")
-                        # 🔧 refresco rápido y sin sleep
-                        leer_hoja.clear()
-                        st.session_state["df_players"] = leer_hoja("Jugadores")
-                        df_players = st.session_state["df_players"]
-                        st.session_state["last_update"] = time.time()
+                        st.cache_data.clear()
+                        df_players = cargar_datos_sheets("Jugadores")
                         st.toast(f"✅ Jugador '{nuevo_nombre}' agregado correctamente.", icon="✅")
                         st.experimental_rerun()
                     except Exception as e:
@@ -728,12 +725,9 @@ if menu == "Jugadores":
                 st.info("📉 No hay suficientes informes para generar el radar.")
 
         # =========================================================
-        # EDITAR DATOS DEL JUGADOR (optimizado)
+        # EDITAR DATOS DEL JUGADOR (en expander)
         # =========================================================
-        if CURRENT_ROLE in ["admin", "scout"]:
-            st.markdown("---")
-            st.subheader("✏️ Editar información del jugador")
-
+        with st.expander("✏️ Editar información del jugador", expanded=False):
             with st.form(f"editar_jugador_form_{jugador['ID_Jugador']}", clear_on_submit=False):
                 e_nombre = st.text_input("Nombre completo", value=jugador.get("Nombre", ""))
                 e_fecha = st.text_input("Fecha de nacimiento (dd/mm/aaaa)", value=jugador.get("Fecha_Nac", ""))
@@ -768,10 +762,8 @@ if menu == "Jugadores":
                                 e_club, e_liga, "", e_foto, e_link
                             ]
                             ws.update(f"A{row_number}:N{row_number}", [valores])
-                            leer_hoja.clear()
-                            st.session_state["df_players"] = leer_hoja("Jugadores")
-                            df_players = st.session_state["df_players"]
-                            st.session_state["last_update"] = time.time()
+                            st.cache_data.clear()
+                            df_players = cargar_datos_sheets("Jugadores")
                             st.toast("✅ Datos actualizados correctamente.", icon="✅")
                             st.experimental_rerun()
                         else:
@@ -780,7 +772,44 @@ if menu == "Jugadores":
                         st.error(f"⚠️ Error al guardar: {e}")
 
         # =========================================================
-        # CARGAR NUEVO INFORME (refresco instantáneo)
+        # ELIMINAR JUGADOR (acceso para todos los roles)
+        # =========================================================
+        with st.expander("🗑️ Eliminar jugador permanentemente", expanded=False):
+            eliminar_confirm = st.checkbox("Confirmar eliminación")
+            if st.button("Eliminar jugador", type="primary"):
+                if eliminar_confirm:
+                    try:
+                        ws_players = obtener_hoja("Jugadores")
+                        data_players = ws_players.get_all_records()
+                        df_players_local = pd.DataFrame(data_players)
+                        df_players_local = df_players_local[df_players_local["ID_Jugador"].astype(str) != str(id_jugador)]
+                        ws_players.clear()
+                        ws_players.append_row(list(df_players_local.columns))
+                        if not df_players_local.empty:
+                            ws_players.update([df_players_local.columns.values.tolist()] + df_players_local.values.tolist())
+
+                        ws_short = obtener_hoja("Lista corta")
+                        data_short = ws_short.get_all_records()
+                        df_short_local = pd.DataFrame(data_short)
+                        if not df_short_local.empty:
+                            df_short_local = df_short_local[df_short_local["ID_Jugador"].astype(str) != str(id_jugador)]
+                            ws_short.clear()
+                            ws_short.append_row(list(df_short_local.columns))
+                            if not df_short_local.empty:
+                                ws_short.update([df_short_local.columns.values.tolist()] + df_short_local.values.tolist())
+
+                        st.cache_data.clear()
+                        df_players = cargar_datos_sheets("Jugadores")
+                        df_short = cargar_datos_sheets("Lista corta")
+                        st.success(f"🗑️ Jugador '{jugador['Nombre']}' eliminado correctamente.")
+                        st.experimental_rerun()
+                    except Exception as e:
+                        st.error(f"⚠️ Error al eliminar: {e}")
+                else:
+                    st.warning("Debes confirmar la eliminación antes de continuar.")
+
+        # =========================================================
+        # CARGAR NUEVO INFORME (sin cambios)
         # =========================================================
         if CURRENT_ROLE in ["admin", "scout"]:
             st.markdown("---")
@@ -796,7 +825,6 @@ if menu == "Jugadores":
                 ])
                 st.markdown("### Evaluación técnica (0 a 5)")
 
-                # --- BLOQUES DE EVALUACIÓN ---
                 with st.expander("🎯 Habilidades técnicas"):
                     col1, col2, col3 = st.columns(3)
                     with col1:
@@ -870,14 +898,13 @@ if menu == "Jugadores":
 
                         ws_inf = obtener_hoja("Informes")
                         ws_inf.append_row(nuevo, value_input_option="USER_ENTERED")
-                        leer_hoja.clear()
-                        st.session_state["df_reports"] = leer_hoja("Informes")
-                        df_reports = st.session_state["df_reports"]
-                        st.session_state["last_update"] = time.time()
+                        st.cache_data.clear()
+                        df_reports = cargar_datos_sheets("Informes")
                         st.toast(f"✅ Informe guardado correctamente para {jugador['Nombre']}", icon="✅")
                         st.experimental_rerun()
                     except Exception as e:
                         st.error(f"⚠️ Error al guardar el informe: {e}")
+
 
 # =========================================================
 # BLOQUE 4 / 5 — Ver Informes (optimizando edición y refresco instantáneo)
@@ -1302,6 +1329,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
