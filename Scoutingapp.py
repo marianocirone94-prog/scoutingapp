@@ -1,25 +1,39 @@
 # =========================================================
-# BLOQUE 1 / 5 — Conexión + Configuración inicial + Login (versión estable final)
+# BLOQUE 1 / 5 — Conexión + Configuración inicial + Login
 # =========================================================
+# ⚽ ScoutingApp Profesional v2 — Conectada a Google Sheets
+# =========================================================
+# - Carga directa desde "Scouting_DB" (Jugadores / Informes / Lista corta)
+# - Login por roles (admin / scout / viewer)
+# - Diseño oscuro #0e1117 + acento #00c6ff
+# =========================================================
+
 import os
-import json
-import time
 import numpy as np
 import pandas as pd
 import streamlit as st
 import matplotlib.pyplot as plt
-import matplotlib.patches as patches
 
 from io import BytesIO
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from fpdf import FPDF
 from st_aggrid import AgGrid, GridOptionsBuilder
+import matplotlib.patches as patches
 import gspread
 from google.oauth2.service_account import Credentials
 
 # =========================================================
-# CONFIGURACIÓN GENERAL Y CONEXIÓN
+# BLOQUE DE CONEXIÓN A GOOGLE SHEETS (FINAL - SEGURO Y MULTIUSUARIO)
 # =========================================================
+
+import os, json, time
+import pandas as pd
+import gspread
+from google.oauth2.service_account import Credentials
+import streamlit as st
+from datetime import datetime, timedelta
+
+# --- CONFIGURACIÓN GENERAL ---
 SCOPE = [
     "https://www.googleapis.com/auth/spreadsheets",
     "https://www.googleapis.com/auth/drive"
@@ -27,9 +41,14 @@ SCOPE = [
 SHEET_ID = "1IInJ87xaaEwJfaz96mUlLLiX9_tk0HvqzoBoZGhrBi8"
 CREDS_PATH = os.path.join("credentials", "credentials.json")
 
+# Control de lectura para evitar exceso de requests
 if "ultima_lectura" not in st.session_state:
     st.session_state["ultima_lectura"] = datetime.now() - timedelta(seconds=5)
 
+
+# =========================================================
+# CONEXIÓN
+# =========================================================
 def conectar_sheets():
     try:
         if "GOOGLE_SERVICE_ACCOUNT_JSON" in st.secrets:
@@ -40,14 +59,16 @@ def conectar_sheets():
                 st.error("❌ Falta credentials.json o secreto en Streamlit Cloud.")
                 st.stop()
             creds = Credentials.from_service_account_file(CREDS_PATH, scopes=SCOPE)
+
         client = gspread.authorize(creds)
         return client.open_by_key(SHEET_ID)
     except Exception as e:
         st.error(f"⚠️ No se pudo conectar con Google Sheets: {e}")
         st.stop()
 
+
 # =========================================================
-# FUNCIONES BASE DE HOJAS
+# OBTENER O CREAR HOJA
 # =========================================================
 def obtener_hoja(nombre_hoja: str, columnas_base: list = None):
     try:
@@ -64,26 +85,117 @@ def obtener_hoja(nombre_hoja: str, columnas_base: list = None):
         st.error(f"⚠️ Error al obtener hoja '{nombre_hoja}': {e}")
         st.stop()
 
+
 # =========================================================
-# LECTURA DE DATOS Y CACHE
+# CARGAR DATOS (con control de tiempo)
 # =========================================================
 @st.cache_data(ttl=30)
 def _leer_datos(nombre_hoja: str):
     ws = obtener_hoja(nombre_hoja)
     return ws.get_all_records()
 
-# ✅ Alias compatible para refrescos rápidos
-def leer_hoja(nombre_hoja: str):
-    """Alias para lectura directa (evita errores en bloques posteriores)."""
-    return _leer_datos(nombre_hoja)
+
+def cargar_datos_sheets(nombre_hoja: str, columnas_base: list = None) -> pd.DataFrame:
+    try:
+        ahora = datetime.now()
+        if ahora - st.session_state["ultima_lectura"] < timedelta(seconds=2):
+            time.sleep(1)
+        st.session_state["ultima_lectura"] = ahora
+
+        data = _leer_datos(nombre_hoja)
+        df = pd.DataFrame(data)
+        if df.empty and columnas_base:
+            df = pd.DataFrame(columns=columnas_base)
+        return df
+    except Exception as e:
+        st.error(f"⚠️ Error al cargar '{nombre_hoja}': {e}")
+        return pd.DataFrame(columns=columnas_base or [])
 
 
 # =========================================================
-# BOTÓN DE REFRESCO CONTROLADO
+# ACTUALIZAR HOJA (BLINDADA - SIN BORRAR)
+# =========================================================
+def actualizar_hoja(nombre_hoja: str, df: pd.DataFrame):
+    """
+    Actualiza sin borrar datos previos.
+    Si existe el ID, actualiza esa fila. Si no, la agrega.
+    Nunca borra toda la hoja.
+    """
+    try:
+        ws = obtener_hoja(nombre_hoja, list(df.columns))
+        data_actual = ws.get_all_records()
+        df_actual = pd.DataFrame(data_actual)
+
+        # Si la hoja está vacía, crea desde cero
+        if df_actual.empty:
+            ws.update([df.columns.values.tolist()] + df.values.tolist())
+            st.toast(f"✅ Hoja '{nombre_hoja}' creada y actualizada.", icon="💾")
+            return
+
+        # Detectar columna de ID
+        id_col = None
+        for posible in ["ID_Jugador", "ID_Informe"]:
+            if posible in df.columns:
+                id_col = posible
+                break
+
+        # Fusión segura sin borrar
+        if id_col:
+            df_actual[id_col] = df_actual[id_col].astype(str)
+            df[id_col] = df[id_col].astype(str)
+            df_fusion = pd.concat([df_actual, df]).drop_duplicates(subset=[id_col], keep="last")
+        else:
+            df_fusion = pd.concat([df_actual, df]).drop_duplicates(keep="last")
+
+        # Subir a Sheets
+        ws.update([df_fusion.columns.values.tolist()] + df_fusion.values.tolist())
+        st.toast(f"💾 '{nombre_hoja}' actualizada correctamente (sin borrar datos).", icon="✅")
+
+    except Exception as e:
+        st.error(f"⚠️ Error al actualizar '{nombre_hoja}': {e}")
+
+
+# =========================================================
+# ELIMINAR FILA SEGURA (CONTROLADO)
+# =========================================================
+def eliminar_por_id(nombre_hoja: str, id_col: str, id_valor):
+    """
+    Elimina una fila específica por ID, sin tocar el resto.
+    """
+    try:
+        ws = obtener_hoja(nombre_hoja)
+        data_actual = ws.get_all_records()
+        df = pd.DataFrame(data_actual)
+        if id_col not in df.columns:
+            st.error(f"⚠️ La hoja '{nombre_hoja}' no tiene la columna '{id_col}'.")
+            return
+        df = df[df[id_col].astype(str) != str(id_valor)]
+        ws.update([df.columns.values.tolist()] + df.values.tolist())
+        st.success(f"🗑️ Registro con {id_col}={id_valor} eliminado correctamente.")
+    except Exception as e:
+        st.error(f"⚠️ Error al eliminar en '{nombre_hoja}': {e}")
+
+
+# =========================================================
+# AGREGAR FILA NUEVA (SEGURA)
+# =========================================================
+def agregar_fila(nombre_hoja: str, fila: list):
+    """Agrega una nueva fila sin tocar el resto."""
+    try:
+        ws = obtener_hoja(nombre_hoja)
+        ws.append_row(fila, value_input_option="USER_ENTERED")
+        st.toast(f"🟢 Nueva fila agregada en '{nombre_hoja}'.", icon="🟢")
+        st.cache_data.clear()
+    except Exception as e:
+        st.error(f"⚠️ Error al agregar fila en '{nombre_hoja}': {e}")
+
+
+# =========================================================
+# BOTÓN MANUAL DE REFRESCO
 # =========================================================
 def boton_refrescar_datos():
     st.markdown("---")
-    if st.button("🔄 Actualizar datos (solo refresco visual)"):
+    if st.button("🔄 Actualizar datos (refrescar desde Google Sheets)"):
         st.cache_data.clear()
         st.rerun()
 
@@ -97,7 +209,7 @@ st.set_page_config(
 )
 
 # =========================================================
-# ESTILOS Y CSS
+# CARGAR ESTILOS Y CSS PERSONALIZADO
 # =========================================================
 try:
     from ui.style import load_custom_css
@@ -123,7 +235,7 @@ body, .stApp { background-color: #0e1117 !important; }
 """, unsafe_allow_html=True)
 
 # =========================================================
-# ARCHIVOS LOCALES
+# ARCHIVOS LOCALES (usuarios y cancha)
 # =========================================================
 FILE_USERS = "usuarios.csv"
 CANCHA_IMG = "CANCHA.png"
@@ -138,7 +250,7 @@ if not all(col in df_users.columns for col in ["Usuario", "Contraseña", "Rol"])
     st.stop()
 
 # =========================================================
-# LOGIN
+# BLOQUE DE LOGIN CON ROLES
 # =========================================================
 def login_ui():
     st.sidebar.title("🔐 Acceso de usuario")
@@ -171,6 +283,7 @@ def login_ui():
         else:
             st.sidebar.error("Usuario o contraseña incorrectos")
     return False
+
 
 if not login_ui():
     st.stop()
@@ -1189,6 +1302,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
