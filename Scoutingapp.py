@@ -400,6 +400,9 @@ def calcular_promedios_posicion(df_reports, df_players, posicion):
 
 def radar_chart(prom_jugador, prom_posicion):
     """Radar comparativo jugador vs promedio de posición."""
+    if not prom_jugador:
+        return
+
     categorias = list(prom_jugador.keys())
     valores_jug = [prom_jugador.get(c, 0) for c in categorias]
     valores_pos = [prom_posicion.get(c, 0) for c in categorias] if prom_posicion else [0]*len(categorias)
@@ -421,7 +424,12 @@ def radar_chart(prom_jugador, prom_posicion):
     ax.set_xticks(angles[:-1])
     ax.set_xticklabels(categorias, color="white", fontsize=9)
     ax.tick_params(colors="white")
-    ax.legend(loc="upper right", bbox_to_anchor=(1.2, 1.1), facecolor="#0e1117", labelcolor="white")
+    ax.legend(
+        loc="upper right",
+        bbox_to_anchor=(1.2, 1.1),
+        facecolor="#0e1117",
+        labelcolor="white"
+    )
     st.pyplot(fig)
 
 
@@ -557,7 +565,7 @@ menu = st.sidebar.radio(
 )
 
 # =========================================================
-# BLOQUE 3 / 5 — Sección Jugadores (versión final completa y estable)
+# BLOQUE 3 / 5 — Sección Jugadores (versión final con actualización automática)
 # =========================================================
 
 if menu == "Jugadores":
@@ -628,9 +636,14 @@ if menu == "Jugadores":
                         ]
                         ws = obtener_hoja("Jugadores")
                         ws.append_row(fila, value_input_option="USER_ENTERED")
-                        st.success(f"✅ Jugador '{nuevo_nombre}' agregado correctamente.")
-                        st.cache_data.clear()
+
+                        st.info("⏳ Guardando y sincronizando datos...", icon="💾")
+                        import time; time.sleep(2)
+
+                        df_players = actualizar_dataframe("Jugadores", df_players)
+                        st.toast(f"✅ Jugador '{nuevo_nombre}' agregado correctamente.", icon="✅")
                         st.rerun()
+
                     except Exception as e:
                         st.error(f"⚠️ Error al agregar el jugador: {e}")
 
@@ -740,38 +753,17 @@ if menu == "Jugadores":
                             ]
                             ws = obtener_hoja("Jugadores")
                             ws.update([df_players.columns.values.tolist()] + df_players.values.tolist())
-                            jugador.update({
-                                "Nombre": e_nombre,"Fecha_Nac": e_fecha,"Altura": e_altura,
-                                "Pie_Hábil": e_pie,"Posición": e_pos,"Club": e_club,"Liga": e_liga,
-                                "Nacionalidad": e_nac,"Segunda_Nacionalidad": e_seg,"Caracteristica": e_car,
-                                "URL_Foto": e_foto,"URL_Perfil": e_link
-                            })
-                            st.success("✅ Cambios guardados correctamente.")
-                            st.toast("Cambios sincronizados ☁️", icon="✅")
+
+                            import time; time.sleep(2)
+                            df_players = actualizar_dataframe("Jugadores", df_players)
+                            jugador = df_players[df_players["ID_Jugador"] == id_jugador].iloc[0]
+
+                            st.toast("✅ Datos actualizados y sincronizados.", icon="✅")
                             st.session_state.editar_jugador = False
-                            st.experimental_rerun()
+                            st.rerun()
+
                         except Exception as e:
                             st.error(f"⚠️ Error al guardar: {e}")
-
-
-        # =========================================================
-        # AGREGAR A LISTA CORTA
-        # =========================================================
-        if CURRENT_ROLE in ["admin", "scout"]:
-            st.markdown("---")
-            if st.button("⭐ Agregar a lista corta"):
-                try:
-                    edad = calcular_edad(jugador["Fecha_Nac"])
-                    fila = [
-                        jugador["ID_Jugador"], jugador["Nombre"], edad, jugador["Altura"],
-                        jugador["Club"], jugador["Posición"], jugador["URL_Foto"],
-                        jugador["URL_Perfil"], CURRENT_USER, date.today().strftime("%d/%m/%Y")
-                    ]
-                    ws_short = obtener_hoja("Lista corta")
-                    ws_short.append_row(fila, value_input_option="USER_ENTERED")
-                    st.toast(f"⭐ {jugador['Nombre']} agregado a la lista corta.", icon="⭐")
-                except Exception as e:
-                    st.error(f"⚠️ Error al agregar a la lista corta: {e}")
 
         # =========================================================
         # ELIMINAR JUGADOR
@@ -800,17 +792,17 @@ if menu == "Jugadores":
                         if not df_short_actual.empty:
                             ws_short.update([df_short_actual.columns.values.tolist()] + df_short_actual.values.tolist())
 
+                        import time; time.sleep(2)
+                        df_players = actualizar_dataframe("Jugadores", df_players)
+                        df_short = actualizar_dataframe("Lista corta", df_short)
+
                         st.toast(f"🗑️ Jugador '{jugador['Nombre']}' eliminado correctamente.", icon="🗑️")
-                        st.cache_data.clear()
-                        df_players = cargar_datos_sheets("Jugadores")
-                        df_short = cargar_datos_sheets("Lista corta")
+                        st.rerun()
 
                     except Exception as e:
                         st.error(f"⚠️ Error al eliminar el jugador: {e}")
                 else:
                     st.warning("Debes marcar la casilla antes de eliminar.")
-
-
 
 # =========================================================
 # BLOQUE 4 / 5 — Ver Informes (única tabla + ficha clickeable)
@@ -1215,6 +1207,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
