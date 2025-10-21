@@ -684,6 +684,40 @@ if menu == "Jugadores":
             if pd.notna(jugador.get("URL_Perfil")) and str(jugador["URL_Perfil"]).startswith("http"):
                 st.markdown(f"[🌐 Perfil externo]({jugador['URL_Perfil']})", unsafe_allow_html=True)
 
+          # =========================================================
+    # AGREGAR A LISTA CORTA
+    # =========================================================
+    if CURRENT_ROLE in ["admin", "scout"]:
+        if st.button("⭐ Agregar a Lista Corta"):
+            try:
+                ws_short = obtener_hoja("Lista corta")
+                data_short = ws_short.get_all_records()
+                df_short_local = pd.DataFrame(data_short)
+
+                # Evitar duplicados
+                if "ID_Jugador" in df_short_local.columns and str(jugador["ID_Jugador"]) in df_short_local["ID_Jugador"].astype(str).values:
+                    st.warning("⚠️ Este jugador ya está en la lista corta.")
+                else:
+                    nueva_fila = [
+                        jugador["ID_Jugador"],
+                        jugador["Nombre"],
+                        calcular_edad(jugador["Fecha_Nac"]),
+                        jugador.get("Altura", "-"),
+                        jugador.get("Club", "-"),
+                        jugador.get("Posición", "-"),
+                        jugador.get("URL_Foto", ""),
+                        jugador.get("URL_Perfil", ""),
+                        CURRENT_USER,
+                        date.today().strftime("%d/%m/%Y")
+                    ]
+                    ws_short.append_row(nueva_fila, value_input_option="USER_ENTERED")
+                    st.toast(f"⭐ {jugador['Nombre']} agregado a la lista corta", icon="⭐")
+                    st.cache_data.clear()
+                    df_short = cargar_datos_sheets("Lista corta")
+            except Exception as e:
+                st.error(f"⚠️ Error al agregar a lista corta: {e}")
+
+
         # === COMPARATIVA CENTRAL ===
         with col2:
             st.markdown("### 🔍 Comparativa por grupos")
@@ -836,7 +870,7 @@ if menu == "Jugadores":
                     with col3:
                         pase_filtrado = st.slider("Pase filtrado", 0.0, 5.0, 0.0, 0.5)
 
-                with st.expander("🛡️ Aspectos defensivos"):
+                with st.expander("Aspectos defensivos"):
                     col1, col2 = st.columns(2)
                     with col1:
                         v1_def = st.slider("1v1 defensivo", 0.0, 5.0, 0.0, 0.5)
@@ -845,7 +879,7 @@ if menu == "Jugadores":
                         intercepciones = st.slider("Intercepciones", 0.0, 5.0, 0.0, 0.5)
                         duelos_aereos = st.slider("Duelos aéreos", 0.0, 5.0, 0.0, 0.5)
 
-                with st.expander("⚡ Aspectos ofensivos"):
+                with st.expander("Aspectos ofensivos"):
                     col1, col2 = st.columns(2)
                     with col1:
                         regate = st.slider("Regate", 0.0, 5.0, 0.0, 0.5)
@@ -853,7 +887,7 @@ if menu == "Jugadores":
                     with col2:
                         duelos_of = st.slider("Duelos ofensivos", 0.0, 5.0, 0.0, 0.5)
 
-                with st.expander("🧠 Aspectos mentales / psicológicos"):
+                with st.expander("Aspectos mentales / psicológicos"):
                     col1, col2 = st.columns(2)
                     with col1:
                         resiliencia = st.slider("Resiliencia", 0.0, 5.0, 0.0, 0.5)
@@ -862,7 +896,7 @@ if menu == "Jugadores":
                         int_tactica = st.slider("Inteligencia táctica", 0.0, 5.0, 0.0, 0.5)
                         int_emocional = st.slider("Inteligencia emocional", 0.0, 5.0, 0.0, 0.5)
 
-                with st.expander("📐 Aspectos tácticos"):
+                with st.expander("Aspectos tácticos"):
                     col1, col2 = st.columns(2)
                     with col1:
                         posicionamiento = st.slider("Posicionamiento", 0.0, 5.0, 0.0, 0.5)
@@ -870,7 +904,7 @@ if menu == "Jugadores":
                     with col2:
                         movimientos = st.slider("Movimientos sin pelota", 0.0, 5.0, 0.0, 0.5)
 
-                guardar_informe = st.form_submit_button("💾 Guardar informe")
+                guardar_informe = st.form_submit_button("Guardar informe")
 
                 if guardar_informe:
                     try:
@@ -1329,6 +1363,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
