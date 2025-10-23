@@ -950,7 +950,7 @@ if menu == "Jugadores":
 
 
 # =========================================================
-# BLOQUE 4 / 5 — Ver Informes (optimizando edición y refresco instantáneo)
+# BLOQUE 4 / 5 — Ver Informes (optimizado y con ficha completa)
 # =========================================================
 
 if menu == "Ver informes":
@@ -1038,7 +1038,7 @@ if menu == "Ver informes":
         elif isinstance(selected_data, dict):
             selected_data = [selected_data]
 
-        if len(selected_data) > 0:
+        if selected_data and isinstance(selected_data, (list, tuple)) and len(selected_data) > 0:
             jugador_sel = selected_data[0]
             nombre_jug = jugador_sel.get("Nombre", "")
             jugador_data = df_players[df_players["Nombre"] == nombre_jug]
@@ -1053,15 +1053,24 @@ if menu == "Ver informes":
                     st.markdown(f"**📍 Club:** {j.get('Club','-')}")
                     st.markdown(f"**🎯 Posición:** {j.get('Posición','-')}")
                     st.markdown(f"**📏 Altura:** {j.get('Altura','-')} cm")
+                    edad_jugador = calcular_edad(j.get("Fecha_Nac"))
+                    st.markdown(f"**📅 Edad:** {edad_jugador} años")
+
                 with col2:
                     st.markdown(f"**👟 Pie hábil:** {j.get('Pie_Hábil','-')}")
                     st.markdown(f"**🌍 Nacionalidad:** {j.get('Nacionalidad','-')}")
                     st.markdown(f"**🏆 Liga:** {j.get('Liga','-')}")
+
                 with col3:
                     st.markdown(f"**2ª Nacionalidad:** {j.get('Segunda_Nacionalidad','-')}")
                     st.markdown(f"**🧠 Característica:** {j.get('Caracteristica','-')}")
                     if pd.notna(j.get("URL_Foto")) and str(j["URL_Foto"]).startswith("http"):
                         st.image(j["URL_Foto"], width=130)
+                    if pd.notna(j.get("URL_Perfil")) and str(j["URL_Perfil"]).startswith("http"):
+                        st.markdown(f"[🌐 Perfil externo]({j['URL_Perfil']})", unsafe_allow_html=True)
+        else:
+            st.info("Seleccioná un registro para ver la ficha del jugador.")
+
 
                 # =========================================================
                 # INFORMES ASOCIADOS + EDICIÓN + PDF
@@ -1372,6 +1381,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
