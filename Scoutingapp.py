@@ -302,7 +302,7 @@ st.markdown("---")
 # =========================================================
 
 # =========================================================
-# FUNCIONES AUXILIARES Y DE CÁLCULO (versión estable con refresco automático)
+# FUNCIONES AUXILIARES Y DE CÁLCULO (versión estable y segura)
 # =========================================================
 
 def calcular_edad(fecha_nac):
@@ -325,9 +325,10 @@ def generar_id_unico(df, columna="ID_Jugador"):
 
 
 def calcular_promedios_jugador(df_reports, id_jugador):
-    """Calcula promedios reales (0-5) del jugador, corrigiendo decimales y tipos."""
+    """Calcula promedios reales (0-5) del jugador, corrigiendo valores no numéricos."""
     if df_reports.empty:
         return None
+
     df_reports["ID_Jugador"] = df_reports["ID_Jugador"].astype(str)
     informes = df_reports[df_reports["ID_Jugador"] == str(id_jugador)]
     if informes.empty:
@@ -349,21 +350,25 @@ def calcular_promedios_jugador(df_reports, id_jugador):
                     informes[col]
                     .astype(str)
                     .str.replace(",", ".", regex=False)
+                    .replace(["", "nan", "None", "-", "—"], 0)
                     .astype(float)
                 )
-                prom = valores.mean()
+                prom = np.mean(valores)
                 if prom > 5:
                     prom = prom / 10
-                promedios[col] = round(prom, 2)
+                promedios[col] = round(float(prom), 2)
             except Exception:
-                promedios[col] = None
+                promedios[col] = 0.0
+        else:
+            promedios[col] = 0.0
     return promedios
 
 
 def calcular_promedios_posicion(df_reports, df_players, posicion):
-    """Promedio global de la posición, con corrección de decimales."""
+    """Promedio global de la posición, limpiando valores no numéricos."""
     if df_players.empty or df_reports.empty:
         return None
+
     df_players["ID_Jugador"] = df_players["ID_Jugador"].astype(str)
     df_reports["ID_Jugador"] = df_reports["ID_Jugador"].astype(str)
 
@@ -389,14 +394,17 @@ def calcular_promedios_posicion(df_reports, df_players, posicion):
                     informes[col]
                     .astype(str)
                     .str.replace(",", ".", regex=False)
+                    .replace(["", "nan", "None", "-", "—"], 0)
                     .astype(float)
                 )
-                prom = valores.mean()
+                prom = np.mean(valores)
                 if prom > 5:
                     prom = prom / 10
-                promedios[col] = round(prom, 2)
+                promedios[col] = round(float(prom), 2)
             except Exception:
-                promedios[col] = None
+                promedios[col] = 0.0
+        else:
+            promedios[col] = 0.0
     return promedios
 
 
@@ -406,8 +414,8 @@ def radar_chart(prom_jugador, prom_posicion):
         return
 
     categorias = list(prom_jugador.keys())
-    valores_jug = [prom_jugador.get(c, 0) for c in categorias]
-    valores_pos = [prom_posicion.get(c, 0) for c in categorias] if prom_posicion else [0]*len(categorias)
+    valores_jug = [float(prom_jugador.get(c, 0) or 0) for c in categorias]
+    valores_pos = [float(prom_posicion.get(c, 0) or 0) for c in categorias] if prom_posicion else [0]*len(categorias)
     valores_jug += valores_jug[:1]
     valores_pos += valores_pos[:1]
 
@@ -471,6 +479,7 @@ def generar_pdf_ficha(jugador, informes):
     pdf.output(buffer)
     buffer.seek(0)
     return buffer
+
 
 # =========================================================
 # REFRESCO AUTOMÁTICO DE DATAFRAMES (nuevo, mejorado)
@@ -1363,6 +1372,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
