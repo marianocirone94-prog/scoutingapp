@@ -1072,14 +1072,13 @@ if menu == "Ver informes":
             st.info("Seleccioná un registro para ver la ficha del jugador.")
 
 
-                # =========================================================
+                               # =========================================================
                 # INFORMES ASOCIADOS + EDICIÓN + PDF
                 # =========================================================
                 informes_sel = df_reports[df_reports["ID_Jugador"] == j["ID_Jugador"]]
                 if not informes_sel.empty:
                     st.markdown(f"### 📄 Informes de {j['Nombre']}")
 
-                    # === PDF ===
                     if st.button("📥 Exportar informes en PDF", key=f"pdf_{j['ID_Jugador']}"):
                         try:
                             pdf = FPDF(orientation="P", unit="mm", format="A4")
@@ -1091,6 +1090,7 @@ if menu == "Ver informes":
                             pdf.cell(0, 8, f"Club: {j.get('Club','')}", ln=True)
                             pdf.cell(0, 8, f"Posición: {j.get('Posición','')}", ln=True)
                             pdf.ln(8)
+
                             for _, inf in informes_sel.iterrows():
                                 pdf.set_font("Arial", "B", 12)
                                 pdf.cell(0, 8, f"{inf.get('Fecha_Partido','')} | Scout: {inf.get('Scout','')} | Línea: {inf.get('Línea','')}", ln=True)
@@ -1099,6 +1099,7 @@ if menu == "Ver informes":
                                 pdf.set_font("Arial", "", 10)
                                 pdf.multi_cell(0, 6, f"{inf.get('Observaciones','') or '-'}")
                                 pdf.ln(4)
+
                             buffer = BytesIO()
                             pdf.output(buffer)
                             buffer.seek(0)
@@ -1111,7 +1112,7 @@ if menu == "Ver informes":
                         except Exception as e:
                             st.error(f"⚠️ Error al generar PDF: {e}")
 
-                    # === Editar informes individuales ===
+                    # --- Expander editable para cada informe ---
                     for _, inf in informes_sel.iterrows():
                         titulo = f"{inf.get('Fecha_Partido','')} | Scout: {inf.get('Scout','')} | Línea: {inf.get('Línea','')}"
                         with st.expander(titulo):
@@ -1121,8 +1122,8 @@ if menu == "Ver informes":
                                 nuevos_equipos = st.text_input("Equipos y resultado", inf.get("Equipos_Resultados",""), key=f"equipos_{inf['ID_Informe']}")
                                 nueva_linea = st.selectbox(
                                     "Línea",
-                                    ["1ra (Fichar)","2da (Seguir)","3ra (Ver más adelante)","4ta (Descartar)","Joven Promesa"],
-                                    index=["1ra (Fichar)","2da (Seguir)","3ra (Ver más adelante)","4ta (Descartar)","Joven Promesa"].index(
+                                    ["1ra (Fichar)", "2da (Seguir)", "3ra (Ver más adelante)", "4ta (Descartar)", "Joven Promesa"],
+                                    index=["1ra (Fichar)", "2da (Seguir)", "3ra (Ver más adelante)", "4ta (Descartar)", "Joven Promesa"].index(
                                         inf.get("Línea","3ra (Ver más adelante)")
                                     ),
                                     key=f"linea_{inf['ID_Informe']}"
@@ -1132,39 +1133,14 @@ if menu == "Ver informes":
 
                                 if guardar:
                                     try:
+                                        df_reports.loc[df_reports["ID_Informe"] == inf["ID_Informe"], [
+                                            "Scout","Fecha_Partido","Equipos_Resultados","Línea","Observaciones"
+                                        ]] = [nuevo_scout, nueva_fecha, nuevos_equipos, nueva_linea, nuevas_obs]
                                         ws_inf = obtener_hoja("Informes")
-                                        data = ws_inf.get_all_records()
-                                        df_inf = pd.DataFrame(data)
-
-                                        # Buscamos fila exacta
-                                        fila = df_inf.index[df_inf["ID_Informe"] == inf["ID_Informe"]]
-                                        if not fila.empty:
-                                            row_number = fila[0] + 2
-                                            valores = df_inf.loc[fila[0]].tolist()
-                                            # Actualizamos los valores editados
-                                            valores[df_inf.columns.get_loc("Scout")] = nuevo_scout
-                                            valores[df_inf.columns.get_loc("Fecha_Partido")] = nueva_fecha
-                                            valores[df_inf.columns.get_loc("Equipos_Resultados")] = nuevos_equipos
-                                            valores[df_inf.columns.get_loc("Línea")] = nueva_linea
-                                            valores[df_inf.columns.get_loc("Observaciones")] = nuevas_obs
-
-                                            ws_inf.update(f"A{row_number}:AA{row_number}", [valores])
-                                            leer_hoja.clear()
-                                            st.session_state["df_reports"] = leer_hoja("Informes")
-                                            df_reports = st.session_state["df_reports"]
-                                            st.session_state["last_update"] = time.time()
-                                            st.toast("✅ Informe actualizado correctamente.", icon="✅")
-                                            st.experimental_rerun()
-                                        else:
-                                            st.warning("⚠️ No se encontró el informe en la hoja.")
+                                        ws_inf.update([df_reports.columns.values.tolist()] + df_reports.values.tolist())
+                                        st.toast("✅ Informe actualizado correctamente.", icon="✅")
                                     except Exception as e:
                                         st.error(f"⚠️ Error al actualizar el informe: {e}")
-
-        else:
-            st.info("📍 Seleccioná un registro para ver la ficha del jugador.")
-    else:
-        st.warning("⚠️ No se encontraron informes con los filtros seleccionados.")
-
 
 # =========================================================
 # BLOQUE 5 / 5 — Lista corta + Cancha + Cierre (optimizado)
@@ -1381,6 +1357,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
