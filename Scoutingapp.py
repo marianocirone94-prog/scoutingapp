@@ -1068,11 +1068,8 @@ if menu == "Ver informes":
                         st.image(j["URL_Foto"], width=130)
                     if pd.notna(j.get("URL_Perfil")) and str(j["URL_Perfil"]).startswith("http"):
                         st.markdown(f"[🌐 Perfil externo]({j['URL_Perfil']})", unsafe_allow_html=True)
-        else:
-            st.info("Seleccioná un registro para ver la ficha del jugador.")
 
-
-                               # =========================================================
+                # =========================================================
                 # INFORMES ASOCIADOS + EDICIÓN + PDF
                 # =========================================================
                 informes_sel = df_reports[df_reports["ID_Jugador"] == j["ID_Jugador"]]
@@ -1141,6 +1138,8 @@ if menu == "Ver informes":
                                         st.toast("✅ Informe actualizado correctamente.", icon="✅")
                                     except Exception as e:
                                         st.error(f"⚠️ Error al actualizar el informe: {e}")
+        else:
+            st.info("📍 Seleccioná un registro para ver la ficha del jugador.")
 
 # =========================================================
 # BLOQUE 5 / 5 — Lista corta + Cancha + Cierre (optimizado)
@@ -1357,6 +1356,7 @@ st.markdown(
     "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
