@@ -1142,7 +1142,7 @@ if menu == "Ver informes":
             st.info("📍 Seleccioná un registro para ver la ficha del jugador.")
 
 # =========================================================
-# BLOQUE 5 / 5 — Lista corta + Cancha + Cierre (optimizado)
+# BLOQUE 5 / 5 — Lista corta + Cancha + Cierre (versión extendida)
 # =========================================================
 
 if menu == "Lista corta":
@@ -1156,12 +1156,14 @@ if menu == "Lista corta":
         st.info("ℹ️ No hay jugadores en la lista corta todavía.")
     else:
         # =========================================================
-        # FILTROS
+        # FILTROS ADICIONALES
         # =========================================================
-        st.sidebar.markdown("### 🔎 Filtros lista corta")
+        st.sidebar.markdown("### 🔎 Filtros avanzados")
         filtro_pos = st.sidebar.multiselect("Posición", sorted(df_short["Posición"].dropna().unique()))
         filtro_club = st.sidebar.multiselect("Club", sorted(df_short["Club"].dropna().unique()))
         filtro_nac = st.sidebar.multiselect("Nacionalidad", sorted(df_players["Nacionalidad"].dropna().unique()))
+        filtro_anio = st.sidebar.multiselect("Año de agregado", sorted(df_short["Fecha_Agregado"].dropna().unique()))
+        filtro_tipo = st.sidebar.multiselect("Tipo", ["Joven Promesa", "Consolidado", "A Seguir"], default=[])
 
         df_filtrado = df_short.copy()
         if filtro_pos:
@@ -1171,6 +1173,10 @@ if menu == "Lista corta":
         if filtro_nac:
             ids_filtrados = df_players[df_players["Nacionalidad"].isin(filtro_nac)]["ID_Jugador"].tolist()
             df_filtrado = df_filtrado[df_filtrado["ID_Jugador"].isin(ids_filtrados)]
+        if filtro_anio:
+            df_filtrado = df_filtrado[df_filtrado["Fecha_Agregado"].isin(filtro_anio)]
+        if filtro_tipo and "Tipo" in df_filtrado.columns:
+            df_filtrado = df_filtrado[df_filtrado["Tipo"].isin(filtro_tipo)]
 
         # =========================================================
         # PESTAÑAS: LISTADO / TABLA / CANCHA
@@ -1181,7 +1187,7 @@ if menu == "Lista corta":
         # 📋 LISTADO EN CARTAS
         # =========================================================
         with tabs[0]:
-            st.markdown("### 📇 Jugadores en lista corta (vista de cartas)")
+            st.markdown("### 📇 Jugadores en lista corta (vista de tarjetas)")
             df_filtrado = df_filtrado.sort_values("Posición")
             cols = st.columns(3)
 
@@ -1189,45 +1195,31 @@ if menu == "Lista corta":
                 with cols[i % 3]:
                     st.markdown(f"""
                     <div style="background: linear-gradient(90deg, #1e3c72, #2a5298);
-                        padding: 0.5em; border-radius: 5px; margin-bottom: 10px;
-                        color: white; text-align: center; font-family: Arial, sans-serif; max-width: 220px;">
-                        <img src="{row['URL_Foto'] if pd.notna(row['URL_Foto']) and str(row['URL_Foto']).startswith('http') else 'https://via.placeholder.com/120'}"
-                             style="width:80px; border-radius:6px; margin-bottom:5px;" />
-                        <h5 style="font-size:16px; margin:4px 0;">{row['Nombre']}</h5>
-                        <p style="font-size:14px; margin:2px 0;">Edad: {row.get('Edad','-')}</p>
-                        <p style="font-size:14px; margin:2px 0;">{row.get('Posición','-')}</p>
-                        <p style="font-size:14px; margin:2px 0;">{row.get('Club','-')}</p>
+                        padding: 0.8em; border-radius: 8px; margin-bottom: 15px;
+                        color: white; text-align: center; font-family: Arial, sans-serif; min-height: 270px;">
+                        <img src="{row['URL_Foto'] if pd.notna(row['URL_Foto']) and str(row['URL_Foto']).startswith('http') else 'https://via.placeholder.com/100'}"
+                             style="width:90px; border-radius:50%; margin-bottom:8px;" />
+                        <h5 style="font-size:17px; margin:5px 0;">{row['Nombre']}</h5>
+                        <p style="font-size:13px; margin:2px 0;">Edad: {row.get('Edad','-')}</p>
+                        <p style="font-size:13px; margin:2px 0;">{row.get('Posición','-')}</p>
+                        <p style="font-size:13px; margin:2px 0;">{row.get('Club','-')}</p>
+                        <p style="font-size:12px; margin:3px 0; color:#c6e2ff;">{row.get('Agregado_Por','')}</p>
                     </div>
                     """, unsafe_allow_html=True)
 
-                    # --- Botón eliminar optimizado ---
                     if CURRENT_ROLE in ["admin", "scout"]:
-                        if st.button(f"🗑️ Borrar {row['Nombre']}", key=f"del_{i}"):
+                        if st.button(f"🗑️ Eliminar", key=f"del_{i}"):
                             try:
                                 ws_short = obtener_hoja("Lista corta")
                                 data_short = ws_short.get_all_records()
                                 df_short_local = pd.DataFrame(data_short)
-
-                                # Buscar y eliminar fila exacta
-                                fila = df_short_local.index[df_short_local["ID_Jugador"].astype(str) == str(row["ID_Jugador"])]
-                                if not fila.empty:
-                                    df_short_local = df_short_local.drop(fila[0])
-                                    # Actualizar hoja sin borrar encabezado
-                                    ws_short.clear()
-                                    ws_short.append_row(list(df_short_local.columns))
-                                    if not df_short_local.empty:
-                                        ws_short.update([df_short_local.columns.values.tolist()] + df_short_local.values.tolist())
-
-                                    # 🔧 Refrescar solo cache local
-                                    leer_hoja.clear()
-                                    st.session_state["df_short"] = leer_hoja("Lista corta")
-                                    df_short = st.session_state["df_short"]
-                                    st.session_state["last_update"] = time.time()
-
-                                    st.toast(f"🗑️ Jugador {row['Nombre']} eliminado correctamente.", icon="🗑️")
-                                    st.experimental_rerun()
-                                else:
-                                    st.warning("⚠️ No se encontró el jugador en la hoja.")
+                                df_short_local = df_short_local[df_short_local["ID_Jugador"].astype(str) != str(row["ID_Jugador"])]
+                                ws_short.clear()
+                                ws_short.append_row(list(df_short_local.columns))
+                                if not df_short_local.empty:
+                                    ws_short.update([df_short_local.columns.values.tolist()] + df_short_local.values.tolist())
+                                st.toast(f"🗑️ {row['Nombre']} eliminado.", icon="🗑️")
+                                st.rerun()
                             except Exception as e:
                                 st.error(f"⚠️ Error al eliminar: {e}")
 
@@ -1236,7 +1228,7 @@ if menu == "Lista corta":
         # =========================================================
         with tabs[1]:
             st.markdown("### 📊 Vista en tabla")
-            columnas_tabla = ["Nombre","Edad","Posición","Club","Agregado_Por","Fecha_Agregado"]
+            columnas_tabla = ["Nombre", "Edad", "Posición", "Club", "Agregado_Por", "Fecha_Agregado", "Tipo"]
             columnas_presentes = [c for c in columnas_tabla if c in df_filtrado.columns]
             st.dataframe(df_filtrado[columnas_presentes], use_container_width=True)
 
@@ -1244,7 +1236,7 @@ if menu == "Lista corta":
         # ⚽ VISTA EN CANCHA
         # =========================================================
         with tabs[2]:
-            st.markdown("### ⚽ Distribución en cancha")
+            st.markdown("### ⚽ Distribución en cancha (automática por posición)")
 
             posiciones_cancha = {
                 "Arquero": (265, 630),
@@ -1260,72 +1252,28 @@ if menu == "Lista corta":
                 "Delantero centro": (265, 60)
             }
 
-            if "alineacion" not in st.session_state:
-                st.session_state["alineacion"] = {pos: [] for pos in posiciones_cancha.keys()}
+            # Dibujar cancha
+            try:
+                cancha = plt.imread(CANCHA_IMG)
+                fig, ax = plt.subplots(figsize=(6, 9))
+                ax.imshow(cancha)
+            except:
+                fig, ax = plt.subplots(figsize=(6, 9))
+                ax.set_facecolor("#003366")
 
-            col1, col2 = st.columns([1, 2])
+            for _, jugador in df_filtrado.iterrows():
+                pos = jugador.get("Posición", "")
+                if pos in posiciones_cancha:
+                    x, y = posiciones_cancha[pos]
+                    nombre_fmt = jugador["Nombre"].split()[0]
+                    club = jugador.get("Club", "-")
+                    ax.text(x, y, f"{nombre_fmt}\n{club}",
+                            ha="center", va="center",
+                            fontsize=7, color="white",
+                            bbox=dict(facecolor="#1e3c72", alpha=0.7, boxstyle="round,pad=0.3"))
 
-            # --- Asignar jugador a posición ---
-            with col1:
-                if CURRENT_ROLE in ["admin", "scout"]:
-                    st.markdown("#### Asignar jugador a una posición")
-                    jugador_opt = st.selectbox("Seleccionar jugador", [""] + list(df_short["Nombre"]))
-                    pos_opt = st.selectbox("Posición en cancha", list(posiciones_cancha.keys()))
-                    if st.button("Agregar a posición"):
-                        if jugador_opt:
-                            jugador_data = df_short[df_short["Nombre"] == jugador_opt].iloc[0]
-                            jugador_info = {
-                                "Nombre": jugador_data["Nombre"],
-                                "Edad": jugador_data.get("Edad", "-"),
-                                "Altura": jugador_data.get("Altura", "-"),
-                                "Club": jugador_data.get("Club", "-")
-                            }
-                            st.session_state["alineacion"][pos_opt].append(jugador_info)
-                            st.toast(f"✅ {jugador_opt} agregado a {pos_opt}", icon="✅")
-
-            # --- Dibujar cancha ---
-            with col2:
-                st.markdown("#### Vista en cancha")
-                try:
-                    cancha = plt.imread(CANCHA_IMG)
-                    fig, ax = plt.subplots(figsize=(6, 9))
-                    ax.imshow(cancha)
-                except:
-                    fig, ax = plt.subplots(figsize=(6, 9))
-                    ax.set_facecolor("#003366")
-
-                for pos, coords in posiciones_cancha.items():
-                    jugadores = st.session_state["alineacion"].get(pos, [])
-                    jugadores = [j for j in jugadores if isinstance(j, dict) and "Nombre" in j]
-                    for idx, jugador in enumerate(jugadores):
-                        partes = jugador["Nombre"].split()
-                        nombre_fmt = f"{partes[0]} {partes[-1]}" if len(partes) >= 2 else jugador["Nombre"]
-                        edad = jugador.get("Edad", "-")
-                        club = jugador.get("Club", "-")
-                        texto = f"{nombre_fmt} ({edad})\n{club}"
-                        x, y = coords[0], coords[1] + idx * 32
-                        ax.add_patch(patches.Rectangle((x-60, y-15), 122, 32,
-                                                       linewidth=1, edgecolor="white",
-                                                       facecolor="blue", alpha=0.6))
-                        ax.text(x, y, texto, ha="center", va="center",
-                                fontsize=6, color="white", linespacing=1.1)
-                ax.axis("off")
-                st.pyplot(fig)
-
-            # --- Eliminar jugadores de la alineación ---
-            if CURRENT_ROLE in ["admin", "scout"]:
-                st.markdown("### ❌ Eliminar jugadores de la alineación")
-                for pos, jugadores in st.session_state["alineacion"].items():
-                    jugadores = [j for j in jugadores if isinstance(j, dict) and "Nombre" in j]
-                    for idx, jugador in enumerate(jugadores):
-                        col_del1, col_del2 = st.columns([4, 1])
-                        with col_del1:
-                            st.write(f"{pos}: {jugador['Nombre']} ({jugador.get('Club','-')})")
-                        with col_del2:
-                            if st.button("❌", key=f"del_{pos}_{idx}"):
-                                st.session_state["alineacion"][pos].pop(idx)
-                                st.toast(f"🗑️ {jugador['Nombre']} eliminado de {pos}", icon="🗑️")
-
+            ax.axis("off")
+            st.pyplot(fig)
 
 # =========================================================
 # CIERRE PROFESIONAL (sin cambios visuales)
@@ -1333,31 +1281,13 @@ if menu == "Lista corta":
 st.markdown("---")
 st.markdown(f"""
 <div style="text-align:center; color:#00c6ff; margin-top:30px;">
-    <h4>ScoutingApp Profesional v2.0</h4>
+    <h4>ScoutingApp Profesional v2.1</h4>
     <p>Usuario activo: <strong>{CURRENT_USER}</strong> ({CURRENT_ROLE})</p>
     <p style="color:gray; font-size:13px;">
         Desarrollada por Mariano Cirone · Área de Scouting Profesional
     </p>
 </div>
 """, unsafe_allow_html=True)
-
-# --- Limpieza de alineación temporal ---
-if "user" in st.session_state:
-    if "alineacion" in st.session_state and CURRENT_ROLE != "admin":
-        if st.button("🧹 Limpiar alineación temporal"):
-            try:
-                st.session_state["alineacion"] = {pos: [] for pos in posiciones_cancha.keys()}
-                st.toast("🧹 Alineación limpia para la próxima sesión.", icon="🧼")
-            except Exception as e:
-                st.error(f"⚠️ No se pudo limpiar la alineación: {e}")
-
-# --- Footer final ---
-st.markdown(
-    "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
-    unsafe_allow_html=True
-)
-
-
 
 
 
