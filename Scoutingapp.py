@@ -1202,46 +1202,43 @@ if menu == "Lista corta":
         tabs = st.tabs(["📋 Listado", "⚽ Cancha"])
 
        # =========================================================
-# 📋 LISTADO (agrupado por posiciones)
+# 📋 LISTADO (desplegable por posición específica)
 # =========================================================
 with tabs[0]:
-    st.markdown("### 📇 Jugadores en lista corta (agrupados por posición)")
+    st.markdown("###Jugadores en lista corta (por posición)")
 
     if df_filtrado.empty:
         st.info("No hay jugadores que coincidan con los filtros seleccionados.")
     else:
-        # --- Clasificar posiciones ---
-        grupos_posiciones = {
-            "Arqueros": ["Arquero"],
-            "Defensas": [
-                "Lateral derecho", "Lateral izquierdo",
-                "Defensa central derecho", "Defensa central izquierdo"
-            ],
-            "Mediocampistas": [
-                "Mediocampista defensivo", "Mediocampista mixto", "Mediocampista ofensivo"
-            ],
-            "Extremos": ["Extremo derecho", "Extremo izquierdo"],
-            "Delanteros": ["Delantero centro"]
-        }
+        # --- Orden lógico de posiciones ---
+        orden_posiciones = [
+            "Arquero",
+            "Lateral derecho",
+            "Defensa central derecho",
+            "Defensa central izquierdo",
+            "Lateral izquierdo",
+            "Mediocampista defensivo",
+            "Mediocampista mixto",
+            "Mediocampista ofensivo",
+            "Extremo derecho",
+            "Extremo izquierdo",
+            "Delantero centro"
+        ]
 
-        sub_tabs = st.tabs(list(grupos_posiciones.keys()))
+        for pos in orden_posiciones:
+            jugadores_pos = df_filtrado[df_filtrado["Posición"] == pos]
 
-        for i, (grupo, posiciones) in enumerate(grupos_posiciones.items()):
-            with sub_tabs[i]:
-                st.markdown(f"#### {grupo}")
-                jugadores_grupo = df_filtrado[df_filtrado["Posición"].isin(posiciones)]
-
-                if jugadores_grupo.empty:
-                    st.info(f"No hay jugadores cargados en el grupo **{grupo}**.")
-                else:
+            if not jugadores_pos.empty:
+                with st.expander(f"⚽ {pos} ({len(jugadores_pos)})", expanded=False):
                     cols = st.columns(3)
-                    for j, row in enumerate(jugadores_grupo.itertuples()):
-                        with cols[j % 3]:
+                    for i, row in enumerate(jugadores_pos.itertuples()):
+                        with cols[i % 3]:
                             st.markdown(f"""
                             <div style="background: linear-gradient(90deg,#1e3c72,#2a5298);
                                 padding:0.8em;border-radius:10px;margin-bottom:12px;
                                 color:white;text-align:center;font-family:Arial;
-                                width:220px;min-height:250px;box-shadow:0 0 5px rgba(0,0,0,0.3);margin:auto;">
+                                width:220px;min-height:250px;
+                                box-shadow:0 0 5px rgba(0,0,0,0.3);margin:auto;">
                                 <img src="{row.URL_Foto if pd.notna(row.URL_Foto) and str(row.URL_Foto).startswith('http') else 'https://via.placeholder.com/100'}"
                                      style="width:80px;border-radius:50%;margin-bottom:8px;" />
                                 <h5 style="font-size:15px;margin:3px 0;">{row.Nombre}</h5>
@@ -1252,6 +1249,7 @@ with tabs[0]:
                                 if pd.notna(row.URL_Perfil) and str(row.URL_Perfil).startswith("http") else ""}
                             </div>
                             """, unsafe_allow_html=True)
+
 
         # =========================================================
 # ⚽ CANCHA (interactiva con buscador + ficha + eliminación segura)
@@ -1366,6 +1364,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
