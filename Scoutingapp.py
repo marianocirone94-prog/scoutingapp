@@ -1317,29 +1317,67 @@ if menu == "Lista corta":
                 else:
                     st.info("Seleccioná un jugador para ver su ficha o eliminarlo.")
 
-            # === COL 2: VISUAL DE CANCHA ===
-            with col2:
-                try:
-                    cancha = plt.imread(CANCHA_IMG)
-                    fig, ax = plt.subplots(figsize=(6, 9))
-                    ax.imshow(cancha)
-                except:
-                    fig, ax = plt.subplots(figsize=(6, 9))
-                    ax.set_facecolor("#003366")
+            # === COL 2: VISUAL DE CANCHA (optimizada visualmente)
+with col2:
+    st.markdown("### Distribución táctica sobre la cancha")
 
-                for pos, coords in posiciones_cancha.items():
-                    jugadores = df_filtrado[df_filtrado["Posición"] == pos].head(4)
-                    for idx, jugador in enumerate(jugadores.itertuples()):
-                        nombre_fmt = jugador.Nombre.split()[0] if len(jugador.Nombre.split()) == 1 else f"{jugador.Nombre.split()[0]} {jugador.Nombre.split()[-1]}"
-                        x, y = coords[0], coords[1] + idx * 32
-                        ax.add_patch(patches.Rectangle((x - 55, y - 14), 110, 30,
-                                                       linewidth=1, edgecolor="white",
-                                                       facecolor="#1e3c72", alpha=0.85))
-                        ax.text(x, y, nombre_fmt, ha="center", va="center",
-                                fontsize=7, color="white", linespacing=1.1)
+    # Contenedor con scroll por si hay muchos jugadores
+    with st.container():
+        st.markdown(
+            """
+            <style>
+                div[data-testid="stVerticalBlock"] div[data-testid="stVerticalBlock"] {
+                    overflow-y: auto;
+                    max-height: 800px;
+                }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
 
-                ax.axis("off")
-                st.pyplot(fig)
+        try:
+            cancha = plt.imread(CANCHA_IMG)
+            fig, ax = plt.subplots(figsize=(7, 10))
+            ax.imshow(cancha)
+        except:
+            fig, ax = plt.subplots(figsize=(7, 10))
+            ax.set_facecolor("#1e3c72")
+
+        # Parámetros de diseño
+        card_width = 135     # ancho de cada tarjeta
+        card_height = 26     # alto de cada tarjeta
+        text_size = 6.5      # tamaño de fuente
+
+        for pos, coords in posiciones_cancha.items():
+            jugadores = df_filtrado[df_filtrado["Posición"] == pos]
+            n = len(jugadores)
+
+            if n > 0:
+                # Ajustar el espaciado dinámico
+                espacio = 34 if n <= 3 else 28
+                offset_total = (n - 1) * espacio / 2
+
+                for idx, jugador in enumerate(jugadores.itertuples()):
+                    nombre_fmt = jugador.Nombre.split()[0] if len(jugador.Nombre.split()) == 1 else f"{jugador.Nombre.split()[0]} {jugador.Nombre.split()[-1]}"
+                    x, y = coords[0], coords[1] + (idx * espacio) - offset_total
+
+                    # Fondo del rectángulo
+                    ax.add_patch(patches.Rectangle(
+                        (x - card_width / 2, y - card_height / 2),
+                        card_width, card_height,
+                        linewidth=0.8, edgecolor="white",
+                        facecolor="#1e3c72", alpha=0.9
+                    ))
+
+                    # Texto centrado
+                    ax.text(
+                        x, y, nombre_fmt,
+                        ha="center", va="center",
+                        fontsize=text_size, color="white", fontweight="medium"
+                    )
+
+        ax.axis("off")
+        st.pyplot(fig)
 
 
 # =========================================================
@@ -1361,6 +1399,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
