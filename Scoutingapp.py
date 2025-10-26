@@ -1142,7 +1142,7 @@ if menu == "Ver informes":
             st.info("📍 Seleccioná un registro para ver la ficha del jugador.")
 
 # =========================================================
-# BLOQUE 5 / 5 — Lista corta + Cancha + Cierre (profesional)
+# BLOQUE 5 / 5 — Lista corta + Cancha + Cierre (profesional completo)
 # =========================================================
 
 if menu == "Lista corta":
@@ -1151,6 +1151,12 @@ if menu == "Lista corta":
     # --- Filtrado por rol ---
     if CURRENT_ROLE == "scout":
         df_short = df_short[df_short["Agregado_Por"] == CURRENT_USER]
+
+    # --- Recalcular edad si falta ---
+    if "Edad" not in df_short.columns or df_short["Edad"].isna().any():
+        if "ID_Jugador" in df_short.columns:
+            df_short = df_short.merge(df_players[["ID_Jugador","Fecha_Nac"]], on="ID_Jugador", how="left")
+            df_short["Edad"] = df_short["Fecha_Nac"].apply(lambda x: calcular_edad(x))
 
     if df_short.empty:
         st.info("ℹ️ No hay jugadores en la lista corta todavía.")
@@ -1208,8 +1214,31 @@ if menu == "Lista corta":
                             </div>
                             """, unsafe_allow_html=True)
 
+                            # Botón eliminar
+                            if CURRENT_ROLE in ["admin", "scout"]:
+                                if st.button(f"🗑️", key=f"del_{row['ID_Jugador']}"):
+                                    try:
+                                        ws_short = obtener_hoja("Lista corta")
+                                        data_short = ws_short.get_all_records()
+                                        df_short_local = pd.DataFrame(data_short)
+                                        df_short_local = df_short_local[df_short_local["ID_Jugador"].astype(str) != str(row["ID_Jugador"])]
+                                        ws_short.clear()
+                                        ws_short.append_row(list(df_short_local.columns))
+                                        if not df_short_local.empty:
+                                            ws_short.update([df_short_local.columns.values.tolist()] + df_short_local.values.tolist())
+
+                                        # Actualizar cache y recargar
+                                        st.cache_data.clear()
+                                        df_short = cargar_datos_sheets("Lista corta")
+                                        st.session_state["df_short"] = df_short
+
+                                        st.toast(f"🗑️ {row['Nombre']} eliminado correctamente.", icon="🗑️")
+                                        st.rerun()
+                                    except Exception as e:
+                                        st.error(f"⚠️ Error al eliminar: {e}")
+
         # =========================================================
-        # ⚽ CANCHA CON INTERACCIÓN (base limpia)
+        # ⚽ CANCHA CON INTERACCIÓN
         # =========================================================
         with tabs[1]:
             st.markdown("### ⚽ Distribución en cancha")
@@ -1239,7 +1268,7 @@ if menu == "Lista corta":
                     fig, ax = plt.subplots(figsize=(6, 9))
                     ax.set_facecolor("#003366")
 
-                # Dibujar jugadores (solo nombre en cada zona)
+                # Dibujar nombres por posición
                 for _, jugador in df_filtrado.iterrows():
                     pos = jugador.get("Posición", "")
                     if pos in posiciones_cancha:
@@ -1252,7 +1281,7 @@ if menu == "Lista corta":
                 ax.axis("off")
                 st.pyplot(fig)
 
-            # === COLUMNA IZQUIERDA: DATOS DEL JUGADOR ===
+            # === COLUMNA IZQUIERDA: FICHA DETALLADA ===
             with col1:
                 st.markdown("#### 🧾 Ficha del jugador en cancha")
                 jugador_opt = st.selectbox("Seleccionar jugador", [""] + list(df_filtrado["Nombre"]))
@@ -1273,3 +1302,30 @@ if menu == "Lista corta":
                     </div>
                     """, unsafe_allow_html=True)
 
+# =========================================================
+# CIERRE PROFESIONAL (footer y limpieza)
+# =========================================================
+st.markdown("---")
+st.markdown(f"""
+<div style="text-align:center; color:#00c6ff; margin-top:30px;">
+    <h4>ScoutingApp Profesional v2.1</h4>
+    <p>Usuario activo: <strong>{CURRENT_USER}</strong> ({CURRENT_ROLE})</p>
+    <p style="color:gray; font-size:13px;">
+        Desarrollada por Mariano Cirone · Área de Scouting Profesional
+    </p>
+</div>
+""", unsafe_allow_html=True)
+
+if "user" in st.session_state:
+    if "alineacion" in st.session_state and CURRENT_ROLE != "admin":
+        if st.button("🧹 Limpiar alineación temporal"):
+            try:
+                st.session_state["alineacion"] = {}
+                st.toast("🧹 Alineación limpia para la próxima sesión.", icon="🧼")
+            except Exception as e:
+                st.error(f"⚠️ No se pudo limpiar la alineación: {e}")
+
+st.markdown(
+    "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
+    unsafe_allow_html=True
+)
