@@ -603,13 +603,13 @@ if menu == "Jugadores":
         "Brasil - Serie A (Brasileirão)", "Brasil - Serie B", "Chile - Primera División",
         "Uruguay - Primera División", "Uruguay - Segunda División Profesional",
         "Paraguay - División Profesional", "Colombia - Categoría Primera A",
-        "Ecuador - LigaPro Serie A", "Perú - Liga 1", "Venezuela - Liga FUTVE", "México - Liga MX",
-        "España - LaLiga", "España - LaLiga 2", "Italia - Serie A", "Italia - Serie B",
-        "Inglaterra - Premier League", "Inglaterra - Championship", "Francia - Ligue 1",
-        "Alemania - Bundesliga", "Portugal - Primeira Liga", "Países Bajos - Eredivisie",
-        "Suiza - Super League", "Bélgica - Pro League", "Grecia - Super League",
-        "Turquía - Süper Lig", "Arabia Saudita - Saudi Pro League", "Estados Unidos - MLS",
-        "Otro / Sin especificar"
+        "Ecuador - LigaPro Serie A", "Perú - Liga 1", "Venezuela - Liga FUTVE",
+        "México - Liga MX", "España - LaLiga", "España - LaLiga 2", "Italia - Serie A",
+        "Italia - Serie B", "Inglaterra - Premier League", "Inglaterra - Championship",
+        "Francia - Ligue 1", "Alemania - Bundesliga", "Portugal - Primeira Liga",
+        "Países Bajos - Eredivisie", "Suiza - Super League", "Bélgica - Pro League",
+        "Grecia - Super League", "Turquía - Süper Lig", "Arabia Saudita - Saudi Pro League",
+        "Estados Unidos - MLS", "Otro / Sin especificar"
     ]
     opciones_paises = [
         "Argentina", "Brasil", "Chile", "Uruguay", "Paraguay", "Colombia", "México",
@@ -702,19 +702,15 @@ if menu == "Jugadores":
                     ws_short = obtener_hoja("Lista corta")
                     data_short = ws_short.get_all_records()
                     df_short_local = pd.DataFrame(data_short)
+
+                    # Evitar duplicados
                     if "ID_Jugador" in df_short_local.columns and str(jugador["ID_Jugador"]) in df_short_local["ID_Jugador"].astype(str).values:
                         st.warning("⚠️ Este jugador ya está en la lista corta.")
                     else:
                         nueva_fila = [
-                            jugador["ID_Jugador"],
-                            jugador["Nombre"],
-                            calcular_edad(jugador["Fecha_Nac"]),
-                            jugador.get("Altura", "-"),
-                            jugador.get("Club", "-"),
-                            jugador.get("Posición", "-"),
-                            jugador.get("URL_Foto", ""),
-                            jugador.get("URL_Perfil", ""),
-                            CURRENT_USER,
+                            jugador["ID_Jugador"], jugador["Nombre"], calcular_edad(jugador["Fecha_Nac"]),
+                            jugador.get("Altura", "-"), jugador.get("Club", "-"), jugador.get("Posición", "-"),
+                            jugador.get("URL_Foto", ""), jugador.get("URL_Perfil", ""), CURRENT_USER,
                             date.today().strftime("%d/%m/%Y")
                         ]
                         ws_short.append_row(nueva_fila, value_input_option="USER_ENTERED")
@@ -729,6 +725,7 @@ if menu == "Jugadores":
             st.markdown("### 🔍 Comparativa por grupos")
             prom_jugador = calcular_promedios_jugador(df_reports, id_jugador)
             prom_posicion = calcular_promedios_posicion(df_reports, df_players, jugador["Posición"])
+
             if prom_jugador and prom_posicion:
                 grupos = {
                     "Habilidades técnicas": ["Controles", "Perfiles", "Pase_corto", "Pase_largo", "Pase_filtrado"],
@@ -739,19 +736,23 @@ if menu == "Jugadores":
                         "Posicionamiento", "Vision_de_juego", "Movimientos_sin_pelota"
                     ]
                 }
+
                 for grupo, atributos in grupos.items():
                     val_j = [prom_jugador.get(a, 0) for a in atributos]
                     val_p = [prom_posicion.get(a, 0) for a in atributos]
+
                     if val_j and val_p:
                         diff = np.mean(val_j) - np.mean(val_p)
                         color = "#4CAF50" if diff > 0.2 else "#D16C6C" if diff < -0.2 else "#B8B78A"
                         emoji = "⬆️" if diff > 0.2 else "⬇️" if diff < -0.2 else "➡️"
+
                         st.markdown(f"""
-                        <div style='background: linear-gradient(135deg,{color},#1e3c72);
-                            border-radius:10px;padding:10px;margin-bottom:6px;text-align:center;color:white;font-weight:600'>
-                            <h5 style='margin:0;font-size:15px;'>{grupo}</h5>
-                            <p style='margin:5px 0;font-size:20px;'>{emoji} {np.mean(val_j):.2f}</p>
-                        </div>
+                            <div style='background: linear-gradient(135deg,{color},#1e3c72);
+                                        border-radius:10px;padding:10px;margin-bottom:6px;
+                                        text-align:center;color:white;font-weight:600'>
+                                <h5 style='margin:0;font-size:15px;'>{grupo}</h5>
+                                <p style='margin:5px 0;font-size:20px;'>{emoji} {np.mean(val_j):.2f}</p>
+                            </div>
                         """, unsafe_allow_html=True)
             else:
                 st.info("ℹ️ Aún no hay informes cargados para este jugador.")
@@ -771,17 +772,12 @@ if menu == "Jugadores":
             with st.form(f"editar_jugador_form_{jugador['ID_Jugador']}", clear_on_submit=False):
                 e_nombre = st.text_input("Nombre completo", value=jugador.get("Nombre", ""))
                 e_fecha = st.text_input("Fecha de nacimiento (dd/mm/aaaa)", value=jugador.get("Fecha_Nac", ""))
-                e_altura = st.number_input("Altura (cm)", 140, 210,
-                    int(float(jugador.get("Altura", 175))) if str(jugador.get("Altura", "")).strip() else 175)
-                e_pie = st.selectbox("Pie hábil", opciones_pies,
-                    index=opciones_pies.index(jugador["Pie_Hábil"]) if jugador["Pie_Hábil"] in opciones_pies else 0)
-                e_pos = st.selectbox("Posición", opciones_posiciones,
-                    index=opciones_posiciones.index(jugador["Posición"]) if jugador["Posición"] in opciones_posiciones else 0)
+                e_altura = st.number_input("Altura (cm)", 140, 210, int(float(jugador.get("Altura", 175))) if str(jugador.get("Altura", "")).strip() else 175)
+                e_pie = st.selectbox("Pie hábil", opciones_pies, index=opciones_pies.index(jugador["Pie_Hábil"]) if jugador["Pie_Hábil"] in opciones_pies else 0)
+                e_pos = st.selectbox("Posición", opciones_posiciones, index=opciones_posiciones.index(jugador["Posición"]) if jugador["Posición"] in opciones_posiciones else 0)
                 e_club = st.text_input("Club actual", value=jugador.get("Club", ""))
-                e_liga = st.selectbox("Liga", opciones_ligas,
-                    index=opciones_ligas.index(jugador["Liga"]) if jugador["Liga"] in opciones_ligas else 0)
-                e_nac = st.selectbox("Nacionalidad principal", opciones_paises,
-                    index=opciones_paises.index(jugador["Nacionalidad"]) if jugador["Nacionalidad"] in opciones_paises else 0)
+                e_liga = st.selectbox("Liga", opciones_ligas, index=opciones_ligas.index(jugador["Liga"]) if jugador["Liga"] in opciones_ligas else 0)
+                e_nac = st.selectbox("Nacionalidad principal", opciones_paises, index=opciones_paises.index(jugador["Nacionalidad"]) if jugador["Nacionalidad"] in opciones_paises else 0)
                 e_seg = st.text_input("Segunda nacionalidad (opcional)", value=jugador.get("Segunda_Nacionalidad", ""))
                 e_car = st.text_input("Característica distintiva", value=jugador.get("Caracteristica", ""))
                 e_foto = st.text_input("URL de foto", value=str(jugador.get("URL_Foto", "")))
@@ -794,12 +790,12 @@ if menu == "Jugadores":
                         data = ws.get_all_records()
                         df_actual = pd.DataFrame(data)
                         index_row = df_actual.index[df_actual["ID_Jugador"].astype(str) == str(id_jugador)]
+
                         if not index_row.empty:
                             row_number = index_row[0] + 2
                             valores = [
-                                id_jugador, e_nombre, e_fecha, e_nac, e_seg,
-                                e_altura, e_pie, e_pos, e_car,
-                                e_club, e_liga, "", e_foto, e_link
+                                id_jugador, e_nombre, e_fecha, e_nac, e_seg, e_altura, e_pie,
+                                e_pos, e_car, e_club, e_liga, "", e_foto, e_link
                             ]
                             ws.update(f"A{row_number}:N{row_number}", [valores])
                             st.cache_data.clear()
@@ -823,6 +819,7 @@ if menu == "Jugadores":
                         data_players = ws_players.get_all_records()
                         df_players_local = pd.DataFrame(data_players)
                         df_players_local = df_players_local[df_players_local["ID_Jugador"].astype(str) != str(id_jugador)]
+
                         ws_players.clear()
                         ws_players.append_row(list(df_players_local.columns))
                         if not df_players_local.empty:
@@ -854,6 +851,7 @@ if menu == "Jugadores":
         if CURRENT_ROLE in ["admin", "scout"]:
             st.markdown("---")
             st.subheader(f"📝 Cargar nuevo informe para {jugador['Nombre']}")
+
             with st.form(f"nuevo_informe_form_{jugador['ID_Jugador']}", clear_on_submit=True):
                 scout = CURRENT_USER
                 fecha_partido = st.date_input("Fecha del partido", format="DD/MM/YYYY")
@@ -863,8 +861,8 @@ if menu == "Jugadores":
                 linea = st.selectbox("Línea de seguimiento", [
                     "1ra (Fichar)", "2da (Seguir)", "3ra (Ver más adelante)", "4ta (Descartar)", "Joven Promesa"
                 ])
-                st.markdown("### Evaluación técnica (0 a 5)")
 
+                st.markdown("### Evaluación técnica (0 a 5)")
                 with st.expander("🎯 Habilidades técnicas"):
                     col1, col2, col3 = st.columns(3)
                     with col1:
@@ -924,16 +922,18 @@ if menu == "Jugadores":
 
                         nuevo = [
                             len(df_reports) + 1, jugador["ID_Jugador"], CURRENT_USER,
-                            fecha_partido.strftime("%d/%m/%Y"),
-                            date.today().strftime("%d/%m/%Y"),
+                            fecha_partido.strftime("%d/%m/%Y"), date.today().strftime("%d/%m/%Y"),
                             equipos_resultados, formacion, observaciones, linea,
-                            to_float_safe(controles), to_float_safe(perfiles), to_float_safe(pase_corto),
-                            to_float_safe(pase_largo), to_float_safe(pase_filtrado),
-                            to_float_safe(v1_def), to_float_safe(recuperacion), to_float_safe(intercepciones),
-                            to_float_safe(duelos_aereos), to_float_safe(regate), to_float_safe(velocidad),
-                            to_float_safe(duelos_of), to_float_safe(resiliencia), to_float_safe(liderazgo),
+                            to_float_safe(controles), to_float_safe(perfiles),
+                            to_float_safe(pase_corto), to_float_safe(pase_largo),
+                            to_float_safe(pase_filtrado), to_float_safe(v1_def),
+                            to_float_safe(recuperacion), to_float_safe(intercepciones),
+                            to_float_safe(duelos_aereos), to_float_safe(regate),
+                            to_float_safe(velocidad), to_float_safe(duelos_of),
+                            to_float_safe(resiliencia), to_float_safe(liderazgo),
                             to_float_safe(int_tactica), to_float_safe(int_emocional),
-                            to_float_safe(posicionamiento), to_float_safe(vision), to_float_safe(movimientos)
+                            to_float_safe(posicionamiento), to_float_safe(vision),
+                            to_float_safe(movimientos)
                         ]
 
                         ws_inf = obtener_hoja("Informes")
@@ -944,6 +944,7 @@ if menu == "Jugadores":
                         st.experimental_rerun()
                     except Exception as e:
                         st.error(f"⚠️ Error al guardar el informe: {e}")
+
 
 # =========================================================
 # BLOQUE 4 / 5 — Ver Informes (optimizado y con ficha completa)
@@ -1294,4 +1295,5 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
