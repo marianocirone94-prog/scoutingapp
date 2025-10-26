@@ -1201,37 +1201,60 @@ if menu == "Lista corta":
         # =========================================================
         tabs = st.tabs(["📋 Listado", "⚽ Cancha"])
 
-        # =========================================================
-        # 📋 LISTADO
-        # =========================================================
-        with tabs[0]:
-            st.markdown("### 📇 Jugadores en lista corta (vista de cartas)")
-            df_filtrado = df_filtrado.sort_values("Posición")
+       # =========================================================
+# 📋 LISTADO (agrupado por posiciones)
+# =========================================================
+with tabs[0]:
+    st.markdown("### 📇 Jugadores en lista corta (agrupados por posición)")
 
-            if df_filtrado.empty:
-                st.info("No hay jugadores que coincidan con los filtros seleccionados.")
-            else:
-                cols = st.columns(3)
-                for i, row in df_filtrado.iterrows():
-                    with cols[i % 3]:
-                        st.markdown(f"""
-                        <div style="background: linear-gradient(90deg,#1e3c72,#2a5298);
-                            padding:0.8em;border-radius:10px;margin-bottom:12px;
-                            color:white;text-align:center;font-family:Arial;
-                            width:220px;min-height:250px;box-shadow:0 0 5px rgba(0,0,0,0.3);margin:auto;">
-                            <img src="{row['URL_Foto'] if pd.notna(row['URL_Foto']) and str(row['URL_Foto']).startswith('http') else 'https://via.placeholder.com/100'}"
-                                 style="width:80px;border-radius:50%;margin-bottom:8px;" />
-                            <h5 style="font-size:15px;margin:3px 0;">{row['Nombre']}</h5>
-                            <p style="font-size:13px;margin:2px 0;">{row.get('Posición','-')}</p>
-                            <p style="font-size:13px;margin:2px 0;">{row.get('Club','-')}</p>
-                            <p style="font-size:13px;margin:2px 0;">Edad: {row.get('Edad','-')}</p>
-                            {"<a href='"+row["URL_Perfil"]+"' style='color:#b0dfff;font-size:12px;' target='_blank'>🌐 Perfil</a>"
-                            if pd.notna(row.get("URL_Perfil")) and str(row["URL_Perfil"]).startswith("http") else ""}
-                        </div>
-                        """, unsafe_allow_html=True)
+    if df_filtrado.empty:
+        st.info("No hay jugadores que coincidan con los filtros seleccionados.")
+    else:
+        # --- Clasificar posiciones ---
+        grupos_posiciones = {
+            "Arqueros": ["Arquero"],
+            "Defensas": [
+                "Lateral derecho", "Lateral izquierdo",
+                "Defensa central derecho", "Defensa central izquierdo"
+            ],
+            "Mediocampistas": [
+                "Mediocampista defensivo", "Mediocampista mixto", "Mediocampista ofensivo"
+            ],
+            "Extremos": ["Extremo derecho", "Extremo izquierdo"],
+            "Delanteros": ["Delantero centro"]
+        }
+
+        sub_tabs = st.tabs(list(grupos_posiciones.keys()))
+
+        for i, (grupo, posiciones) in enumerate(grupos_posiciones.items()):
+            with sub_tabs[i]:
+                st.markdown(f"#### {grupo}")
+                jugadores_grupo = df_filtrado[df_filtrado["Posición"].isin(posiciones)]
+
+                if jugadores_grupo.empty:
+                    st.info(f"No hay jugadores cargados en el grupo **{grupo}**.")
+                else:
+                    cols = st.columns(3)
+                    for j, row in enumerate(jugadores_grupo.itertuples()):
+                        with cols[j % 3]:
+                            st.markdown(f"""
+                            <div style="background: linear-gradient(90deg,#1e3c72,#2a5298);
+                                padding:0.8em;border-radius:10px;margin-bottom:12px;
+                                color:white;text-align:center;font-family:Arial;
+                                width:220px;min-height:250px;box-shadow:0 0 5px rgba(0,0,0,0.3);margin:auto;">
+                                <img src="{row.URL_Foto if pd.notna(row.URL_Foto) and str(row.URL_Foto).startswith('http') else 'https://via.placeholder.com/100'}"
+                                     style="width:80px;border-radius:50%;margin-bottom:8px;" />
+                                <h5 style="font-size:15px;margin:3px 0;">{row.Nombre}</h5>
+                                <p style="font-size:13px;margin:2px 0;">{row.Posición}</p>
+                                <p style="font-size:13px;margin:2px 0;">{row.Club}</p>
+                                <p style="font-size:13px;margin:2px 0;">Edad: {row.Edad}</p>
+                                {"<a href='"+row.URL_Perfil+"' style='color:#b0dfff;font-size:12px;' target='_blank'>🌐 Perfil</a>"
+                                if pd.notna(row.URL_Perfil) and str(row.URL_Perfil).startswith("http") else ""}
+                            </div>
+                            """, unsafe_allow_html=True)
 
         # =========================================================
-# ⚽ CANCHA (versión interactiva con eliminación y ficha)
+# ⚽ CANCHA (interactiva con buscador + ficha + eliminación segura)
 # =========================================================
 with tabs[1]:
     st.markdown("### ⚽ Distribución táctica sobre la cancha")
@@ -1252,48 +1275,53 @@ with tabs[1]:
         "Delantero centro": (265, 60)
     }
 
-    # === COL 1: LISTA DE JUGADORES EN CANCHA ===
+    # === COL 1: BUSCADOR Y FICHA ===
     with col1:
-        st.markdown("#### Jugadores ubicados en cancha")
-
-        jugadores_cancha = df_filtrado[df_filtrado["Posición"].isin(posiciones_cancha.keys())]
-
-        if not jugadores_cancha.empty:
-            for _, jugador in jugadores_cancha.iterrows():
-                nombre_fmt = jugador["Nombre"]
-                if st.button(f"{nombre_fmt}", key=f"btn_{jugador['ID_Jugador']}"):
-                    st.session_state["jugador_seleccionado_cancha"] = jugador["ID_Jugador"]
-
-            jugador_eliminar = st.selectbox("🗑️ Eliminar jugador de la cancha", [""] + list(jugadores_cancha["Nombre"]))
-            if jugador_eliminar and st.button("Eliminar seleccionado"):
-                df_filtrado = df_filtrado[df_filtrado["Nombre"] != jugador_eliminar]
-                st.toast(f"❌ {jugador_eliminar} eliminado de la visualización", icon="❌")
-                st.experimental_rerun()
+        st.markdown("#### 🔍 Buscar jugador en cancha")
+        if not df_filtrado.empty:
+            opciones = {f"{row['Nombre']} - {row['Posición']}": row["ID_Jugador"] for _, row in df_filtrado.iterrows()}
         else:
-            st.info("No hay jugadores ubicados en la cancha actualmente.")
+            opciones = {}
 
-        # === FICHA DEL JUGADOR SELECCIONADO ===
-        if "jugador_seleccionado_cancha" in st.session_state:
-            jugador_id = st.session_state["jugador_seleccionado_cancha"]
-            jugador = df_filtrado[df_filtrado["ID_Jugador"] == jugador_id].iloc[0]
+        seleccion = st.selectbox("Seleccionar jugador", [""] + list(opciones.keys()))
 
-            st.markdown("---")
-            st.markdown(f"### 🧩 Ficha de {jugador['Nombre']}")
-            colf1, colf2 = st.columns([1, 2])
-            with colf1:
-                if pd.notna(jugador.get("URL_Foto")) and str(jugador["URL_Foto"]).startswith("http"):
-                    st.image(jugador["URL_Foto"], width=160)
-            with colf2:
-                edad = calcular_edad(jugador.get("Fecha_Nac"))
-                st.write(f"📅 Fecha de nacimiento: {jugador.get('Fecha_Nac', '')} ({edad} años)")
-                st.write(f"🌍 Nacionalidad: {jugador.get('Nacionalidad', '-')}")
-                st.write(f"📏 Altura: {jugador.get('Altura', '-') } cm")
-                st.write(f"👟 Pie hábil: {jugador.get('Pie_Hábil', '-')}")
-                st.write(f"🎯 Posición: {jugador.get('Posición', '-')}")
-                st.write(f"🏟️ Club actual: {jugador.get('Club', '-')} ({jugador.get('Liga', '-')})")
-                st.write(f"⭐ Característica: {jugador.get('Caracteristica', '-')}")
-                if pd.notna(jugador.get("URL_Perfil")) and str(jugador["URL_Perfil"]).startswith("http"):
-                    st.markdown(f"[🌐 Perfil externo]({jugador['URL_Perfil']})", unsafe_allow_html=True)
+        if seleccion:
+            jugador_id = opciones[seleccion]
+            jugador_data = df_filtrado[df_filtrado["ID_Jugador"] == jugador_id]
+
+            if jugador_data.empty:
+                st.warning("⚠️ Este jugador no está disponible en el filtro actual.")
+            else:
+                jugador = jugador_data.iloc[0]
+
+                # --- FICHA COMPLETA ---
+                st.markdown("---")
+                st.markdown(f"### 🧩 {jugador['Nombre']}")
+                colf1, colf2 = st.columns([1, 2])
+                with colf1:
+                    if pd.notna(jugador.get("URL_Foto")) and str(jugador["URL_Foto"]).startswith("http"):
+                        st.image(jugador["URL_Foto"], width=160)
+                with colf2:
+                    edad = calcular_edad(jugador.get("Fecha_Nac"))
+                    st.write(f"📅 Fecha de nacimiento: {jugador.get('Fecha_Nac', '')} ({edad} años)")
+                    st.write(f"🌍 Nacionalidad: {jugador.get('Nacionalidad', '-')}")
+                    st.write(f"📏 Altura: {jugador.get('Altura', '-') } cm")
+                    st.write(f"👟 Pie hábil: {jugador.get('Pie_Hábil', '-')}")
+                    st.write(f"🎯 Posición: {jugador.get('Posición', '-')}")
+                    st.write(f"🏟️ Club actual: {jugador.get('Club', '-')} ({jugador.get('Liga', '-')})")
+                    st.write(f"⭐ Característica: {jugador.get('Caracteristica', '-')}")
+                    if pd.notna(jugador.get("URL_Perfil")) and str(jugador["URL_Perfil"]).startswith("http"):
+                        st.markdown(f"[🌐 Perfil externo]({jugador['URL_Perfil']})", unsafe_allow_html=True)
+
+                # --- ELIMINAR ---
+                with st.expander("🗑️ Eliminar jugador de la visualización", expanded=False):
+                    if st.button("Eliminar este jugador"):
+                        df_filtrado = df_filtrado[df_filtrado["ID_Jugador"] != jugador_id]
+                        st.toast(f"❌ {jugador['Nombre']} eliminado de la visualización", icon="❌")
+                        st.experimental_rerun()
+
+        else:
+            st.info("Seleccioná un jugador para ver su ficha o eliminarlo.")
 
     # === COL 2: VISUAL DE CANCHA ===
     with col2:
@@ -1338,6 +1366,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
