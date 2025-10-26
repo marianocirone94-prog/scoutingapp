@@ -1250,26 +1250,10 @@ if menu == "Lista corta":
                                     """, unsafe_allow_html=True)
 
         # =========================================================
-        # CANCHA (interactiva con buscador + ficha + eliminación segura)
+        # CANCHA + LISTA EXTENDIDA SCROLLEABLE (versión recomendada)
         # =========================================================
         with tabs[1]:
-            st.markdown("### Distribución táctica sobre la cancha")
-
             col1, col2 = st.columns([1, 2])
-
-            posiciones_cancha = {
-                "Arquero": (265, 630),
-                "Defensa central derecho": (340, 560),
-                "Defensa central izquierdo": (187, 560),
-                "Lateral derecho": (470, 470),
-                "Lateral izquierdo": (60, 470),
-                "Mediocampista defensivo": (265, 430),
-                "Mediocampista mixto": (195, 280),
-                "Mediocampista ofensivo": (320, 200),
-                "Extremo derecho": (470, 130),
-                "Extremo izquierdo": (60, 130),
-                "Delantero centro": (265, 60)
-            }
 
             # === COL 1: BUSCADOR Y FICHA ===
             with col1:
@@ -1317,144 +1301,143 @@ if menu == "Lista corta":
                 else:
                     st.info("Seleccioná un jugador para ver su ficha o eliminarlo.")
 
-            # === COL 2: CANCHA + LISTA EXTENDIDA SCROLLEABLE ===
-with col2:
-    import plotly.graph_objects as go
+            # === COL 2: CANCHA + LISTA SCROLLEABLE ===
+            with col2:
+                import plotly.graph_objects as go
 
-    st.markdown("### Distribución táctica sobre la cancha")
+                st.markdown("### Distribución táctica sobre la cancha")
 
-    # --- CANCHA BASE (Plotly) ---
-    cancha = go.Figure()
+                cancha = go.Figure()
 
-    cancha.add_layout_image(
-        dict(
-            source=CANCHA_IMG,
-            xref="x", yref="y",
-            x=0, y=100,
-            sizex=100, sizey=100,
-            sizing="stretch",
-            opacity=1,
-            layer="below"
-        )
-    )
+                cancha.add_layout_image(
+                    dict(
+                        source=CANCHA_IMG,
+                        xref="x", yref="y",
+                        x=0, y=100,
+                        sizex=100, sizey=100,
+                        sizing="stretch",
+                        opacity=1,
+                        layer="below"
+                    )
+                )
 
-    cancha.update_xaxes(visible=False, range=[0, 100])
-    cancha.update_yaxes(visible=False, range=[0, 100])
+                cancha.update_xaxes(visible=False, range=[0, 100])
+                cancha.update_yaxes(visible=False, range=[0, 100])
 
-    posiciones_cancha = {
-        "Arquero": (50, 5),
-        "Defensa central derecho": (60, 20),
-        "Defensa central izquierdo": (40, 20),
-        "Lateral derecho": (75, 30),
-        "Lateral izquierdo": (25, 30),
-        "Mediocampista defensivo": (50, 38),
-        "Mediocampista mixto": (45, 50),
-        "Mediocampista ofensivo": (55, 62),
-        "Extremo derecho": (80, 75),
-        "Extremo izquierdo": (20, 75),
-        "Delantero centro": (50, 88)
-    }
+                posiciones_cancha = {
+                    "Arquero": (50, 5),
+                    "Defensa central derecho": (60, 20),
+                    "Defensa central izquierdo": (40, 20),
+                    "Lateral derecho": (75, 30),
+                    "Lateral izquierdo": (25, 30),
+                    "Mediocampista defensivo": (50, 38),
+                    "Mediocampista mixto": (45, 50),
+                    "Mediocampista ofensivo": (55, 62),
+                    "Extremo derecho": (80, 75),
+                    "Extremo izquierdo": (20, 75),
+                    "Delantero centro": (50, 88)
+                }
 
-    max_por_pos = 4  # máximo jugadores visibles en cancha
+                max_por_pos = 4
 
-    for pos, (x, y) in posiciones_cancha.items():
-        jugadores_pos = df_filtrado[df_filtrado["Posición"] == pos]
-        total = len(jugadores_pos)
+                for pos, (x, y) in posiciones_cancha.items():
+                    jugadores_pos = df_filtrado[df_filtrado["Posición"] == pos]
+                    total = len(jugadores_pos)
 
-        for i, row in enumerate(jugadores_pos.head(max_por_pos).itertuples()):
-            y_offset = y + (i * 3.5)
-            cancha.add_trace(go.Scatter(
-                x=[x], y=[y_offset],
-                mode="text+markers",
-                marker=dict(size=48, color="#1e3c72", opacity=0.9),
-                text=[row.Nombre.split()[0] if len(row.Nombre.split()) == 1 else f"{row.Nombre.split()[0]} {row.Nombre.split()[-1]}"],
-                textposition="middle center",
-                textfont=dict(color="white", size=9),
-                hovertemplate=f"<b>{row.Nombre}</b><br>{row.Posición}<br>{row.Club}<extra></extra>",
-                name=row.Nombre,
-                customdata=[row.ID_Jugador]
-            ))
+                    for i, row in enumerate(jugadores_pos.head(max_por_pos).itertuples()):
+                        y_offset = y + (i * 3.5)
+                        cancha.add_trace(go.Scatter(
+                            x=[x], y=[y_offset],
+                            mode="text+markers",
+                            marker=dict(size=48, color="#1e3c72", opacity=0.9),
+                            text=[row.Nombre.split()[0] if len(row.Nombre.split()) == 1 else f"{row.Nombre.split()[0]} {row.Nombre.split()[-1]}"],
+                            textposition="middle center",
+                            textfont=dict(color="white", size=9),
+                            hovertemplate=f"<b>{row.Nombre}</b><br>{row.Posición}<br>{row.Club}<extra></extra>",
+                            name=row.Nombre,
+                            customdata=[row.ID_Jugador]
+                        ))
 
-        if total > max_por_pos:
-            cancha.add_trace(go.Scatter(
-                x=[x], y=[y + (max_por_pos * 4.5)],
-                mode="text",
-                text=[f"+{total - max_por_pos} más"],
-                textfont=dict(color="#b0dfff", size=9),
-                hoverinfo="skip",
-                showlegend=False
-            ))
+                    if total > max_por_pos:
+                        cancha.add_trace(go.Scatter(
+                            x=[x], y=[y + (max_por_pos * 4.5)],
+                            mode="text",
+                            text=[f"+{total - max_por_pos} más"],
+                            textfont=dict(color="#b0dfff", size=9),
+                            hoverinfo="skip",
+                            showlegend=False
+                        ))
 
-    cancha.update_layout(
-        width=620, height=850,
-        plot_bgcolor="rgba(0,0,0,0)",
-        paper_bgcolor="rgba(0,0,0,0)",
-        margin=dict(l=5, r=5, t=10, b=10),
-        showlegend=False
-    )
+                cancha.update_layout(
+                    width=620, height=850,
+                    plot_bgcolor="rgba(0,0,0,0)",
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    margin=dict(l=5, r=5, t=10, b=10),
+                    showlegend=False
+                )
 
-    st.plotly_chart(cancha, use_container_width=True)
+                st.plotly_chart(cancha, use_container_width=True)
 
-    # --- LISTA EXTENDIDA SCROLLEABLE ---
-    st.markdown("### Lista extendida por posición")
+                # --- LISTA EXTENDIDA SCROLLEABLE ---
+                st.markdown("### Lista extendida por posición")
 
-    # Scroll vertical controlado con estilo CSS
-    st.markdown(
-        """
-        <style>
-            .scroll-container {
-                max-height: 500px;
-                overflow-y: auto;
-                padding-right: 10px;
-            }
-            .player-card {
-                background: linear-gradient(90deg, #1e3c72, #2a5298);
-                color: white;
-                padding: 6px 12px;
-                border-radius: 8px;
-                margin-bottom: 6px;
-                font-size: 13px;
-                text-align: center;
-                box-shadow: 0 0 4px rgba(0,0,0,0.3);
-                cursor: pointer;
-                transition: all 0.2s ease-in-out;
-            }
-            .player-card:hover {
-                background: linear-gradient(90deg, #2a5298, #1e3c72);
-                transform: scale(1.02);
-            }
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
+                st.markdown(
+                    """
+                    <style>
+                        .scroll-container {
+                            max-height: 500px;
+                            overflow-y: auto;
+                            padding-right: 10px;
+                        }
+                        .player-card {
+                            background: linear-gradient(90deg, #1e3c72, #2a5298);
+                            color: white;
+                            padding: 6px 12px;
+                            border-radius: 8px;
+                            margin-bottom: 6px;
+                            font-size: 13px;
+                            text-align: center;
+                            box-shadow: 0 0 4px rgba(0,0,0,0.3);
+                            cursor: pointer;
+                            transition: all 0.2s ease-in-out;
+                        }
+                        .player-card:hover {
+                            background: linear-gradient(90deg, #2a5298, #1e3c72);
+                            transform: scale(1.02);
+                        }
+                    </style>
+                    """,
+                    unsafe_allow_html=True
+                )
 
-    orden_posiciones = [
-        "Arquero",
-        "Lateral derecho",
-        "Defensa central derecho",
-        "Defensa central izquierdo",
-        "Lateral izquierdo",
-        "Mediocampista defensivo",
-        "Mediocampista mixto",
-        "Mediocampista ofensivo",
-        "Extremo derecho",
-        "Extremo izquierdo",
-        "Delantero centro"
-    ]
+                orden_posiciones = [
+                    "Arquero",
+                    "Lateral derecho",
+                    "Defensa central derecho",
+                    "Defensa central izquierdo",
+                    "Lateral izquierdo",
+                    "Mediocampista defensivo",
+                    "Mediocampista mixto",
+                    "Mediocampista ofensivo",
+                    "Extremo derecho",
+                    "Extremo izquierdo",
+                    "Delantero centro"
+                ]
 
-    with st.container():
-        st.markdown('<div class="scroll-container">', unsafe_allow_html=True)
-        for pos in orden_posiciones:
-            jugadores_pos = df_filtrado[df_filtrado["Posición"] == pos]
-            if not jugadores_pos.empty:
-                st.markdown(f"**{pos}**")
-                cols = st.columns(5)
-                for i, j in enumerate(jugadores_pos.itertuples()):
-                    with cols[i % 5]:
-                        if st.button(j.Nombre, key=j.ID_Jugador):
-                            st.session_state["jugador_seleccionado"] = j.ID_Jugador
-                            st.experimental_rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
+                with st.container():
+                    st.markdown('<div class="scroll-container">', unsafe_allow_html=True)
+                    for pos in orden_posiciones:
+                        jugadores_pos = df_filtrado[df_filtrado["Posición"] == pos]
+                        if not jugadores_pos.empty:
+                            st.markdown(f"**{pos}**")
+                            cols = st.columns(5)
+                            for i, j in enumerate(jugadores_pos.itertuples()):
+                                with cols[i % 5]:
+                                    if st.button(j.Nombre, key=j.ID_Jugador):
+                                        st.session_state["jugador_seleccionado"] = j.ID_Jugador
+                                        st.experimental_rerun()
+                    st.markdown('</div>', unsafe_allow_html=True)
+
 
 # =========================================================
 # CIERRE PROFESIONAL (footer)
@@ -1475,6 +1458,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
