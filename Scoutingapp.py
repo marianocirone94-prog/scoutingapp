@@ -1142,7 +1142,7 @@ if menu == "Ver informes":
             st.info("📍 Seleccioná un registro para ver la ficha del jugador.")
 
 # =========================================================
-# BLOQUE 5 / 5 — Lista corta + Cancha + Cierre (profesional completo)
+# BLOQUE 5 / 5 — Lista corta + Cancha + Cierre (versión final sin 'Liga' y con filtros por año/semestre)
 # =========================================================
 
 if menu == "Lista corta":
@@ -1152,31 +1152,44 @@ if menu == "Lista corta":
     if CURRENT_ROLE == "scout":
         df_short = df_short[df_short["Agregado_Por"] == CURRENT_USER]
 
-    # --- Recalcular edad si falta ---
+    # --- Calcular edad si falta ---
     if "Edad" not in df_short.columns or df_short["Edad"].isna().any():
         if "ID_Jugador" in df_short.columns:
             df_short = df_short.merge(df_players[["ID_Jugador","Fecha_Nac"]], on="ID_Jugador", how="left")
             df_short["Edad"] = df_short["Fecha_Nac"].apply(lambda x: calcular_edad(x))
 
+    # --- Agregar columna Año y Semestre desde Fecha_Agregado ---
+    if "Fecha_Agregado" in df_short.columns:
+        try:
+            df_short["Fecha_Agregado_dt"] = pd.to_datetime(df_short["Fecha_Agregado"], format="%d/%m/%Y", errors="coerce")
+            df_short["Año"] = df_short["Fecha_Agregado_dt"].dt.year
+            df_short["Semestre"] = df_short["Fecha_Agregado_dt"].dt.month.apply(lambda m: "1° Semestre" if m <= 6 else "2° Semestre")
+        except Exception:
+            df_short["Año"] = None
+            df_short["Semestre"] = None
+
     if df_short.empty:
         st.info("ℹ️ No hay jugadores en la lista corta todavía.")
     else:
         # =========================================================
-        # FILTROS PRINCIPALES
+        # FILTROS ACTUALES
         # =========================================================
         st.sidebar.markdown("### 🔎 Filtros lista corta")
         filtro_scout = st.sidebar.multiselect("Scout", sorted(df_short["Agregado_Por"].dropna().unique()))
-        filtro_liga = st.sidebar.multiselect("Liga", sorted(df_short["Liga"].dropna().unique()))
         filtro_pos = st.sidebar.multiselect("Posición", sorted(df_short["Posición"].dropna().unique()))
+        filtro_ano = st.sidebar.multiselect("Año agregado", sorted(df_short["Año"].dropna().unique()))
+        filtro_sem = st.sidebar.multiselect("Semestre", sorted(df_short["Semestre"].dropna().unique()))
         filtro_nac = st.sidebar.multiselect("Nacionalidad", sorted(df_players["Nacionalidad"].dropna().unique()))
 
         df_filtrado = df_short.copy()
         if filtro_scout:
             df_filtrado = df_filtrado[df_filtrado["Agregado_Por"].isin(filtro_scout)]
-        if filtro_liga:
-            df_filtrado = df_filtrado[df_filtrado["Liga"].isin(filtro_liga)]
         if filtro_pos:
             df_filtrado = df_filtrado[df_filtrado["Posición"].isin(filtro_pos)]
+        if filtro_ano:
+            df_filtrado = df_filtrado[df_filtrado["Año"].isin(filtro_ano)]
+        if filtro_sem:
+            df_filtrado = df_filtrado[df_filtrado["Semestre"].isin(filtro_sem)]
         if filtro_nac:
             ids_filtrados = df_players[df_players["Nacionalidad"].isin(filtro_nac)]["ID_Jugador"].tolist()
             df_filtrado = df_filtrado[df_filtrado["ID_Jugador"].isin(ids_filtrados)]
@@ -1210,6 +1223,7 @@ if menu == "Lista corta":
                                 <p style="font-size:11px; margin:2px 0;">{row.get('Club','-')}</p>
                                 <p style="font-size:11px; margin:2px 0;">Edad: {row.get('Edad','-')}</p>
                                 <p style="font-size:11px; margin:2px 0;">{row.get('Agregado_Por','')}</p>
+                                <p style="font-size:10px; margin:2px 0;">{row.get('Semestre','') or ''} {row.get('Año','') or ''}</p>
                                 {"<a href='"+row["URL_Perfil"]+"' style='color:#b0dfff;font-size:11px;' target='_blank'>🌐 Perfil</a>" if pd.notna(row.get("URL_Perfil")) and str(row["URL_Perfil"]).startswith("http") else ""}
                             </div>
                             """, unsafe_allow_html=True)
@@ -1238,7 +1252,7 @@ if menu == "Lista corta":
                                         st.error(f"⚠️ Error al eliminar: {e}")
 
         # =========================================================
-        # ⚽ CANCHA CON INTERACCIÓN
+        # ⚽ CANCHA INTERACTIVA
         # =========================================================
         with tabs[1]:
             st.markdown("### ⚽ Distribución en cancha")
@@ -1258,7 +1272,7 @@ if menu == "Lista corta":
                 "Delantero centro": (265, 60)
             }
 
-            # === COLUMNA DERECHA: CANCHA DE FONDO ===
+            # === COLUMNA DERECHA: CANCHA ===
             with col2:
                 try:
                     cancha = plt.imread(CANCHA_IMG)
@@ -1268,7 +1282,6 @@ if menu == "Lista corta":
                     fig, ax = plt.subplots(figsize=(6, 9))
                     ax.set_facecolor("#003366")
 
-                # Dibujar nombres por posición
                 for _, jugador in df_filtrado.iterrows():
                     pos = jugador.get("Posición", "")
                     if pos in posiciones_cancha:
@@ -1287,7 +1300,6 @@ if menu == "Lista corta":
                 jugador_opt = st.selectbox("Seleccionar jugador", [""] + list(df_filtrado["Nombre"]))
                 if jugador_opt:
                     j = df_filtrado[df_filtrado["Nombre"] == jugador_opt].iloc[0]
-
                     st.markdown(f"""
                     <div style="background: linear-gradient(90deg, #1e3c72, #2a5298);
                         padding: 1em; border-radius: 8px; color: white; text-align: center;">
@@ -1298,12 +1310,13 @@ if menu == "Lista corta":
                         <p style="font-size:14px;">Posición: {j.get('Posición','-')}</p>
                         <p style="font-size:14px;">Club: {j.get('Club','-')}</p>
                         <p style="font-size:13px; color:#b0dfff;">Agregado por: {j.get('Agregado_Por','')}</p>
+                        <p style="font-size:12px;">{j.get('Semestre','')} {j.get('Año','')}</p>
                         {"<a href='"+j["URL_Perfil"]+"' style='color:#b0dfff;font-size:13px;' target='_blank'>🌐 Ver perfil externo</a>" if pd.notna(j.get("URL_Perfil")) and str(j["URL_Perfil"]).startswith("http") else ""}
                     </div>
                     """, unsafe_allow_html=True)
 
 # =========================================================
-# CIERRE PROFESIONAL (footer y limpieza)
+# CIERRE PROFESIONAL
 # =========================================================
 st.markdown("---")
 st.markdown(f"""
