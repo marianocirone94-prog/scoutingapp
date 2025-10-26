@@ -1142,7 +1142,7 @@ if menu == "Ver informes":
             st.info("📍 Seleccioná un registro para ver la ficha del jugador.")
 
 # =========================================================
-# BLOQUE 5 / 5 — Lista corta + Cancha + Cierre (profesional coherente y limpia)
+# BLOQUE 5 / 5 — Lista corta + Cancha (versión Wyscout estable y visual)
 # =========================================================
 
 if menu == "Lista corta":
@@ -1158,141 +1158,137 @@ if menu == "Lista corta":
             df_short = df_short.merge(df_players[["ID_Jugador","Fecha_Nac"]], on="ID_Jugador", how="left")
             df_short["Edad"] = df_short["Fecha_Nac"].apply(lambda x: calcular_edad(x))
 
-    # --- Año y semestre ---
-    if "Fecha_Agregado" in df_short.columns:
-        try:
-            df_short["Fecha_Agregado_dt"] = pd.to_datetime(df_short["Fecha_Agregado"], format="%d/%m/%Y", errors="coerce")
-            df_short["Año"] = df_short["Fecha_Agregado_dt"].dt.year
-            df_short["Semestre"] = df_short["Fecha_Agregado_dt"].dt.month.apply(lambda m: "1° Semestre" if m <= 6 else "2° Semestre")
-        except Exception:
-            df_short["Año"], df_short["Semestre"] = None, None
+    # --- Filtros ---
+    st.sidebar.markdown("### 🔎 Filtros lista corta")
+    filtro_scout = st.sidebar.multiselect("Scout", sorted(df_short["Agregado_Por"].dropna().unique()))
+    filtro_pos = st.sidebar.multiselect("Posición", sorted(df_short["Posición"].dropna().unique()))
+    df_filtrado = df_short.copy()
+    if filtro_scout:
+        df_filtrado = df_filtrado[df_filtrado["Agregado_Por"].isin(filtro_scout)]
+    if filtro_pos:
+        df_filtrado = df_filtrado[df_filtrado["Posición"].isin(filtro_pos)]
 
-    if df_short.empty:
-        st.info("ℹ️ No hay jugadores en la lista corta todavía.")
-    else:
-        # =========================================================
-        # FILTROS
-        # =========================================================
-        st.sidebar.markdown("### 🔎 Filtros lista corta")
-        filtro_scout = st.sidebar.multiselect("Scout", sorted(df_short["Agregado_Por"].dropna().unique()))
-        filtro_pos = st.sidebar.multiselect("Posición", sorted(df_short["Posición"].dropna().unique()))
-        filtro_ano = st.sidebar.multiselect("Año", sorted(df_short["Año"].dropna().unique()))
-        filtro_sem = st.sidebar.multiselect("Semestre", sorted(df_short["Semestre"].dropna().unique()))
+    # =========================================================
+    # PESTAÑAS PRINCIPALES
+    # =========================================================
+    tabs = st.tabs(["📋 Listado", "⚽ Cancha"])
 
-        df_filtrado = df_short.copy()
-        if filtro_scout:
-            df_filtrado = df_filtrado[df_filtrado["Agregado_Por"].isin(filtro_scout)]
-        if filtro_pos:
-            df_filtrado = df_filtrado[df_filtrado["Posición"].isin(filtro_pos)]
-        if filtro_ano:
-            df_filtrado = df_filtrado[df_filtrado["Año"].isin(filtro_ano)]
-        if filtro_sem:
-            df_filtrado = df_filtrado[df_filtrado["Semestre"].isin(filtro_sem)]
-
-        # =========================================================
-        # PESTAÑAS PRINCIPALES
-        # =========================================================
-        tabs = st.tabs(["📋 Listado", "⚽ Cancha"])
-
-        # =========================================================
-        # 📋 LISTADO AGRUPADO POR POSICIÓN
-        # =========================================================
-        with tabs[0]:
-            st.markdown("### 📇 Jugadores agrupados por posición")
-
-            posiciones_ordenadas = sorted(df_filtrado["Posición"].dropna().unique())
-            for pos in posiciones_ordenadas:
-                grupo = df_filtrado[df_filtrado["Posición"] == pos]
-                with st.expander(f"📌 {pos} ({len(grupo)})", expanded=False):
-                    cols = st.columns(4)
-                    for i, row in grupo.iterrows():
-                        with cols[i % 4]:
-                            st.markdown(f"""
-                            <div style="background: linear-gradient(90deg, #1e3c72, #2a5298);
-                                padding: 0.8em; border-radius: 10px; margin-bottom: 12px;
-                                color: white; text-align: center; font-family: Arial, sans-serif;
-                                width: 180px; min-height: 250px;">
-                                <img src="{row['URL_Foto'] if pd.notna(row['URL_Foto']) and str(row['URL_Foto']).startswith('http') else 'https://via.placeholder.com/100'}"
-                                     style="width:70px; border-radius:50%; margin-bottom:5px;" />
-                                <h5 style="font-size:14px; margin:3px 0;">{row['Nombre']}</h5>
-                                <p style="font-size:12px; margin:2px 0;">{row.get('Club','-')}</p>
-                                <p style="font-size:12px; margin:2px 0;">Edad: {row.get('Edad','-')}</p>
-                                <p style="font-size:12px; margin:2px 0;">{row.get('Agregado_Por','')}</p>
-                                <p style="font-size:11px; margin:2px 0;">{row.get('Semestre','') or ''} {row.get('Año','') or ''}</p>
-                                {"<a href='"+row["URL_Perfil"]+"' style='color:#b0dfff;font-size:11px;' target='_blank'>🌐 Perfil</a>" if pd.notna(row.get("URL_Perfil")) and str(row["URL_Perfil"]).startswith("http") else ""}
-                            </div>
-                            """, unsafe_allow_html=True)
-
-                            if CURRENT_ROLE in ["admin", "scout"]:
-                                if st.button(f"🗑️", key=f"del_{row['ID_Jugador']}"):
-                                    try:
-                                        ws_short = obtener_hoja("Lista corta")
-                                        data_short = ws_short.get_all_records()
-                                        df_short_local = pd.DataFrame(data_short)
-                                        df_short_local = df_short_local[df_short_local["ID_Jugador"].astype(str) != str(row["ID_Jugador"])]
-                                        ws_short.clear()
-                                        ws_short.append_row(list(df_short_local.columns))
-                                        if not df_short_local.empty:
-                                            ws_short.update([df_short_local.columns.values.tolist()] + df_short_local.values.tolist())
-                                        st.cache_data.clear()
-                                        df_short = cargar_datos_sheets("Lista corta")
-                                        st.session_state["df_short"] = df_short
-                                        st.toast(f"🗑️ {row['Nombre']} eliminado correctamente.", icon="🗑️")
-                                        st.rerun()
-                                    except Exception as e:
-                                        st.error(f"⚠️ Error al eliminar: {e}")
-
-        # =========================================================
-        # ⚽ CANCHA ORGANIZADA POR ZONAS
-        # =========================================================
-        with tabs[1]:
-            st.markdown("### ⚽ Vista táctica (zonas de la cancha)")
-            col1, col2 = st.columns([1, 2])
-
-            zonas = {
-                "Arqueros": ["Arquero"],
-                "Defensas": ["Defensa central derecho", "Defensa central izquierdo", "Lateral derecho", "Lateral izquierdo"],
-                "Mediocampistas": ["Mediocampista defensivo", "Mediocampista mixto", "Mediocampista ofensivo"],
-                "Atacantes": ["Extremo derecho", "Extremo izquierdo", "Delantero centro"]
-            }
-
-            # === COLUMNA DERECHA: CANCHA VISUAL ===
-            with col2:
-                st.image(CANCHA_IMG, use_container_width=True)
-                for zona, posiciones in zonas.items():
-                    jugadores_zona = df_filtrado[df_filtrado["Posición"].isin(posiciones)]
-                    if not jugadores_zona.empty:
-                        st.markdown(f"#### 🟦 {zona}")
-                        subcols = st.columns(4)
-                        for i, jug in jugadores_zona.iterrows():
-                            with subcols[i % 4]:
-                                if st.button(jug["Nombre"], key=f"sel_{jug['ID_Jugador']}"):
-                                    st.session_state["jug_sel"] = jug["ID_Jugador"]
-
-            # === COLUMNA IZQUIERDA: FICHA SELECCIONADA ===
-            with col1:
-                st.markdown("#### 🧾 Ficha del jugador seleccionado")
-                if "jug_sel" in st.session_state:
-                    try:
-                        j = df_filtrado[df_filtrado["ID_Jugador"] == st.session_state["jug_sel"]].iloc[0]
+    # =========================================================
+    # 📋 LISTADO AGRUPADO POR POSICIÓN
+    # =========================================================
+    with tabs[0]:
+        st.markdown("### 📇 Jugadores agrupados por posición")
+        posiciones_ordenadas = sorted(df_filtrado["Posición"].dropna().unique())
+        for pos in posiciones_ordenadas:
+            grupo = df_filtrado[df_filtrado["Posición"] == pos]
+            with st.expander(f"📌 {pos} ({len(grupo)})", expanded=False):
+                cols = st.columns(4)
+                for i, row in grupo.iterrows():
+                    with cols[i % 4]:
                         st.markdown(f"""
                         <div style="background: linear-gradient(90deg, #1e3c72, #2a5298);
-                            padding: 1em; border-radius: 8px; color: white; text-align: center;">
-                            <img src="{j['URL_Foto'] if pd.notna(j['URL_Foto']) and str(j['URL_Foto']).startswith('http') else 'https://via.placeholder.com/120'}"
-                                 style="width:100px; border-radius:8px; margin-bottom:10px;" />
-                            <h4 style="margin:5px 0;">{j['Nombre']}</h4>
-                            <p style="font-size:14px;">Edad: {j.get('Edad','-')}</p>
-                            <p style="font-size:14px;">Posición: {j.get('Posición','-')}</p>
-                            <p style="font-size:14px;">Club: {j.get('Club','-')}</p>
-                            <p style="font-size:13px; color:#b0dfff;">Agregado por: {j.get('Agregado_Por','')}</p>
-                            <p style="font-size:12px;">{j.get('Semestre','')} {j.get('Año','')}</p>
-                            {"<a href='"+j["URL_Perfil"]+"' style='color:#b0dfff;font-size:13px;' target='_blank'>🌐 Ver perfil externo</a>" if pd.notna(j.get("URL_Perfil")) and str(j["URL_Perfil"]).startswith("http") else ""}
+                            padding: 0.8em; border-radius: 10px; margin-bottom: 12px;
+                            color: white; text-align: center; font-family: Arial, sans-serif;
+                            width: 180px; min-height: 230px;">
+                            <img src="{row['URL_Foto'] if pd.notna(row['URL_Foto']) and str(row['URL_Foto']).startswith('http') else 'https://via.placeholder.com/100'}"
+                                 style="width:70px; border-radius:50%; margin-bottom:5px;" />
+                            <h5 style="font-size:14px; margin:3px 0;">{row['Nombre']}</h5>
+                            <p style="font-size:12px; margin:2px 0;">{row.get('Club','-')}</p>
+                            <p style="font-size:12px; margin:2px 0;">Edad: {row.get('Edad','-')}</p>
+                            {"<a href='"+row["URL_Perfil"]+"' style='color:#b0dfff;font-size:11px;' target='_blank'>🌐 Perfil</a>" if pd.notna(row.get("URL_Perfil")) and str(row["URL_Perfil"]).startswith("http") else ""}
                         </div>
                         """, unsafe_allow_html=True)
-                    except:
-                        st.info("Seleccioná un jugador en la cancha para ver su ficha.")
-                else:
+
+    # =========================================================
+    # ⚽ CANCHA ESTILO WYSCOUT
+    # =========================================================
+    with tabs[1]:
+        st.markdown("### ⚽ Vista táctica (estilo Wyscout)")
+        col1, col2 = st.columns([1, 2])
+
+        # === COLUMNA DERECHA: CANCHA ===
+        with col2:
+            st.markdown("""
+            <style>
+            .cancha {
+                position: relative;
+                width: 100%;
+                max-width: 600px;
+                aspect-ratio: 0.66;
+                background-image: url('https://upload.wikimedia.org/wikipedia/commons/6/6e/Soccer_field_-_empty.svg');
+                background-size: cover;
+                border-radius: 12px;
+                margin: auto;
+                box-shadow: 0 0 10px rgba(0,0,0,0.3);
+            }
+            .jugador {
+                position: absolute;
+                transform: translate(-50%, -50%);
+                background-color: rgba(30,60,114,0.85);
+                color: white;
+                font-size: 11px;
+                border-radius: 6px;
+                padding: 3px 5px;
+                text-align: center;
+                cursor: pointer;
+                width: 90px;
+                transition: 0.2s;
+            }
+            .jugador:hover {
+                background-color: rgba(0,198,255,0.9);
+                transform: translate(-50%, -50%) scale(1.05);
+            }
+            </style>
+            """, unsafe_allow_html=True)
+
+            posiciones = {
+                "Arquero": (50, 90),
+                "Defensa central derecho": (60, 75),
+                "Defensa central izquierdo": (40, 75),
+                "Lateral derecho": (75, 70),
+                "Lateral izquierdo": (25, 70),
+                "Mediocampista defensivo": (50, 60),
+                "Mediocampista mixto": (40, 45),
+                "Mediocampista ofensivo": (60, 35),
+                "Extremo derecho": (75, 25),
+                "Extremo izquierdo": (25, 25),
+                "Delantero centro": (50, 15),
+            }
+
+            html_jugadores = '<div class="cancha">'
+            for _, jug in df_filtrado.iterrows():
+                pos = posiciones.get(jug["Posición"], (50, 50))
+                html_jugadores += f"""
+                    <div class="jugador" style="left:{pos[0]}%; top:{pos[1]}%;" 
+                        onclick="window.parent.postMessage({{'jugador_id': '{jug['ID_Jugador']}' }}, '*')">
+                        {jug['Nombre']}
+                    </div>
+                """
+            html_jugadores += "</div>"
+            st.markdown(html_jugadores, unsafe_allow_html=True)
+
+        # === COLUMNA IZQUIERDA: FICHA DEL JUGADOR ===
+        with col1:
+            st.markdown("#### 🧾 Ficha del jugador seleccionado")
+            if "jug_sel" in st.session_state:
+                try:
+                    j = df_filtrado[df_filtrado["ID_Jugador"] == st.session_state["jug_sel"]].iloc[0]
+                    st.markdown(f"""
+                    <div style="background: linear-gradient(90deg, #1e3c72, #2a5298);
+                        padding: 1em; border-radius: 8px; color: white; text-align: center;">
+                        <img src="{j['URL_Foto'] if pd.notna(j['URL_Foto']) and str(j['URL_Foto']).startswith('http') else 'https://via.placeholder.com/120'}"
+                             style="width:100px; border-radius:8px; margin-bottom:10px;" />
+                        <h4 style="margin:5px 0;">{j['Nombre']}</h4>
+                        <p style="font-size:14px;">Edad: {j.get('Edad','-')}</p>
+                        <p style="font-size:14px;">Posición: {j.get('Posición','-')}</p>
+                        <p style="font-size:14px;">Club: {j.get('Club','-')}</p>
+                        {"<a href='"+j["URL_Perfil"]+"' style='color:#b0dfff;font-size:13px;' target='_blank'>🌐 Ver perfil externo</a>" if pd.notna(j.get("URL_Perfil")) and str(j["URL_Perfil"]).startswith("http") else ""}
+                    </div>
+                    """, unsafe_allow_html=True)
+                except:
                     st.info("Seleccioná un jugador en la cancha para ver su ficha.")
+            else:
+                st.info("Seleccioná un jugador en la cancha para ver su ficha.")
 
 # =========================================================
 # CIERRE PROFESIONAL
@@ -1300,15 +1296,10 @@ if menu == "Lista corta":
 st.markdown("---")
 st.markdown(f"""
 <div style="text-align:center; color:#00c6ff; margin-top:30px;">
-    <h4>ScoutingApp Profesional v2.1</h4>
+    <h4>ScoutingApp Profesional v2.2</h4>
     <p>Usuario activo: <strong>{CURRENT_USER}</strong> ({CURRENT_ROLE})</p>
     <p style="color:gray; font-size:13px;">
         Desarrollada por Mariano Cirone · Área de Scouting Profesional
     </p>
 </div>
 """, unsafe_allow_html=True)
-
-st.markdown(
-    "<p style='text-align:center; color:gray; font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
-    unsafe_allow_html=True
-)
