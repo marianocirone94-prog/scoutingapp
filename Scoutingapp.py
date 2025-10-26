@@ -1231,50 +1231,93 @@ if menu == "Lista corta":
                         """, unsafe_allow_html=True)
 
         # =========================================================
-        # ⚽ CANCHA (versión matplotlib, visual real)
-        # =========================================================
-        with tabs[1]:
-            st.markdown("### ⚽ Distribución táctica sobre la cancha")
+# ⚽ CANCHA (versión interactiva con eliminación y ficha)
+# =========================================================
+with tabs[1]:
+    st.markdown("### ⚽ Distribución táctica sobre la cancha")
 
-            posiciones_cancha = {
-                "Arquero": (265, 630),
-                "Defensa central derecho": (340, 560),
-                "Defensa central izquierdo": (187, 560),
-                "Lateral derecho": (470, 470),
-                "Lateral izquierdo": (60, 470),
-                "Mediocampista defensivo": (265, 430),
-                "Mediocampista mixto": (195, 280),
-                "Mediocampista ofensivo": (320, 200),
-                "Extremo derecho": (470, 130),
-                "Extremo izquierdo": (60, 130),
-                "Delantero centro": (265, 60)
-            }
+    col1, col2 = st.columns([1, 2])
 
-            try:
-                cancha = plt.imread(CANCHA_IMG)
-                fig, ax = plt.subplots(figsize=(6, 9))
-                ax.imshow(cancha)
-            except:
-                fig, ax = plt.subplots(figsize=(6, 9))
-                ax.set_facecolor("#003366")
+    posiciones_cancha = {
+        "Arquero": (265, 630),
+        "Defensa central derecho": (340, 560),
+        "Defensa central izquierdo": (187, 560),
+        "Lateral derecho": (470, 470),
+        "Lateral izquierdo": (60, 470),
+        "Mediocampista defensivo": (265, 430),
+        "Mediocampista mixto": (195, 280),
+        "Mediocampista ofensivo": (320, 200),
+        "Extremo derecho": (470, 130),
+        "Extremo izquierdo": (60, 130),
+        "Delantero centro": (265, 60)
+    }
 
-            for pos, coords in posiciones_cancha.items():
-                jugadores = df_filtrado[df_filtrado["Posición"] == pos]
-                jugadores = jugadores.head(4)
-                for idx, jugador in enumerate(jugadores.itertuples()):
-                    nombre_fmt = jugador.Nombre.split()[0] if len(jugador.Nombre.split()) == 1 else f"{jugador.Nombre.split()[0]} {jugador.Nombre.split()[-1]}"
-                    edad = getattr(jugador, "Edad", "-")
-                    club = getattr(jugador, "Club", "-")
-                    texto = f"{nombre_fmt} ({edad})\n{club}"
-                    x, y = coords[0], coords[1] + idx * 32
-                    ax.add_patch(patches.Rectangle((x - 60, y - 15), 122, 32,
-                                                   linewidth=1, edgecolor="white",
-                                                   facecolor="#1e3c72", alpha=0.85))
-                    ax.text(x, y, texto, ha="center", va="center",
-                            fontsize=6, color="white", linespacing=1.1)
+    # === COL 1: LISTA DE JUGADORES EN CANCHA ===
+    with col1:
+        st.markdown("#### Jugadores ubicados en cancha")
 
-            ax.axis("off")
-            st.pyplot(fig)
+        jugadores_cancha = df_filtrado[df_filtrado["Posición"].isin(posiciones_cancha.keys())]
+
+        if not jugadores_cancha.empty:
+            for _, jugador in jugadores_cancha.iterrows():
+                nombre_fmt = jugador["Nombre"]
+                if st.button(f"{nombre_fmt}", key=f"btn_{jugador['ID_Jugador']}"):
+                    st.session_state["jugador_seleccionado_cancha"] = jugador["ID_Jugador"]
+
+            jugador_eliminar = st.selectbox("🗑️ Eliminar jugador de la cancha", [""] + list(jugadores_cancha["Nombre"]))
+            if jugador_eliminar and st.button("Eliminar seleccionado"):
+                df_filtrado = df_filtrado[df_filtrado["Nombre"] != jugador_eliminar]
+                st.toast(f"❌ {jugador_eliminar} eliminado de la visualización", icon="❌")
+                st.experimental_rerun()
+        else:
+            st.info("No hay jugadores ubicados en la cancha actualmente.")
+
+        # === FICHA DEL JUGADOR SELECCIONADO ===
+        if "jugador_seleccionado_cancha" in st.session_state:
+            jugador_id = st.session_state["jugador_seleccionado_cancha"]
+            jugador = df_filtrado[df_filtrado["ID_Jugador"] == jugador_id].iloc[0]
+
+            st.markdown("---")
+            st.markdown(f"### 🧩 Ficha de {jugador['Nombre']}")
+            colf1, colf2 = st.columns([1, 2])
+            with colf1:
+                if pd.notna(jugador.get("URL_Foto")) and str(jugador["URL_Foto"]).startswith("http"):
+                    st.image(jugador["URL_Foto"], width=160)
+            with colf2:
+                edad = calcular_edad(jugador.get("Fecha_Nac"))
+                st.write(f"📅 Fecha de nacimiento: {jugador.get('Fecha_Nac', '')} ({edad} años)")
+                st.write(f"🌍 Nacionalidad: {jugador.get('Nacionalidad', '-')}")
+                st.write(f"📏 Altura: {jugador.get('Altura', '-') } cm")
+                st.write(f"👟 Pie hábil: {jugador.get('Pie_Hábil', '-')}")
+                st.write(f"🎯 Posición: {jugador.get('Posición', '-')}")
+                st.write(f"🏟️ Club actual: {jugador.get('Club', '-')} ({jugador.get('Liga', '-')})")
+                st.write(f"⭐ Característica: {jugador.get('Caracteristica', '-')}")
+                if pd.notna(jugador.get("URL_Perfil")) and str(jugador["URL_Perfil"]).startswith("http"):
+                    st.markdown(f"[🌐 Perfil externo]({jugador['URL_Perfil']})", unsafe_allow_html=True)
+
+    # === COL 2: VISUAL DE CANCHA ===
+    with col2:
+        try:
+            cancha = plt.imread(CANCHA_IMG)
+            fig, ax = plt.subplots(figsize=(6, 9))
+            ax.imshow(cancha)
+        except:
+            fig, ax = plt.subplots(figsize=(6, 9))
+            ax.set_facecolor("#003366")
+
+        for pos, coords in posiciones_cancha.items():
+            jugadores = df_filtrado[df_filtrado["Posición"] == pos].head(4)
+            for idx, jugador in enumerate(jugadores.itertuples()):
+                nombre_fmt = jugador.Nombre.split()[0] if len(jugador.Nombre.split()) == 1 else f"{jugador.Nombre.split()[0]} {jugador.Nombre.split()[-1]}"
+                x, y = coords[0], coords[1] + idx * 32
+                ax.add_patch(patches.Rectangle((x - 55, y - 14), 110, 30,
+                                               linewidth=1, edgecolor="white",
+                                               facecolor="#1e3c72", alpha=0.85))
+                ax.text(x, y, nombre_fmt, ha="center", va="center",
+                        fontsize=7, color="white", linespacing=1.1)
+
+        ax.axis("off")
+        st.pyplot(fig)
 
 # =========================================================
 # CIERRE PROFESIONAL (footer)
@@ -1295,5 +1338,6 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
