@@ -957,7 +957,7 @@ if menu == "Ver informes":
             st.info("📍 Seleccioná un registro para ver la ficha del jugador.")
 
 # =========================================================
-# BLOQUE 5 / 5 — Lista corta + Cancha (versión final estable y visual)
+# BLOQUE 5 / 5 — Lista corta + Cancha (versión final sin errores)
 # =========================================================
 
 if menu == "Lista corta":
@@ -1130,7 +1130,7 @@ if menu == "Lista corta":
                     jugadores = df_filtrado[df_filtrado["Posición"] == pos]
                     filas = ""
                     for _, row in jugadores.iterrows():
-                        filas += f"<tr><td onclick=\"window.parent.postMessage({{'jugador_id':'{row['ID_Jugador']}'}}, '*')\">{row['Nombre']}</td></tr>"
+                        filas += f"<tr><td onclick=\"window.parent.postMessage({{{{ 'jugador_id':'{row['ID_Jugador']}' }}}}, '*')\">{row['Nombre']}</td></tr>"
                     if filas == "":
                         filas = "<tr><td style='color:gray;'>—</td></tr>"
                     html += f"""
@@ -1143,12 +1143,12 @@ if menu == "Lista corta":
 
                 st.components.v1.html(f"""
                 <script>
-                window.addEventListener("message",(event)=>{
-                    const data=event.data;
+                window.addEventListener("message",(event)=>{{
+                    const data = event.data;
                     if(data.jugador_id){{
                         window.parent.postMessage(data,"*");
                     }}
-                });
+                }});
                 </script>
                 {html}
                 """, height=720)
