@@ -6,6 +6,7 @@ streamlit-aggrid>=0.3.4.post3
 pandas>=2.2.0
 numpy>=1.26.0
 matplotlib>=3.8.0
+plotly>=5.22.0      # 👈 AÑADÍ ESTA LÍNEA
 
 # --- Google Sheets API ---
 gspread>=6.0.0
