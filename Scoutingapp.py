@@ -1139,7 +1139,7 @@ if menu == "Ver informes":
             st.info("📍 Seleccioná un registro para ver la ficha del jugador.")
 
 # =========================================================
-# BLOQUE 5 / 5 — Lista corta + Cancha (versión final mejorada)
+# BLOQUE 5 / 5 — Lista corta + Cancha (vista vertical tipo Power BI)
 # =========================================================
 
 if menu == "Lista corta":
@@ -1156,235 +1156,158 @@ if menu == "Lista corta":
         # =========================================================
         # FILTROS
         # =========================================================
-        col_f1, col_f2, col_f3, col_f4, col_f5, col_f6 = st.columns(6)
+        col_f1, col_f2, col_f3, col_f4, col_f5 = st.columns(5)
         with col_f1:
-            filtro_anio = st.selectbox("Año", [""] + sorted(df_short["Fecha_Agregado"].astype(str).str[-4:].unique()))
-        with col_f2:
-            filtro_semestre = st.selectbox("Semestre", ["", "1°", "2°"])
-        with col_f3:
             filtro_liga = st.selectbox("Liga", [""] + sorted(df_players["Liga"].dropna().unique()))
-        with col_f4:
+        with col_f2:
             filtro_scout = st.selectbox("Scout", [""] + sorted(df_short["Agregado_Por"].dropna().unique()))
-        with col_f5:
+        with col_f3:
             filtro_nac = st.selectbox("Nacionalidad", [""] + sorted(df_players["Nacionalidad"].dropna().unique()))
-        with col_f6:
-            filtro_promesa = st.selectbox("Promesa", ["", "Sí", "No"])
+        with col_f4:
+            filtro_pos = st.selectbox("Posición", [""] + sorted(df_players["Posición"].dropna().unique()))
+        with col_f5:
+            filtro_anio = st.selectbox("Año", [""] + sorted(df_short["Fecha_Agregado"].astype(str).str[-4:].unique()))
 
         df_filtrado = df_short.copy()
-
-        # --- Aplicar filtros ---
-        if filtro_anio:
-            df_filtrado = df_filtrado[df_filtrado["Fecha_Agregado"].astype(str).str.contains(str(filtro_anio))]
         if filtro_liga:
-            ids_liga = df_players[df_players["Liga"] == filtro_liga]["ID_Jugador"].astype(str).tolist()
-            df_filtrado = df_filtrado[df_filtrado["ID_Jugador"].isin(ids_liga)]
+            ids = df_players[df_players["Liga"] == filtro_liga]["ID_Jugador"].astype(str)
+            df_filtrado = df_filtrado[df_filtrado["ID_Jugador"].isin(ids)]
         if filtro_scout:
             df_filtrado = df_filtrado[df_filtrado["Agregado_Por"] == filtro_scout]
         if filtro_nac:
-            ids_nac = df_players[df_players["Nacionalidad"] == filtro_nac]["ID_Jugador"].astype(str).tolist()
-            df_filtrado = df_filtrado[df_filtrado["ID_Jugador"].isin(ids_nac)]
-        if filtro_promesa == "Sí":
-            df_filtrado = df_filtrado[df_filtrado["Posición"].str.contains("Promesa", case=False, na=False)]
-        elif filtro_promesa == "No":
-            df_filtrado = df_filtrado[~df_filtrado["Posición"].str.contains("Promesa", case=False, na=False)]
+            ids = df_players[df_players["Nacionalidad"] == filtro_nac]["ID_Jugador"].astype(str)
+            df_filtrado = df_filtrado[df_filtrado["ID_Jugador"].isin(ids)]
+        if filtro_pos:
+            df_filtrado = df_filtrado[df_filtrado["Posición"] == filtro_pos]
+        if filtro_anio:
+            df_filtrado = df_filtrado[df_filtrado["Fecha_Agregado"].astype(str).str.contains(filtro_anio)]
 
         # =========================================================
-        # PESTAÑAS
+        # PESTAÑAS: LISTADO Y CANCHA
         # =========================================================
         tabs = st.tabs(["Listado", "Cancha"])
 
-        # =========================================================
-        # LISTADO (igual que antes, sin cambios)
-        # =========================================================
+        # === TAB LISTADO (igual que antes) ===
         with tabs[0]:
             st.markdown("### Jugadores en lista corta (por posición)")
-
             if df_filtrado.empty:
                 st.info("No hay jugadores que coincidan con los filtros seleccionados.")
             else:
-                orden_posiciones = [
-                    "Arquero",
-                    "Lateral derecho",
-                    "Defensa central derecho",
-                    "Defensa central izquierdo",
-                    "Lateral izquierdo",
-                    "Mediocampista defensivo",
-                    "Mediocampista mixto",
-                    "Mediocampista ofensivo",
-                    "Extremo derecho",
-                    "Extremo izquierdo",
-                    "Delantero centro"
+                posiciones = [
+                    "Arquero", "Lateral derecho", "Defensa central derecho",
+                    "Defensa central izquierdo", "Lateral izquierdo",
+                    "Mediocampista defensivo", "Mediocampista mixto",
+                    "Mediocampista ofensivo", "Extremo derecho",
+                    "Extremo izquierdo", "Delantero centro"
                 ]
-
-                for pos in orden_posiciones:
-                    jugadores_pos = df_filtrado[df_filtrado["Posición"] == pos]
-                    if not jugadores_pos.empty:
-                        with st.expander(f"{pos} ({len(jugadores_pos)})", expanded=False):
+                for pos in posiciones:
+                    sub = df_filtrado[df_filtrado["Posición"] == pos]
+                    if not sub.empty:
+                        with st.expander(f"{pos} ({len(sub)})", expanded=False):
                             cols = st.columns(5)
-                            for i, row in enumerate(jugadores_pos.itertuples()):
+                            for i, row in enumerate(sub.itertuples()):
                                 with cols[i % 5]:
                                     st.markdown(f"""
                                     <div style="background: linear-gradient(90deg,#1e3c72,#2a5298);
                                         padding:0.8em;border-radius:10px;margin-bottom:12px;
                                         color:white;text-align:center;font-family:Arial;
-                                        width:220px;min-height:250px;
+                                        width:210px;min-height:230px;
                                         box-shadow:0 0 5px rgba(0,0,0,0.3);margin:auto;">
                                         <img src="{row.URL_Foto if pd.notna(row.URL_Foto) and str(row.URL_Foto).startswith('http') else 'https://via.placeholder.com/100'}"
-                                             style="width:80px;border-radius:50%;margin-bottom:8px;" />
-                                        <h5 style="font-size:15px;margin:3px 0;">{row.Nombre}</h5>
-                                        <p style="font-size:13px;margin:2px 0;">{row.Posición}</p>
-                                        <p style="font-size:13px;margin:2px 0;">{row.Club}</p>
-                                        <p style="font-size:13px;margin:2px 0;">Edad: {row.Edad}</p>
-                                        {"<a href='"+row.URL_Perfil+"' style='color:#b0dfff;font-size:12px;' target='_blank'>Perfil externo</a>"
+                                             style="width:75px;border-radius:50%;margin-bottom:8px;" />
+                                        <h5 style="font-size:14px;margin:3px 0;">{row.Nombre}</h5>
+                                        <p style="font-size:12px;margin:2px 0;">{row.Club}</p>
+                                        <p style="font-size:12px;margin:2px 0;">Edad: {row.Edad}</p>
+                                        {"<a href='"+row.URL_Perfil+"' style='color:#b0dfff;font-size:11px;' target='_blank'>Perfil</a>"
                                         if pd.notna(row.URL_Perfil) and str(row.URL_Perfil).startswith("http") else ""}
                                     </div>
                                     """, unsafe_allow_html=True)
 
-        # =========================================================
-        # CANCHA INTERACTIVA — ESTILO POWER BI
-        # =========================================================
+        # === TAB CANCHA (vista tipo Power BI) ===
         with tabs[1]:
+            st.markdown("### Distribución táctica sobre la cancha")
             col1, col2 = st.columns([1, 2])
 
-            # === PANEL IZQUIERDO: BUSCADOR + FICHA ===
+            # --- COL 1: Ficha del jugador seleccionado ---
             with col1:
-                st.markdown("### Buscar jugador en cancha")
-                if not df_filtrado.empty:
-                    opciones = {f"{row['Nombre']} - {row['Posición']}": row["ID_Jugador"] for _, row in df_filtrado.iterrows()}
-                else:
-                    opciones = {}
-
-                seleccion = st.selectbox("Seleccionar jugador", [""] + list(opciones.keys()))
+                seleccion = st.selectbox("Seleccionar jugador", [""] + list(df_filtrado["Nombre"].unique()))
                 if seleccion:
-                    jugador_id = opciones[seleccion]
-                    st.session_state["jugador_seleccionado"] = jugador_id
+                    j = df_filtrado[df_filtrado["Nombre"] == seleccion].iloc[0]
+                    st.markdown(f"### {j['Nombre']}")
+                    if pd.notna(j.get("URL_Foto")) and str(j["URL_Foto"]).startswith("http"):
+                        st.image(j["URL_Foto"], width=160)
+                    st.write(f"📅 Fecha de nacimiento: {j.get('Fecha_Nac', '-')}")
+                    st.write(f"🌍 Nacionalidad: {j.get('Nacionalidad', '-')}")
+                    st.write(f"📏 Altura: {j.get('Altura', '-') } cm")
+                    st.write(f"👟 Pie hábil: {j.get('Pie_Hábil', '-')}")
+                    st.write(f"🎯 Posición: {j.get('Posición', '-')}")
+                    st.write(f"🏟️ Club: {j.get('Club', '-')} ({j.get('Liga', '-')})")
+                    st.write(f"💬 Característica: {j.get('Caracteristica', '-')}")
+                    if pd.notna(j.get("URL_Perfil")) and str(j["URL_Perfil"]).startswith("http"):
+                        st.markdown(f"[🌐 Perfil externo]({j['URL_Perfil']})", unsafe_allow_html=True)
+                else:
+                    st.info("Seleccioná un jugador para ver su ficha.")
 
-                if "jugador_seleccionado" in st.session_state:
-                    jugador_id = st.session_state["jugador_seleccionado"]
-                    jugador_data = df_filtrado[df_filtrado["ID_Jugador"] == jugador_id]
-                    if not jugador_data.empty:
-                        jugador = jugador_data.iloc[0]
-
-                        st.markdown("---")
-                        st.markdown(f"### {jugador['Nombre']}")
-                        colf1, colf2 = st.columns([1, 2])
-                        with colf1:
-                            if pd.notna(jugador.get("URL_Foto")) and str(jugador["URL_Foto"]).startswith("http"):
-                                st.image(jugador["URL_Foto"], width=160)
-                        with colf2:
-                            edad = calcular_edad(jugador.get("Fecha_Nac"))
-                            st.write(f"Fecha de nacimiento: {jugador.get('Fecha_Nac', '')} ({edad} años)")
-                            st.write(f"Nacionalidad: {jugador.get('Nacionalidad', '-')}")
-                            st.write(f"Altura: {jugador.get('Altura', '-') } cm")
-                            st.write(f"Pie hábil: {jugador.get('Pie_Hábil', '-')}")
-                            st.write(f"Posición: {jugador.get('Posición', '-')}")
-                            st.write(f"Club actual: {jugador.get('Club', '-')} ({jugador.get('Liga', '-')})")
-                            st.write(f"Característica: {jugador.get('Caracteristica', '-')}")
-                            if pd.notna(jugador.get("URL_Perfil")) and str(jugador["URL_Perfil"]).startswith("http"):
-                                st.markdown(f"[🌐 Perfil externo]({jugador['URL_Perfil']})", unsafe_allow_html=True)
-                    else:
-                        st.info("Seleccioná un jugador para ver su ficha.")
-
-            # === PANEL DERECHO: CANCHA INTERACTIVA ===
+            # --- COL 2: Cancha con bloques ---
             with col2:
-                st.markdown("### Distribución táctica sobre la cancha")
+                st.image("CANCHA.png", use_container_width=True)
+                st.markdown("<br>", unsafe_allow_html=True)
 
-                st.markdown(
-                    """
-                    <style>
-                        .cancha-container {
-                            position: relative;
-                            width: 100%;
-                            max-width: 750px;
-                            height: 850px;
-                            background-image: url('CANCHA.png');
-                            background-size: cover;
-                            background-repeat: no-repeat;
-                            margin: auto;
-                            border-radius: 12px;
-                            overflow: hidden;
-                        }
-                        .pos-block {
-                            position: absolute;
-                            width: 130px;
-                            max-height: 160px;
-                            overflow-y: auto;
-                            background: rgba(30,60,114,0.88);
-                            border: 1px solid #00c6ff55;
-                            border-radius: 10px;
-                            padding: 6px;
-                            font-size: 12px;
-                            color: white;
-                            text-align: center;
-                            box-shadow: 0 0 6px rgba(0,0,0,0.4);
-                        }
-                        .pos-block::-webkit-scrollbar { width: 4px; }
-                        .pos-block::-webkit-scrollbar-thumb {
-                            background-color: #00c6ff;
-                            border-radius: 5px;
-                        }
-                        .player-name {
-                            cursor: pointer;
-                            margin: 2px 0;
-                            padding: 2px 4px;
-                            border-radius: 5px;
-                            transition: all 0.2s ease-in-out;
-                        }
-                        .player-name:hover {
-                            background-color: #00c6ff;
-                            color: #0e1117;
-                        }
-                    </style>
-                    """,
-                    unsafe_allow_html=True
-                )
+                posiciones_bloques = [
+                    ("Arquero", 1),
+                    ("Defensa central derecho", 2),
+                    ("Defensa central izquierdo", 2),
+                    ("Lateral derecho", 3),
+                    ("Lateral izquierdo", 3),
+                    ("Mediocampista defensivo", 4),
+                    ("Mediocampista mixto", 5),
+                    ("Mediocampista ofensivo", 6),
+                    ("Extremo derecho", 7),
+                    ("Extremo izquierdo", 7),
+                    ("Delantero centro", 8),
+                ]
 
-                posiciones_ui = {
-                    "Arquero": {"top": "720px", "left": "320px"},
-                    "Defensa central derecho": {"top": "580px", "left": "420px"},
-                    "Defensa central izquierdo": {"top": "580px", "left": "220px"},
-                    "Lateral derecho": {"top": "600px", "left": "520px"},
-                    "Lateral izquierdo": {"top": "600px", "left": "120px"},
-                    "Mediocampista defensivo": {"top": "460px", "left": "320px"},
-                    "Mediocampista mixto": {"top": "350px", "left": "320px"},
-                    "Mediocampista ofensivo": {"top": "250px", "left": "320px"},
-                    "Extremo derecho": {"top": "250px", "left": "520px"},
-                    "Extremo izquierdo": {"top": "250px", "left": "120px"},
-                    "Delantero centro": {"top": "120px", "left": "320px"}
-                }
+                # Creamos el layout tipo Power BI (bloques con scroll)
+                st.markdown("""
+                <style>
+                    .scroll-box {
+                        max-height: 120px;
+                        overflow-y: auto;
+                        background: linear-gradient(90deg,#1e3c72,#2a5298);
+                        color: white;
+                        padding: 6px;
+                        border-radius: 8px;
+                        font-size: 12px;
+                        margin-bottom: 6px;
+                        box-shadow: 0 0 4px rgba(0,0,0,0.3);
+                    }
+                    .scroll-box::-webkit-scrollbar {
+                        width: 4px;
+                    }
+                    .scroll-box::-webkit-scrollbar-thumb {
+                        background: #00c6ff;
+                        border-radius: 10px;
+                    }
+                </style>
+                """, unsafe_allow_html=True)
 
-                cancha_html = '<div class="cancha-container">'
-                for pos, coords in posiciones_ui.items():
-                    jugadores_pos = df_filtrado[df_filtrado["Posición"] == pos]
-                    if not jugadores_pos.empty:
-                        jugadores_html = ""
-                        for _, j in jugadores_pos.iterrows():
-                            jugadores_html += f"""
-                                <div class="player-name" onClick="window.parent.postMessage({{'jugador_id':'{j['ID_Jugador']}' }}, '*');">
-                                    {j['Nombre']}
-                                </div>
-                            """
-                        cancha_html += f"""
-                            <div class="pos-block" style="top:{coords['top']};left:{coords['left']};">
-                                <strong>{pos}</strong><br>{jugadores_html}
-                            </div>
-                        """
-                cancha_html += "</div>"
+                grid = st.container()
+                with grid:
+                    cols = st.columns(3)
+                    posiciones_ordenadas = [
+                        "Arquero", "Defensa central izquierdo", "Defensa central derecho",
+                        "Lateral izquierdo", "Lateral derecho",
+                        "Mediocampista defensivo", "Mediocampista mixto", "Mediocampista ofensivo",
+                        "Extremo izquierdo", "Extremo derecho", "Delantero centro"
+                    ]
 
-                st.components.v1.html(
-                    cancha_html +
-                    """
-                    <script>
-                    window.addEventListener('message', (event) => {
-                        const data = event.data;
-                        if (data.jugador_id) {
-                            window.parent.streamlitSendMessage({type: 'setSessionState', key: 'jugador_seleccionado', value: data.jugador_id});
-                        }
-                    });
-                    </script>
-                    """,
-                    height=880
-                )
+                    for i, pos in enumerate(posiciones_ordenadas):
+                        sub = df_filtrado[df_filtrado["Posición"] == pos]
+                        if not sub.empty:
+                            with cols[i % 3]:
+                                st.markdown(f"**{pos}**")
+                                jugadores = "<div class='scroll-box'>" + "<br>".join(sub["Nombre"].tolist()) + "</div>"
+                                st.markdown(jugadores, unsafe_allow_html=True)
 
 # =========================================================
 # CIERRE PROFESIONAL (footer)
