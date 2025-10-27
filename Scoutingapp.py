@@ -1139,7 +1139,7 @@ if menu == "Ver informes":
             st.info("📍 Seleccioná un registro para ver la ficha del jugador.")
 
 # =========================================================
-# BLOQUE 5 / 5 — Lista corta + Cancha (versión refinada y funcional)
+# BLOQUE 5 / 5 — Lista corta + Cancha (versión final simplificada sin filtro edad)
 # =========================================================
 
 if menu == "Lista corta":
@@ -1165,7 +1165,7 @@ if menu == "Lista corta":
         # FILTROS PRINCIPALES
         # =========================================================
         st.markdown("### 🔎 Filtros de búsqueda")
-        col_f1, col_f2, col_f3, col_f4, col_f5 = st.columns(5)
+        col_f1, col_f2, col_f3, col_f4 = st.columns(4)
         with col_f1:
             filtro_scout = st.selectbox("Scout", [""] + sorted(df_short["Agregado_Por"].dropna().unique()))
         with col_f2:
@@ -1173,8 +1173,6 @@ if menu == "Lista corta":
         with col_f3:
             filtro_nac = st.selectbox("Nacionalidad", [""] + sorted(df_players["Nacionalidad_Normalizada"].dropna().unique()))
         with col_f4:
-            filtro_edad = st.slider("Edad máxima", 15, 40, 40)
-        with col_f5:
             filtro_semestre = st.selectbox("Semestre", ["", "1°", "2°"])
 
         df_filtrado = df_short.copy()
@@ -1187,8 +1185,6 @@ if menu == "Lista corta":
         if filtro_nac:
             ids_nac = df_players[df_players["Nacionalidad_Normalizada"] == filtro_nac]["ID_Jugador"].astype(str).tolist()
             df_filtrado = df_filtrado[df_filtrado["ID_Jugador"].isin(ids_nac)]
-        if filtro_edad:
-            df_filtrado = df_filtrado[df_filtrado["Edad"].astype(int) <= filtro_edad]
 
         # =========================================================
         # PESTAÑAS
@@ -1331,7 +1327,6 @@ if menu == "Lista corta":
                 ax.axis("off")
                 st.pyplot(fig)
 
-
 # =========================================================
 # CIERRE PROFESIONAL (footer)
 # =========================================================
@@ -1350,6 +1345,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
