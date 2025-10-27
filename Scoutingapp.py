@@ -1139,145 +1139,131 @@ if menu == "Ver informes":
             st.info("📍 Seleccioná un registro para ver la ficha del jugador.")
 
 # =========================================================
-# BLOQUE 5 / 5 — Lista corta + Cancha (versión final simplificada sin filtro edad)
+# BLOQUE 5 / 5 — Lista corta + Cancha (versión final estable)
 # =========================================================
 
 if menu == "Lista corta":
-    st.subheader("⭐ Lista corta de jugadores")
+    st.subheader("Lista corta de jugadores")
 
-    # --- Filtrado por rol (cada scout ve solo lo suyo) ---
-    if CURRENT_ROLE == "scout":
-        df_short = df_short[df_short["Agregado_Por"] == CURRENT_USER]
+    # --- FILTROS SUPERIORES ---
+    col_f1, col_f2, col_f3, col_f4, col_f5 = st.columns(5)
+    with col_f1:
+        filtro_liga = st.selectbox("Liga", [""] + sorted(df_players["Liga"].dropna().unique()))
+    with col_f2:
+        filtro_scout = st.selectbox("Scout", [""] + sorted(df_short["Agregado_Por"].dropna().unique()))
+    with col_f3:
+        filtro_nac = st.selectbox("Nacionalidad", [""] + sorted(df_players["Nacionalidad"].dropna().unique()))
+    with col_f4:
+        filtro_semestre = st.selectbox("Semestre", ["", "1°", "2°"])
+    with col_f5:
+        filtro_promesa = st.selectbox("Promesa", ["", "Sí", "No"])
 
-    # --- Normalizar nacionalidades ---
-    if "Nacionalidad" in df_players.columns:
-        df_players["Nacionalidad_Normalizada"] = df_players["Nacionalidad"].replace(
-            {"Líbano": "Argentina", "Libano": "Argentina", "Libanés": "Argentina", "Libanese": "Argentina"}
-        )
-    else:
-        df_players["Nacionalidad_Normalizada"] = df_players.get("Nacionalidad", "Argentina")
+    df_filtrado = df_short.copy()
 
-    # --- Control de lista vacía ---
-    if df_short.empty:
-        st.info("ℹ️ No hay jugadores en la lista corta todavía.")
-    else:
-        # =========================================================
-        # FILTROS PRINCIPALES
-        # =========================================================
-        st.markdown("### 🔎 Filtros de búsqueda")
-        col_f1, col_f2, col_f3, col_f4 = st.columns(4)
-        with col_f1:
-            filtro_scout = st.selectbox("Scout", [""] + sorted(df_short["Agregado_Por"].dropna().unique()))
-        with col_f2:
-            filtro_liga = st.selectbox("Liga", [""] + sorted(df_players["Liga"].dropna().unique()))
-        with col_f3:
-            filtro_nac = st.selectbox("Nacionalidad", [""] + sorted(df_players["Nacionalidad_Normalizada"].dropna().unique()))
-        with col_f4:
-            filtro_semestre = st.selectbox("Semestre", ["", "1°", "2°"])
-
-        df_filtrado = df_short.copy()
-
-        if filtro_scout:
-            df_filtrado = df_filtrado[df_filtrado["Agregado_Por"] == filtro_scout]
-        if filtro_liga:
-            ids_liga = df_players[df_players["Liga"] == filtro_liga]["ID_Jugador"].astype(str).tolist()
-            df_filtrado = df_filtrado[df_filtrado["ID_Jugador"].isin(ids_liga)]
-        if filtro_nac:
-            ids_nac = df_players[df_players["Nacionalidad_Normalizada"] == filtro_nac]["ID_Jugador"].astype(str).tolist()
-            df_filtrado = df_filtrado[df_filtrado["ID_Jugador"].isin(ids_nac)]
-
-        # =========================================================
-        # PESTAÑAS
-        # =========================================================
-        tabs = st.tabs(["📋 Listado", "⚽ Cancha"])
-
-        # =========================================================
-        # 📋 LISTADO (por posición, tarjetas más pequeñas)
-        # =========================================================
-        with tabs[0]:
-            st.markdown("### Jugadores filtrados (por posición)")
-
-            if df_filtrado.empty:
-                st.info("No hay jugadores que coincidan con los filtros seleccionados.")
-            else:
-                orden_posiciones = [
-                    "Arquero",
-                    "Lateral derecho",
-                    "Defensa central derecho",
-                    "Defensa central izquierdo",
-                    "Lateral izquierdo",
-                    "Mediocampista defensivo",
-                    "Mediocampista mixto",
-                    "Mediocampista ofensivo",
-                    "Extremo derecho",
-                    "Extremo izquierdo",
-                    "Delantero centro"
-                ]
-
-                for pos in orden_posiciones:
-                    jugadores_pos = df_filtrado[df_filtrado["Posición"] == pos]
-
-                    if not jugadores_pos.empty:
-                        with st.expander(f"{pos} ({len(jugadores_pos)})", expanded=False):
-                            cols = st.columns(6)
-                            for i, row in enumerate(jugadores_pos.itertuples()):
-                                with cols[i % 6]:
-                                    st.markdown(f"""
-                                    <div style="background: linear-gradient(90deg,#1e3c72,#2a5298);
-                                        padding:0.5em;border-radius:8px;margin-bottom:10px;
-                                        color:white;text-align:center;font-family:Arial;
-                                        width:180px;min-height:200px;
-                                        box-shadow:0 0 4px rgba(0,0,0,0.25);margin:auto;">
-                                        <img src="{row.URL_Foto if pd.notna(row.URL_Foto) and str(row.URL_Foto).startswith('http') else 'https://via.placeholder.com/80'}"
-                                             style="width:60px;border-radius:50%;margin-bottom:6px;" />
-                                        <h5 style="font-size:13px;margin:2px 0;">{row.Nombre}</h5>
-                                        <p style="font-size:12px;margin:1px 0;">{row.Posición}</p>
-                                        <p style="font-size:12px;margin:1px 0;">{row.Club}</p>
-                                        <p style="font-size:11px;margin:1px 0;">Edad: {row.Edad}</p>
-                                    </div>
-                                    """, unsafe_allow_html=True)
-
-                                    if st.button(f"🗑 Eliminar", key=f"del_{row.ID_Jugador}"):
-                                        df_short = df_short[df_short["ID_Jugador"] != row.ID_Jugador]
-                                        st.success(f"{row.Nombre} eliminado de la lista corta.")
-                                        guardar_datos(df_short, "Lista_corta")
-                                        st.experimental_rerun()
-
-       # --- VISTA EN CANCHA ---
-with tabs[2]:
-    st.markdown("### ⚽ Distribución en cancha")
-
-    posiciones_cancha = {
-        "Arquero": (265, 630),
-        "Defensa central derecho": (340, 560),
-        "Defensa central izquierdo": (187, 560),
-        "Lateral derecho": (470, 470),
-        "Lateral izquierdo": (60, 470),
-        "Mediocampista defensivo": (265, 430),
-        "Mediocampista mixto": (195, 280),
-        "Mediocampista ofensivo": (320, 200),
-        "Extremo derecho": (470, 130),
-        "Extremo izquierdo": (60, 130),
-        "Delantero centro": (265, 60)
-    }
-
-    # --- Estado inicial ---
-    if "alineacion" not in st.session_state:
-        st.session_state["alineacion"] = {pos: [] for pos in posiciones_cancha.keys()}
-
-    col1, col2 = st.columns([1.2, 2])
+    if filtro_liga:
+        ids_liga = df_players[df_players["Liga"] == filtro_liga]["ID_Jugador"].astype(str).tolist()
+        df_filtrado = df_filtrado[df_filtrado["ID_Jugador"].isin(ids_liga)]
+    if filtro_scout:
+        df_filtrado = df_filtrado[df_filtrado["Agregado_Por"] == filtro_scout]
+    if filtro_nac:
+        ids_nac = df_players[df_players["Nacionalidad"] == filtro_nac]["ID_Jugador"].astype(str).tolist()
+        df_filtrado = df_filtrado[df_filtrado["ID_Jugador"].isin(ids_nac)]
+    if filtro_promesa == "Sí":
+        df_filtrado = df_filtrado[df_filtrado["Posición"].str.contains("Promesa", case=False, na=False)]
+    elif filtro_promesa == "No":
+        df_filtrado = df_filtrado[~df_filtrado["Posición"].str.contains("Promesa", case=False, na=False)]
 
     # =========================================================
-    # COL 1 — FICHA Y BOTÓN DE ASIGNACIÓN
+    # PESTAÑAS
     # =========================================================
-    with col1:
-        st.markdown("#### Asignar jugador a una posición")
+    tabs = st.tabs(["Listado", "Cancha"])
 
-        if CURRENT_ROLE in ["admin", "scout"]:
+    # =========================================================
+    # LISTADO DE JUGADORES POR POSICIÓN
+    # =========================================================
+    with tabs[0]:
+        st.markdown("### Jugadores en lista corta (por posición)")
+
+        if df_filtrado.empty:
+            st.info("No hay jugadores que coincidan con los filtros seleccionados.")
+        else:
+            orden_posiciones = [
+                "Arquero",
+                "Lateral derecho",
+                "Defensa central derecho",
+                "Defensa central izquierdo",
+                "Lateral izquierdo",
+                "Mediocampista defensivo",
+                "Mediocampista mixto",
+                "Mediocampista ofensivo",
+                "Extremo derecho",
+                "Extremo izquierdo",
+                "Delantero centro"
+            ]
+
+            for pos in orden_posiciones:
+                jugadores_pos = df_filtrado[df_filtrado["Posición"] == pos]
+                if not jugadores_pos.empty:
+                    with st.expander(f"{pos} ({len(jugadores_pos)})", expanded=False):
+                        cols = st.columns(5)
+                        for i, row in enumerate(jugadores_pos.itertuples()):
+                            with cols[i % 5]:
+                                st.markdown(f"""
+                                <div style="background: linear-gradient(90deg,#1e3c72,#2a5298);
+                                    padding:0.6em;border-radius:10px;margin-bottom:10px;
+                                    color:white;text-align:center;font-family:Arial;
+                                    width:190px;min-height:210px;
+                                    box-shadow:0 0 4px rgba(0,0,0,0.3);margin:auto;">
+                                    <img src="{row.URL_Foto if pd.notna(row.URL_Foto) and str(row.URL_Foto).startswith('http') else 'https://via.placeholder.com/90'}"
+                                         style="width:70px;border-radius:50%;margin-bottom:6px;" />
+                                    <h5 style="font-size:13px;margin:2px 0;">{row.Nombre}</h5>
+                                    <p style="font-size:12px;margin:2px 0;">{row.Posición}</p>
+                                    <p style="font-size:12px;margin:2px 0;">{row.Club}</p>
+                                    <p style="font-size:12px;margin:2px 0;">Edad: {row.Edad}</p>
+                                </div>
+                                """, unsafe_allow_html=True)
+
+        # --- Botón para eliminar jugador ---
+        if not df_filtrado.empty:
+            st.markdown("---")
+            jugador_eliminar = st.selectbox("Eliminar jugador de la lista corta", [""] + list(df_filtrado["Nombre"]))
+            if jugador_eliminar:
+                if st.button("Eliminar jugador"):
+                    df_short = df_short[df_short["Nombre"] != jugador_eliminar]
+                    st.toast(f"{jugador_eliminar} eliminado de la lista corta", icon="❌")
+
+    # =========================================================
+    # CANCHA INTERACTIVA (vacía al inicio + agregados manuales)
+    # =========================================================
+    with tabs[1]:
+        st.markdown("### ⚽ Distribución táctica en cancha")
+
+        posiciones_cancha = {
+            "Arquero": (265, 630),
+            "Defensa central derecho": (340, 560),
+            "Defensa central izquierdo": (187, 560),
+            "Lateral derecho": (470, 470),
+            "Lateral izquierdo": (60, 470),
+            "Mediocampista defensivo": (265, 430),
+            "Mediocampista mixto": (195, 280),
+            "Mediocampista ofensivo": (320, 200),
+            "Extremo derecho": (470, 130),
+            "Extremo izquierdo": (60, 130),
+            "Delantero centro": (265, 60)
+        }
+
+        if "alineacion" not in st.session_state:
+            st.session_state["alineacion"] = {pos: [] for pos in posiciones_cancha.keys()}
+
+        col1, col2 = st.columns([1.2, 2])
+
+        # --- Columna izquierda: asignar jugador + ficha lateral ---
+        with col1:
+            st.markdown("#### Asignar jugador a posición")
             jugador_opt = st.selectbox("Seleccionar jugador", [""] + list(df_short["Nombre"]))
             pos_opt = st.selectbox("Posición en cancha", list(posiciones_cancha.keys()))
 
-            if st.button("➕ Agregar a posición"):
+            if st.button("Agregar jugador"):
                 if jugador_opt:
                     jugador_data = df_short[df_short["Nombre"] == jugador_opt].iloc[0]
                     jugador_info = {
@@ -1285,88 +1271,75 @@ with tabs[2]:
                         "Edad": jugador_data["Edad"],
                         "Altura": jugador_data["Altura"],
                         "Club": jugador_data["Club"],
-                        "URL_Foto": jugador_data.get("URL_Foto", ""),
-                        "Posición": pos_opt
+                        "URL_Foto": jugador_data.get("URL_Foto", "")
                     }
-
-                    if not isinstance(st.session_state["alineacion"][pos_opt], list):
-                        st.session_state["alineacion"][pos_opt] = []
                     st.session_state["alineacion"][pos_opt].append(jugador_info)
-                    st.toast(f"✅ {jugador_opt} agregado a {pos_opt}", icon="⚽")
+                    st.toast(f"{jugador_opt} agregado a {pos_opt}", icon="⚽")
 
-        # --- Mostrar fichas de los jugadores actualmente en cancha ---
-        total_en_cancha = sum(len(v) for v in st.session_state["alineacion"].values())
-        if total_en_cancha > 0:
-            st.markdown("---")
-            st.markdown(f"### Jugadores en cancha ({total_en_cancha})")
+            total_en_cancha = sum(len(v) for v in st.session_state["alineacion"].values())
+            if total_en_cancha > 0:
+                st.markdown("---")
+                st.markdown(f"### Jugadores en cancha ({total_en_cancha})")
+                for pos, jugadores in st.session_state["alineacion"].items():
+                    for j in jugadores:
+                        with st.container():
+                            st.markdown(f"**{pos}**")
+                            colf1, colf2 = st.columns([1, 2])
+                            with colf1:
+                                if j.get("URL_Foto") and str(j["URL_Foto"]).startswith("http"):
+                                    st.image(j["URL_Foto"], width=80)
+                            with colf2:
+                                st.markdown(f"**{j['Nombre']}**")
+                                st.write(f"Edad: {j.get('Edad', '-')}")
+                                st.write(f"Altura: {j.get('Altura', '-')}")
+                                st.write(f"Club: {j.get('Club', '-')}")
 
-            for pos, jugadores in st.session_state["alineacion"].items():
-                if not jugadores:
-                    continue
-                for j in jugadores:
-                    with st.container():
-                        st.markdown(f"**{pos}**")
-                        colf1, colf2 = st.columns([1, 2])
-                        with colf1:
-                            if j.get("URL_Foto") and str(j["URL_Foto"]).startswith("http"):
-                                st.image(j["URL_Foto"], width=90)
-                        with colf2:
-                            st.markdown(f"**{j['Nombre']}**")
-                            st.write(f"Edad: {j.get('Edad', '-')}")
-                            st.write(f"Altura: {j.get('Altura', '-')}")
-                            st.write(f"Club: {j.get('Club', '-')}")
+        # --- Columna derecha: dibujo de la cancha ---
+        with col2:
+            st.markdown("#### Vista en cancha")
+            try:
+                cancha = plt.imread(CANCHA_IMG)
+                fig, ax = plt.subplots(figsize=(6, 9))
+                ax.imshow(cancha)
+            except:
+                fig, ax = plt.subplots(figsize=(6, 9))
+                ax.set_facecolor("#003366")
 
-    # =========================================================
-    # COL 2 — DIBUJO DE LA CANCHA
-    # =========================================================
-    with col2:
-        st.markdown("#### Vista en cancha")
-
-        try:
-            cancha = plt.imread(CANCHA_IMG)
-            fig, ax = plt.subplots(figsize=(6, 9))
-            ax.imshow(cancha)
-        except:
-            st.warning("⚠️ No se encontró la imagen CANCHA.png en la carpeta del proyecto.")
-            fig, ax = plt.subplots(figsize=(6, 9))
-            ax.set_facecolor("#003366")
-
-        for pos, coords in posiciones_cancha.items():
-            jugadores = st.session_state["alineacion"].get(pos, [])
-            jugadores = [j for j in jugadores if isinstance(j, dict) and "Nombre" in j]
-            if jugadores:
+            for pos, coords in posiciones_cancha.items():
+                jugadores = st.session_state["alineacion"].get(pos, [])
                 for idx, jugador in enumerate(jugadores):
-                    partes = jugador["Nombre"].split()
-                    nombre_fmt = f"{partes[0]} {partes[-1]}" if len(partes) >= 2 else jugador["Nombre"]
+                    nombre_fmt = jugador["Nombre"].split()[0]
                     edad = jugador.get("Edad", "-")
                     club = jugador.get("Club", "-")
                     texto = f"{nombre_fmt} ({edad})\n{club}"
                     x, y = coords[0], coords[1] + idx * 32
                     ax.add_patch(patches.Rectangle(
-                        (x - 60, y - 15), 122, 32,
+                        (x - 60, y - 15), 120, 32,
                         linewidth=1, edgecolor="white",
-                        facecolor="#1e3c72", alpha=0.75))
+                        facecolor="#1e3c72", alpha=0.8))
                     ax.text(x, y, texto, ha="center", va="center",
                             fontsize=6, color="white", linespacing=1.1)
+            ax.axis("off")
+            st.pyplot(fig)
 
-        ax.axis("off")
-        st.pyplot(fig)
-
-    # =========================================================
-    # ELIMINAR JUGADORES DE LA ALINEACIÓN
-    # =========================================================
-    if CURRENT_ROLE in ["admin", "scout"]:
-        st.markdown("### ❌ Eliminar jugadores de la alineación")
+        # --- Botón para eliminar jugadores individuales ---
+        st.markdown("### Eliminar jugadores de la alineación")
         for pos, jugadores in st.session_state["alineacion"].items():
-            jugadores = [j for j in jugadores if isinstance(j, dict) and "Nombre" in j]
             for idx, jugador in enumerate(jugadores):
                 col_del1, col_del2 = st.columns([4, 1])
                 with col_del1:
                     st.write(f"{pos}: {jugador['Nombre']} ({jugador['Club']})")
                 with col_del2:
-                    if st.button("❌", key=f"del_{pos}_{idx}"):
+                    if st.button("Eliminar", key=f"del_{pos}_{idx}"):
                         st.session_state["alineacion"][pos].pop(idx)
-                        st.toast(f"{jugador['Nombre']} eliminado de {pos}", icon="🗑️")
+                        st.toast(f"{jugador['Nombre']} eliminado de {pos}", icon="❌")
+
+        # --- Botón para vaciar toda la cancha ---
+        st.markdown("---")
+        if st.button("Vaciar toda la cancha"):
+            st.session_state["alineacion"] = {pos: [] for pos in posiciones_cancha.keys()}
+            st.toast("Cancha vaciada completamente.", icon="🧹")
+
 
 # =========================================================
 # CIERRE PROFESIONAL (footer)
@@ -1386,6 +1359,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
