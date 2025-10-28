@@ -1139,7 +1139,7 @@ if menu == "Ver informes":
             st.info("📍 Seleccioná un registro para ver la ficha del jugador.")
 
 # =========================================================
-# BLOQUE 5 / 5 — Lista corta táctica (versión integrada final)
+# BLOQUE 5 / 5 — Lista corta táctica (versión final con link y diseño lateral)
 # =========================================================
 
 if menu == "Lista corta":
@@ -1198,57 +1198,62 @@ if menu == "Lista corta":
     st.markdown(f"### Vista táctica (sistema 4-2-3-1) — <span style='color:#00c6ff;'>Total jugadores: {total_jugadores}</span>", unsafe_allow_html=True)
 
     # =========================================================
-    # CSS TARJETAS
+    # CSS TARJETAS (formato lateral)
     # =========================================================
     st.markdown("""
     <style>
     .player-card {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
         background: linear-gradient(90deg,#0e1117,#1e3c72);
+        padding: 0.6em 0.8em;
         border-radius: 12px;
         color: white;
         font-family: Arial, sans-serif;
         box-shadow: 0 0 6px rgba(0,0,0,0.4);
-        width: 200px;
-        min-height: 180px;
+        width: 230px;
+        min-height: 75px;
         transition: 0.2s ease-in-out;
-        padding: 10px;
-        text-align: center;
-        margin: 8px auto;
+        margin: 6px auto;
     }
     .player-card:hover {
         transform: scale(1.05);
         box-shadow: 0 0 12px #00c6ff;
     }
     .player-photo {
-        width: 70px;
-        height: 70px;
+        width: 55px;
+        height: 55px;
         border-radius: 50%;
         object-fit: cover;
         border: 2px solid #00c6ff;
-        margin-bottom: 6px;
+        margin-right: 10px;
     }
-    .player-name {
-        font-size: 13.5px;
-        font-weight: bold;
-        color: #00c6ff;
+    .player-info h5 {
+        font-size: 13px;
         margin: 0;
+        color: #00c6ff;
+        font-weight: bold;
     }
-    .player-club {
-        font-size: 12px;
-        color: #b0b0b0;
-        margin: 2px 0;
-    }
-    .player-details {
+    .player-info p {
         font-size: 11.5px;
-        color: #ccc;
-        margin-top: 2px;
+        margin: 1px 0;
+        color: #cccccc;
+    }
+    .player-link a {
+        color: #00c6ff;
+        font-size: 10.5px;
+        text-decoration: none;
+    }
+    .player-link a:hover {
+        text-decoration: underline;
     }
     .line-title {
         color:#00c6ff;
         font-weight:bold;
         font-size:16px;
         margin-top:10px;
-        margin-bottom:8px;
+        margin-bottom:5px;
         text-align:center;
     }
     </style>
@@ -1282,7 +1287,7 @@ if menu == "Lista corta":
 
         cantidad = len(jugadores_linea)
         with st.expander(f"{linea} ({cantidad})", expanded=True):
-            
+
             # ---- ARQUEROS EN FILA ----
             if linea == "Arqueros":
                 jugadores_pos = jugadores_linea[jugadores_linea["Posición"] == "Arquero"]
@@ -1298,15 +1303,21 @@ if menu == "Lista corta":
                         edad = row.get("Edad", "-")
                         altura = row.get("Altura", "-")
                         club = row.get("Club", "-")
+                        url_perfil = str(row.get("URL_Perfil", ""))
+                        link_html = f"<div class='player-link'><a href='{url_perfil}' target='_blank'>Ver perfil</a></div>" if url_perfil.startswith('http') else ""
+
                         col.markdown(f"""
                         <div class="player-card">
                             <img src="{url_foto}" class="player-photo"/>
-                            <p class="player-name">{nombre} {apellido}</p>
-                            <p class="player-club">{club}</p>
-                            <p class="player-details">Edad: {edad} | Altura: {altura} cm</p>
+                            <div class="player-info">
+                                <h5>{nombre} {apellido}</h5>
+                                <p>{club}</p>
+                                <p>Edad: {edad} | Altura: {altura} cm</p>
+                                {link_html}
+                            </div>
                         </div>
                         """, unsafe_allow_html=True)
-            
+
             # ---- RESTO DE LAS LÍNEAS ----
             else:
                 cols = st.columns(len(posiciones))
@@ -1325,13 +1336,18 @@ if menu == "Lista corta":
                                 edad = row.get("Edad", "-")
                                 altura = row.get("Altura", "-")
                                 club = row.get("Club", "-")
+                                url_perfil = str(row.get("URL_Perfil", ""))
+                                link_html = f"<div class='player-link'><a href='{url_perfil}' target='_blank'>Ver perfil</a></div>" if url_perfil.startswith('http') else ""
 
                                 st.markdown(f"""
                                 <div class="player-card">
                                     <img src="{url_foto}" class="player-photo"/>
-                                    <p class="player-name">{nombre} {apellido}</p>
-                                    <p class="player-club">{club}</p>
-                                    <p class="player-details">Edad: {edad} | Altura: {altura} cm</p>
+                                    <div class="player-info">
+                                        <h5>{nombre} {apellido}</h5>
+                                        <p>{club}</p>
+                                        <p>Edad: {edad} | Altura: {altura} cm</p>
+                                        {link_html}
+                                    </div>
                                 </div>
                                 """, unsafe_allow_html=True)
                         else:
@@ -1357,6 +1373,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
