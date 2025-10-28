@@ -1082,27 +1082,27 @@ if menu == "Ver informes":
                             st.error(f"⚠️ Error al generar PDF: {e}")
 
                     # --- Expander editable para cada informe ---
-                    for _, inf in informes_sel.iterrows():
-                        titulo = f"{inf.get('Fecha_Partido','')} | Scout: {inf.get('Scout','')} | Línea: {inf.get('Línea','')}"
+                    for idx, inf in enumerate(informes_sel.itertuples()):
+                        titulo = f"{getattr(inf, 'Fecha_Partido', '')} | Scout: {getattr(inf, 'Scout', '')} | Línea: {getattr(inf, 'Línea', '')}"
                         with st.expander(titulo):
-                            with st.form(f"form_edit_{inf['ID_Informe']}"):
-                                nuevo_scout = st.text_input("Scout", inf.get("Scout",""), key=f"scout_{inf['ID_Informe']}")
-                                nueva_fecha = st.text_input("Fecha del partido", inf.get("Fecha_Partido",""), key=f"fecha_{inf['ID_Informe']}")
-                                nuevos_equipos = st.text_input("Equipos y resultado", inf.get("Equipos_Resultados",""), key=f"equipos_{inf['ID_Informe']}")
+                            with st.form(f"form_edit_{inf.ID_Informe}_{idx}"):
+                                nuevo_scout = st.text_input("Scout", getattr(inf, "Scout", ""), key=f"scout_{inf.ID_Informe}_{idx}")
+                                nueva_fecha = st.text_input("Fecha del partido", getattr(inf, "Fecha_Partido", ""), key=f"fecha_{inf.ID_Informe}_{idx}")
+                                nuevos_equipos = st.text_input("Equipos y resultado", getattr(inf, "Equipos_Resultados", ""), key=f"equipos_{inf.ID_Informe}_{idx}")
+                                opciones_linea = ["1ra (Fichar)", "2da (Seguir)", "3ra (Ver más adelante)", "4ta (Descartar)", "Joven Promesa"]
+                                valor_linea = getattr(inf, "Línea", "3ra (Ver más adelante)")
                                 nueva_linea = st.selectbox(
                                     "Línea",
-                                    ["1ra (Fichar)", "2da (Seguir)", "3ra (Ver más adelante)", "4ta (Descartar)", "Joven Promesa"],
-                                    index=["1ra (Fichar)", "2da (Seguir)", "3ra (Ver más adelante)", "4ta (Descartar)", "Joven Promesa"].index(
-                                        inf.get("Línea","3ra (Ver más adelante)")
-                                    ),
-                                    key=f"linea_{inf['ID_Informe']}"
+                                    opciones_linea,
+                                    index=opciones_linea.index(valor_linea) if valor_linea in opciones_linea else 2,
+                                    key=f"linea_{inf.ID_Informe}_{idx}"
                                 )
-                                nuevas_obs = st.text_area("Observaciones", inf.get("Observaciones",""), height=120, key=f"obs_{inf['ID_Informe']}")
+                                nuevas_obs = st.text_area("Observaciones", getattr(inf, "Observaciones", ""), height=120, key=f"obs_{inf.ID_Informe}_{idx}")
                                 guardar = st.form_submit_button("💾 Guardar cambios")
 
                                 if guardar:
                                     try:
-                                        df_reports.loc[df_reports["ID_Informe"] == inf["ID_Informe"], [
+                                        df_reports.loc[df_reports["ID_Informe"] == getattr(inf, "ID_Informe"), [
                                             "Scout","Fecha_Partido","Equipos_Resultados","Línea","Observaciones"
                                         ]] = [nuevo_scout, nueva_fecha, nuevos_equipos, nueva_linea, nuevas_obs]
                                         ws_inf = obtener_hoja("Informes")
@@ -1348,6 +1348,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
