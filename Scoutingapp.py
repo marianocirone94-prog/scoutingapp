@@ -1139,72 +1139,34 @@ if menu == "Ver informes":
             st.info("📍 Seleccioná un registro para ver la ficha del jugador.")
 
 # =========================================================
-# BLOQUE 5 / 5 — Lista corta táctica (versión final estable)
+# BLOQUE 5 / 5 — Lista corta táctica (versión integrada y segura)
 # =========================================================
 
 if menu == "Lista corta":
-    import pandas as pd
-    import streamlit as st
-    from datetime import datetime
+    st.subheader("Lista corta de jugadores")
 
-    st.markdown("<h3 style='color:#00c6ff;text-align:center;'>Lista corta — ScoutingApp PRO</h3>", unsafe_allow_html=True)
+    df_short = st.session_state.get("df_short", pd.DataFrame())
 
-    # =========================================================
-    # CARGA DE DATOS
-    # =========================================================
-    CSV_PATH = "lista_corta.csv"
+    if df_short.empty:
+        st.info("No hay jugadores cargados en la lista corta actualmente.")
+        st.stop()
 
-    @st.cache_data
-    def cargar_lista():
-        try:
-            df = pd.read_csv(CSV_PATH, encoding="utf-8").fillna("")
-            df["Posición"] = df["Posición"].astype(str).str.strip()
-
-            # Unificar equivalencias
-            df["Posición"] = df["Posición"].replace({
-                "Extremo por la derecha": "Extremo derecho",
-                "Extremo por la izquierda": "Extremo izquierdo"
-            })
-
-            # Calcular año y semestre automáticamente
-            def periodo(fecha):
-                try:
-                    d = pd.to_datetime(str(fecha), errors="coerce")
-                    if pd.isnull(d):
-                        return "-", "-"
-                    anio = d.year
-                    semestre = "1º" if d.month <= 6 else "2º"
-                    return anio, semestre
-                except:
-                    return "-", "-"
-
-            df[["Año", "Semestre"]] = df.apply(lambda x: pd.Series(periodo(x["Fecha_Agregado"])), axis=1)
-            return df
-        except Exception as e:
-            st.error(f"No se pudo cargar lista_corta.csv — {e}")
-            return pd.DataFrame()
-
-    df_short = cargar_lista()
+    # Aseguramos columnas necesarias
+    for col in ["Año", "Semestre"]:
+        if col not in df_short.columns:
+            df_short[col] = ""
 
     # =========================================================
     # FILTROS
     # =========================================================
-    st.markdown("### Filtros de búsqueda")
-
-    # Asegurar columnas Año y Semestre
-    if "Año" not in df_short.columns:
-        df_short["Año"] = ""
-    if "Semestre" not in df_short.columns:
-        df_short["Semestre"] = ""
-
     col1, col2, col3, col4, col5, col6 = st.columns(6)
 
     with col1:
         filtro_scout = st.selectbox("Scout", [""] + sorted(df_short["Agregado_Por"].dropna().unique()))
     with col2:
-        filtro_liga = st.selectbox("Liga / Club", [""] + sorted(df_short["Club"].dropna().unique()))
+        filtro_liga = st.selectbox("Club / Liga", [""] + sorted(df_short["Club"].dropna().unique()))
     with col3:
-        filtro_nac = st.selectbox("Nacionalidad", [""] + sorted(df_short["Nacionalidad"].dropna().unique()) if "Nacionalidad" in df_short.columns else [""])
+        filtro_nac = st.selectbox("Nacionalidad", [""] + sorted(df_players["Nacionalidad"].dropna().unique()))
     with col4:
         filtro_anio = st.selectbox("Año", [""] + sorted([x for x in df_short["Año"].dropna().unique() if x != "-"], reverse=True))
     with col5:
@@ -1219,7 +1181,8 @@ if menu == "Lista corta":
     if filtro_liga:
         df_filtrado = df_filtrado[df_filtrado["Club"] == filtro_liga]
     if filtro_nac:
-        df_filtrado = df_filtrado[df_filtrado["Nacionalidad"] == filtro_nac]
+        ids_nac = df_players[df_players["Nacionalidad"] == filtro_nac]["ID_Jugador"].astype(str).tolist()
+        df_filtrado = df_filtrado[df_filtrado["ID_Jugador"].isin(ids_nac)]
     if filtro_anio:
         df_filtrado = df_filtrado[df_filtrado["Año"] == filtro_anio]
     if filtro_sem:
@@ -1286,7 +1249,7 @@ if menu == "Lista corta":
     """, unsafe_allow_html=True)
 
     # =========================================================
-    # SISTEMA 4-2-3-1
+    # ESTRUCTURA TÁCTICA 4-2-3-1
     # =========================================================
     sistema = {
         "Arqueros": ["Arquero"],
@@ -1304,7 +1267,7 @@ if menu == "Lista corta":
     }
 
     # =========================================================
-    # RENDER — AGRUPADO Y AUTOAJUSTADO
+    # RENDER DE JUGADORES (sin huecos)
     # =========================================================
     for linea, posiciones in sistema.items():
         jugadores_linea = df_filtrado[df_filtrado["Posición"].isin(posiciones)]
@@ -1329,7 +1292,7 @@ if menu == "Lista corta":
                             edad = row.get("Edad", "-")
                             club = row.get("Club", "-")
                             url_perfil = str(row.get("URL_Perfil", ""))
-                            link_html = f"<a href='{url_perfil}' target='_blank' style='color:#00c6ff;font-size:10.5px;'>Ver perfil</a>" if url_perfil.startswith("http") else ""
+                            link_html = f"<a href='{url_perfil}' target='_blank' style='color:#00c6ff;font-size:10.5px;'>Ver perfil</a>" if url_perfil.startswith('http') else ""
 
                             st.markdown(f"""
                             <div class="player-card">
@@ -1364,6 +1327,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
