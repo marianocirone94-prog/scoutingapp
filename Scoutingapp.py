@@ -783,23 +783,25 @@ if menu == "Jugadores":
                 st.info("📉 No hay suficientes informes para generar el radar.")
 
         # =========================================================
-        # EDITAR DATOS DEL JUGADOR
-        # =========================================================
-        with st.expander("✏️ Editar información del jugador", expanded=False):
-            with st.form(f"editar_jugador_form_{jugador['ID_Jugador']}", clear_on_submit=False):
-                e_nombre = st.text_input("Nombre completo", value=jugador.get("Nombre", ""))
-                e_fecha = st.text_input("Fecha de nacimiento (dd/mm/aaaa)", value=jugador.get("Fecha_Nac", ""))
-                e_altura = st.number_input("Altura (cm)", 140, 210, int(float(jugador.get("Altura", 175))) if str(jugador.get("Altura", "")).strip() else 175)
-                e_pie = st.selectbox("Pie hábil", opciones_pies, index=opciones_pies.index(jugador["Pie_Hábil"]) if jugador["Pie_Hábil"] in opciones_pies else 0)
-                e_pos = st.selectbox("Posición", opciones_posiciones, index=opciones_posiciones.index(jugador["Posición"]) if jugador["Posición"] in opciones_posiciones else 0)
-                e_club = st.text_input("Club actual", value=jugador.get("Club", ""))
-                e_liga = st.selectbox("Liga", opciones_ligas, index=opciones_ligas.index(jugador["Liga"]) if jugador["Liga"] in opciones_ligas else 0)
-                e_nac = st.selectbox("Nacionalidad principal", opciones_paises, index=opciones_paises.index(jugador["Nacionalidad"]) if jugador["Nacionalidad"] in opciones_paises else 0)
-                e_seg = st.selectbox("Segunda nacionalidad (opcional)", [""] + opciones_segunda_nacionalidad, index=opciones_segunda_nacionalidad.index(jugador["Segunda_Nacionalidad"]) if jugador["Segunda_Nacionalidad"] in opciones_segunda_nacionalidad else 0)
-                e_car = st.multiselect("Característica Distintiva", opciones_caracteristicas, default=[c.strip() for c in str(jugador.get("Caracteristica", "")).split(",") if c.strip()])
-                e_foto = st.text_input("URL de foto", value=str(jugador.get("URL_Foto", "")))
-                e_link = st.text_input("URL perfil externo", value=str(jugador.get("URL_Perfil", "")))
-                guardar_ed = st.form_submit_button("💾 Guardar cambios")
+# EDITAR DATOS DEL JUGADOR
+# =========================================================
+with st.expander("✏️ Editar información del jugador", expanded=False):
+    with st.form(f"editar_jugador_form_{jugador['ID_Jugador']}", clear_on_submit=False):
+        e_nombre = st.text_input("Nombre completo", value=jugador.get("Nombre", ""))
+        e_fecha = st.text_input("Fecha de nacimiento (dd/mm/aaaa)", value=jugador.get("Fecha_Nac", ""))
+        e_altura = st.number_input("Altura (cm)", 140, 210, int(float(jugador.get("Altura", 175))) if str(jugador.get("Altura", "")).strip() else 175)
+        e_pie = st.selectbox("Pie hábil", opciones_pies, index=opciones_pies.index(jugador["Pie_Hábil"]) if jugador["Pie_Hábil"] in opciones_pies else 0)
+        e_pos = st.selectbox("Posición", opciones_posiciones, index=opciones_posiciones.index(jugador["Posición"]) if jugador["Posición"] in opciones_posiciones else 0)
+        e_club = st.text_input("Club actual", value=jugador.get("Club", ""))
+        e_liga = st.selectbox("Liga", opciones_ligas, index=opciones_ligas.index(jugador["Liga"]) if jugador["Liga"] in opciones_ligas else 0)
+        e_nac = st.selectbox("Nacionalidad principal", opciones_paises, index=opciones_paises.index(jugador["Nacionalidad"]) if jugador["Nacionalidad"] in opciones_paises else 0)
+        e_seg_opciones = [""] + opciones_segunda_nacionalidad
+        e_seg = st.selectbox("Segunda nacionalidad (opcional)", e_seg_opciones, index=e_seg_opciones.index(jugador["Segunda_Nacionalidad"]) if jugador["Segunda_Nacionalidad"] in e_seg_opciones else 0)
+        e_car = st.multiselect("Características del jugador", opciones_caracteristicas, default=[c.strip().lower() for c in str(jugador.get("Caracteristica", "")).split(",") if c.strip().lower() in [o.lower() for o in opciones_caracteristicas]])
+        e_foto = st.text_input("URL de foto", value=str(jugador.get("URL_Foto", "")))
+        e_link = st.text_input("URL perfil externo", value=str(jugador.get("URL_Perfil", "")))
+        guardar_ed = st.form_submit_button("💾 Guardar cambios")
+
 
                 if guardar_ed:
                     try:
@@ -1390,6 +1392,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
