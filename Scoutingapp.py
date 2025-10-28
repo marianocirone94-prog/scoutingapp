@@ -593,11 +593,13 @@ if menu == "Jugadores":
 
     # --- OPCIONES PREDEFINIDAS ---
     opciones_pies = ["Derecho", "Izquierdo", "Ambidiestro"]
+
     opciones_posiciones = [
         "Arquero", "Lateral derecho", "Defensa central derecho", "Defensa central izquierdo",
         "Lateral izquierdo", "Mediocampista defensivo", "Mediocampista mixto",
         "Mediocampista ofensivo", "Extremo derecho", "Extremo izquierdo", "Delantero centro"
     ]
+
     opciones_ligas = [
         "Argentina - LPF", "Argentina - Primera Nacional", "Argentina - Federal A",
         "Brasil - Serie A (Brasileirão)", "Brasil - Serie B", "Chile - Primera División",
@@ -611,10 +613,24 @@ if menu == "Jugadores":
         "Grecia - Super League", "Turquía - Süper Lig", "Arabia Saudita - Saudi Pro League",
         "Estados Unidos - MLS", "Otro / Sin especificar"
     ]
+
     opciones_paises = [
         "Argentina", "Brasil", "Chile", "Uruguay", "Paraguay", "Colombia", "México",
         "Ecuador", "Perú", "Venezuela", "España", "Italia", "Francia", "Inglaterra",
-        "Alemania", "Portugal", "Otro"
+        "Alemania", "Portugal", "Estados Unidos", "Canadá", "Bolivia", "Honduras",
+        "Costa Rica", "El Salvador", "Panamá", "República Dominicana", "Guatemala",
+        "Haití", "Jamaica", "Otro"
+    ]
+
+    # Segunda nacionalidad: misma lista que países
+    opciones_segunda_nacionalidad = opciones_paises.copy()
+
+    # Características del jugador
+    opciones_caracteristicas = [
+        "agresivo", "completo", "tiempista", "dinámico", "velocista", "goleador",
+        "juego de espalda", "líder defensivo", "versátil", "posicional", "habilidoso",
+        "táctico", "aguerrido", "resolutivo", "creativo", "preciso", "criterioso",
+        "aplomado", "temperamental", "técnico", "conductor", "proyección"
     ]
 
     # --- BUSCADOR DE JUGADORES ---
@@ -624,6 +640,7 @@ if menu == "Jugadores":
         opciones = {}
 
     seleccion_jug = st.selectbox("🔍 Buscar jugador", [""] + list(opciones.keys()))
+
 
     # =========================================================
     # CREAR NUEVO JUGADOR
@@ -1373,6 +1390,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
