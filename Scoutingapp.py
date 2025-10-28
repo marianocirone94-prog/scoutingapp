@@ -1139,13 +1139,14 @@ if menu == "Ver informes":
             st.info("📍 Seleccioná un registro para ver la ficha del jugador.")
 
 # =========================================================
-# BLOQUE 5 / 5 — Lista corta táctica (versión integrada y segura)
+# BLOQUE 5 / 5 — Lista corta táctica (versión integrada final)
 # =========================================================
 
 if menu == "Lista corta":
     st.subheader("Lista corta de jugadores")
 
     df_short = st.session_state.get("df_short", pd.DataFrame())
+    df_players = st.session_state.get("df_players", pd.DataFrame())
 
     if df_short.empty:
         st.info("No hay jugadores cargados en la lista corta actualmente.")
@@ -1164,7 +1165,7 @@ if menu == "Lista corta":
     with col1:
         filtro_scout = st.selectbox("Scout", [""] + sorted(df_short["Agregado_Por"].dropna().unique()))
     with col2:
-        filtro_liga = st.selectbox("Club / Liga", [""] + sorted(df_short["Club"].dropna().unique()))
+        filtro_liga = st.selectbox("Liga", [""] + sorted(df_players["Liga"].dropna().unique()))
     with col3:
         filtro_nac = st.selectbox("Nacionalidad", [""] + sorted(df_players["Nacionalidad"].dropna().unique()))
     with col4:
@@ -1179,7 +1180,8 @@ if menu == "Lista corta":
     if filtro_scout:
         df_filtrado = df_filtrado[df_filtrado["Agregado_Por"] == filtro_scout]
     if filtro_liga:
-        df_filtrado = df_filtrado[df_filtrado["Club"] == filtro_liga]
+        ids_liga = df_players[df_players["Liga"] == filtro_liga]["ID_Jugador"].astype(str).tolist()
+        df_filtrado = df_filtrado[df_filtrado["ID_Jugador"].isin(ids_liga)]
     if filtro_nac:
         ids_nac = df_players[df_players["Nacionalidad"] == filtro_nac]["ID_Jugador"].astype(str).tolist()
         df_filtrado = df_filtrado[df_filtrado["ID_Jugador"].isin(ids_nac)]
@@ -1201,55 +1203,59 @@ if menu == "Lista corta":
     st.markdown("""
     <style>
     .player-card {
-        display: flex;
-        align-items: center;
-        justify-content: flex-start;
         background: linear-gradient(90deg,#0e1117,#1e3c72);
-        padding: 0.5em 0.7em;
         border-radius: 12px;
         color: white;
         font-family: Arial, sans-serif;
         box-shadow: 0 0 6px rgba(0,0,0,0.4);
-        width: 220px;
-        min-height: 65px;
+        width: 200px;
+        min-height: 180px;
         transition: 0.2s ease-in-out;
-        margin: 6px auto;
+        padding: 10px;
+        text-align: center;
+        margin: 8px auto;
     }
     .player-card:hover {
         transform: scale(1.05);
         box-shadow: 0 0 12px #00c6ff;
     }
     .player-photo {
-        width: 50px;
-        height: 50px;
+        width: 70px;
+        height: 70px;
         border-radius: 50%;
         object-fit: cover;
         border: 2px solid #00c6ff;
-        margin-right: 8px;
+        margin-bottom: 6px;
     }
-    .player-info h5 {
-        font-size: 12.5px;
+    .player-name {
+        font-size: 13.5px;
+        font-weight: bold;
+        color: #00c6ff;
         margin: 0;
-        color: white;
     }
-    .player-info p {
-        font-size: 10.5px;
-        margin: 0;
+    .player-club {
+        font-size: 12px;
         color: #b0b0b0;
+        margin: 2px 0;
+    }
+    .player-details {
+        font-size: 11.5px;
+        color: #ccc;
+        margin-top: 2px;
     }
     .line-title {
         color:#00c6ff;
         font-weight:bold;
         font-size:16px;
         margin-top:10px;
-        margin-bottom:5px;
+        margin-bottom:8px;
         text-align:center;
     }
     </style>
     """, unsafe_allow_html=True)
 
     # =========================================================
-    # ESTRUCTURA TÁCTICA 4-2-3-1
+    # SISTEMA 4-2-3-1
     # =========================================================
     sistema = {
         "Arqueros": ["Arquero"],
@@ -1267,7 +1273,7 @@ if menu == "Lista corta":
     }
 
     # =========================================================
-    # RENDER DE JUGADORES (sin huecos)
+    # RENDER DE JUGADORES
     # =========================================================
     for linea, posiciones in sistema.items():
         jugadores_linea = df_filtrado[df_filtrado["Posición"].isin(posiciones)]
@@ -1276,38 +1282,62 @@ if menu == "Lista corta":
 
         cantidad = len(jugadores_linea)
         with st.expander(f"{linea} ({cantidad})", expanded=True):
-            cols = st.columns(len(posiciones))
-            for i, pos in enumerate(posiciones):
-                jugadores_pos = jugadores_linea[jugadores_linea["Posición"] == pos]
-                with cols[i]:
-                    if not jugadores_pos.empty:
-                        st.markdown(f"<div class='line-title'>{pos}</div>", unsafe_allow_html=True)
-                        for _, row in jugadores_pos.iterrows():
-                            url_foto = str(row.get("URL_Foto", "")).strip()
-                            if not url_foto.startswith("http"):
-                                url_foto = "https://via.placeholder.com/60"
-                            partes = str(row.get("Nombre", "")).split()
-                            apellido = partes[-1] if partes else "Sin nombre"
-                            nombre = partes[0] if len(partes) > 1 else ""
-                            edad = row.get("Edad", "-")
-                            club = row.get("Club", "-")
-                            url_perfil = str(row.get("URL_Perfil", ""))
-                            link_html = f"<a href='{url_perfil}' target='_blank' style='color:#00c6ff;font-size:10.5px;'>Ver perfil</a>" if url_perfil.startswith('http') else ""
+            
+            # ---- ARQUEROS EN FILA ----
+            if linea == "Arqueros":
+                jugadores_pos = jugadores_linea[jugadores_linea["Posición"] == "Arquero"]
+                cols = st.columns(len(jugadores_pos) if len(jugadores_pos) > 0 else 1)
+                for col, (_, row) in zip(cols, jugadores_pos.iterrows()):
+                    with col:
+                        url_foto = str(row.get("URL_Foto", "")).strip()
+                        if not url_foto.startswith("http"):
+                            url_foto = "https://via.placeholder.com/60"
+                        partes = str(row.get("Nombre", "")).split()
+                        nombre = partes[0] if partes else "Sin nombre"
+                        apellido = partes[-1] if len(partes) > 1 else ""
+                        edad = row.get("Edad", "-")
+                        altura = row.get("Altura", "-")
+                        club = row.get("Club", "-")
+                        col.markdown(f"""
+                        <div class="player-card">
+                            <img src="{url_foto}" class="player-photo"/>
+                            <p class="player-name">{nombre} {apellido}</p>
+                            <p class="player-club">{club}</p>
+                            <p class="player-details">Edad: {edad} | Altura: {altura} cm</p>
+                        </div>
+                        """, unsafe_allow_html=True)
+            
+            # ---- RESTO DE LAS LÍNEAS ----
+            else:
+                cols = st.columns(len(posiciones))
+                for i, pos in enumerate(posiciones):
+                    jugadores_pos = jugadores_linea[jugadores_linea["Posición"] == pos]
+                    with cols[i]:
+                        if not jugadores_pos.empty:
+                            st.markdown(f"<div class='line-title'>{pos}</div>", unsafe_allow_html=True)
+                            for _, row in jugadores_pos.iterrows():
+                                url_foto = str(row.get("URL_Foto", "")).strip()
+                                if not url_foto.startswith("http"):
+                                    url_foto = "https://via.placeholder.com/60"
+                                partes = str(row.get("Nombre", "")).split()
+                                nombre = partes[0] if partes else "Sin nombre"
+                                apellido = partes[-1] if len(partes) > 1 else ""
+                                edad = row.get("Edad", "-")
+                                altura = row.get("Altura", "-")
+                                club = row.get("Club", "-")
 
-                            st.markdown(f"""
-                            <div class="player-card">
-                                <img src="{url_foto}" class="player-photo"/>
-                                <div class="player-info">
-                                    <h5>{apellido}</h5>
-                                    <p>{nombre} · {club}</p>
-                                    <p>Edad: {edad}</p>
-                                    {link_html}
+                                st.markdown(f"""
+                                <div class="player-card">
+                                    <img src="{url_foto}" class="player-photo"/>
+                                    <p class="player-name">{nombre} {apellido}</p>
+                                    <p class="player-club">{club}</p>
+                                    <p class="player-details">Edad: {edad} | Altura: {altura} cm</p>
                                 </div>
-                            </div>
-                            """, unsafe_allow_html=True)
-                    else:
-                        st.markdown(f"<div class='line-title'>{pos}</div>", unsafe_allow_html=True)
-                        st.markdown("<p style='color:gray;font-size:11px;text-align:center;'>— Vacante —</p>", unsafe_allow_html=True)
+                                """, unsafe_allow_html=True)
+                        else:
+                            st.markdown(f"<div class='line-title'>{pos}</div>", unsafe_allow_html=True)
+                            st.markdown("<p style='color:gray;font-size:11px;text-align:center;'>— Vacante —</p>", unsafe_allow_html=True)
+
 
 # =========================================================
 # CIERRE PROFESIONAL (footer)
@@ -1327,6 +1357,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
