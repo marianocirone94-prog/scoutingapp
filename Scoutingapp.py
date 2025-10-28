@@ -795,8 +795,8 @@ if menu == "Jugadores":
                 e_club = st.text_input("Club actual", value=jugador.get("Club", ""))
                 e_liga = st.selectbox("Liga", opciones_ligas, index=opciones_ligas.index(jugador["Liga"]) if jugador["Liga"] in opciones_ligas else 0)
                 e_nac = st.selectbox("Nacionalidad principal", opciones_paises, index=opciones_paises.index(jugador["Nacionalidad"]) if jugador["Nacionalidad"] in opciones_paises else 0)
-                e_seg = st.text_input("Segunda nacionalidad (opcional)", value=jugador.get("Segunda_Nacionalidad", ""))
-                e_car = st.text_input("Característica distintiva", value=jugador.get("Caracteristica", ""))
+                e_seg = st.selectbox("Segunda nacionalidad (opcional)", [""] + opciones_segunda_nacionalidad, index=opciones_segunda_nacionalidad.index(jugador["Segunda_Nacionalidad"]) if jugador["Segunda_Nacionalidad"] in opciones_segunda_nacionalidad else 0)
+                e_car = st.multiselect("Característica Distintiva", opciones_caracteristicas, default=[c.strip() for c in str(jugador.get("Caracteristica", "")).split(",") if c.strip()])
                 e_foto = st.text_input("URL de foto", value=str(jugador.get("URL_Foto", "")))
                 e_link = st.text_input("URL perfil externo", value=str(jugador.get("URL_Perfil", "")))
                 guardar_ed = st.form_submit_button("💾 Guardar cambios")
@@ -1390,6 +1390,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
