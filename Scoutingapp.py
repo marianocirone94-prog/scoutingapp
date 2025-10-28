@@ -1114,7 +1114,7 @@ if menu == "Ver informes":
             st.info("📍 Seleccioná un registro para ver la ficha del jugador.")
 
 # =========================================================
-# BLOQUE 5 / 5 — Lista corta táctica (versión final con link y diseño lateral)
+# BLOQUE 5 / 5 — Lista corta táctica (versión final con privacidad por usuario)
 # =========================================================
 
 if menu == "Lista corta":
@@ -1126,6 +1126,12 @@ if menu == "Lista corta":
     if df_short.empty:
         st.info("No hay jugadores cargados en la lista corta actualmente.")
         st.stop()
+
+    # =========================================================
+    # FILTRO DE PRIVACIDAD POR USUARIO
+    # =========================================================
+    if CURRENT_ROLE not in ["admin"]:
+        df_short = df_short[df_short["Agregado_Por"] == CURRENT_USER]
 
     # Aseguramos columnas necesarias
     for col in ["Año", "Semestre"]:
@@ -1330,6 +1336,7 @@ if menu == "Lista corta":
                             st.markdown("<p style='color:gray;font-size:11px;text-align:center;'>— Vacante —</p>", unsafe_allow_html=True)
 
 
+
 # =========================================================
 # CIERRE PROFESIONAL (footer)
 # =========================================================
@@ -1348,6 +1355,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
