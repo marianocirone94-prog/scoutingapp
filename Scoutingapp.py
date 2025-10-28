@@ -641,7 +641,6 @@ if menu == "Jugadores":
 
     seleccion_jug = st.selectbox("🔍 Buscar jugador", [""] + list(opciones.keys()))
 
-
     # =========================================================
     # CREAR NUEVO JUGADOR
     # =========================================================
@@ -657,8 +656,8 @@ if menu == "Jugadores":
                 nuevo_club = st.text_input("Club actual")
                 nueva_liga = st.selectbox("Liga o país de competencia", opciones_ligas)
                 nueva_nacionalidad = st.selectbox("Nacionalidad principal", opciones_paises)
-                nueva_seg_nac = st.text_input("Segunda nacionalidad (opcional)")
-                nueva_caracteristica = st.text_input("Característica distintiva (opcional)")
+                nueva_seg_nac = st.selectbox("Segunda nacionalidad (opcional)", [""] + opciones_segunda_nacionalidad)
+                nueva_caracteristica = st.multiselect("Características del jugador", opciones_caracteristicas)
                 nueva_url_foto = st.text_input("URL de foto (opcional)")
                 nueva_url_perfil = st.text_input("URL de perfil externo (opcional)")
                 guardar_nuevo = st.form_submit_button("💾 Guardar jugador")
@@ -666,9 +665,10 @@ if menu == "Jugadores":
                 if guardar_nuevo and nuevo_nombre:
                     try:
                         nuevo_id = generar_id_unico(df_players, "ID_Jugador")
+                        nueva_caracteristica_str = ", ".join(nueva_caracteristica) if nueva_caracteristica else ""
                         fila = [
                             nuevo_id, nuevo_nombre, nueva_fecha, nueva_nacionalidad, nueva_seg_nac,
-                            nueva_altura, nuevo_pie, nueva_posicion, nueva_caracteristica,
+                            nueva_altura, nuevo_pie, nueva_posicion, nueva_caracteristica_str,
                             nuevo_club, nueva_liga, "", nueva_url_foto, nueva_url_perfil
                         ]
                         ws = obtener_hoja("Jugadores")
@@ -737,71 +737,25 @@ if menu == "Jugadores":
                 except Exception as e:
                     st.error(f"⚠️ Error al agregar a lista corta: {e}")
 
-        # === COMPARATIVA CENTRAL ===
-        with col2:
-            st.markdown("### 🔍 Comparativa por grupos")
-            prom_jugador = calcular_promedios_jugador(df_reports, id_jugador)
-            prom_posicion = calcular_promedios_posicion(df_reports, df_players, jugador["Posición"])
-
-            if prom_jugador and prom_posicion:
-                grupos = {
-                    "Habilidades técnicas": ["Controles", "Perfiles", "Pase_corto", "Pase_largo", "Pase_filtrado"],
-                    "Aspectos defensivos": ["1v1_defensivo", "Recuperacion", "Intercepciones", "Duelos_aereos"],
-                    "Aspectos ofensivos": ["Regate", "Velocidad", "Duelos_ofensivos"],
-                    "Aspectos mentales / tácticos": [
-                        "Resiliencia", "Liderazgo", "Inteligencia_tactica", "Inteligencia_emocional",
-                        "Posicionamiento", "Vision_de_juego", "Movimientos_sin_pelota"
-                    ]
-                }
-
-                for grupo, atributos in grupos.items():
-                    val_j = [prom_jugador.get(a, 0) for a in atributos]
-                    val_p = [prom_posicion.get(a, 0) for a in atributos]
-
-                    if val_j and val_p:
-                        diff = np.mean(val_j) - np.mean(val_p)
-                        color = "#4CAF50" if diff > 0.2 else "#D16C6C" if diff < -0.2 else "#B8B78A"
-                        emoji = "⬆️" if diff > 0.2 else "⬇️" if diff < -0.2 else "➡️"
-
-                        st.markdown(f"""
-                            <div style='background: linear-gradient(135deg,{color},#1e3c72);
-                                        border-radius:10px;padding:10px;margin-bottom:6px;
-                                        text-align:center;color:white;font-weight:600'>
-                                <h5 style='margin:0;font-size:15px;'>{grupo}</h5>
-                                <p style='margin:5px 0;font-size:20px;'>{emoji} {np.mean(val_j):.2f}</p>
-                            </div>
-                        """, unsafe_allow_html=True)
-            else:
-                st.info("ℹ️ Aún no hay informes cargados para este jugador.")
-
-        # === RADAR ===
-        with col3:
-            if prom_jugador:
-                st.markdown("### Radar comparativo")
-                radar_chart(prom_jugador, prom_posicion)
-            else:
-                st.info("📉 No hay suficientes informes para generar el radar.")
-
         # =========================================================
-# EDITAR DATOS DEL JUGADOR
-# =========================================================
-with st.expander("✏️ Editar información del jugador", expanded=False):
-    with st.form(f"editar_jugador_form_{jugador['ID_Jugador']}", clear_on_submit=False):
-        e_nombre = st.text_input("Nombre completo", value=jugador.get("Nombre", ""))
-        e_fecha = st.text_input("Fecha de nacimiento (dd/mm/aaaa)", value=jugador.get("Fecha_Nac", ""))
-        e_altura = st.number_input("Altura (cm)", 140, 210, int(float(jugador.get("Altura", 175))) if str(jugador.get("Altura", "")).strip() else 175)
-        e_pie = st.selectbox("Pie hábil", opciones_pies, index=opciones_pies.index(jugador["Pie_Hábil"]) if jugador["Pie_Hábil"] in opciones_pies else 0)
-        e_pos = st.selectbox("Posición", opciones_posiciones, index=opciones_posiciones.index(jugador["Posición"]) if jugador["Posición"] in opciones_posiciones else 0)
-        e_club = st.text_input("Club actual", value=jugador.get("Club", ""))
-        e_liga = st.selectbox("Liga", opciones_ligas, index=opciones_ligas.index(jugador["Liga"]) if jugador["Liga"] in opciones_ligas else 0)
-        e_nac = st.selectbox("Nacionalidad principal", opciones_paises, index=opciones_paises.index(jugador["Nacionalidad"]) if jugador["Nacionalidad"] in opciones_paises else 0)
-        e_seg_opciones = [""] + opciones_segunda_nacionalidad
-        e_seg = st.selectbox("Segunda nacionalidad (opcional)", e_seg_opciones, index=e_seg_opciones.index(jugador["Segunda_Nacionalidad"]) if jugador["Segunda_Nacionalidad"] in e_seg_opciones else 0)
-        e_car = st.multiselect("Características del jugador", opciones_caracteristicas, default=[c.strip().lower() for c in str(jugador.get("Caracteristica", "")).split(",") if c.strip().lower() in [o.lower() for o in opciones_caracteristicas]])
-        e_foto = st.text_input("URL de foto", value=str(jugador.get("URL_Foto", "")))
-        e_link = st.text_input("URL perfil externo", value=str(jugador.get("URL_Perfil", "")))
-        guardar_ed = st.form_submit_button("💾 Guardar cambios")
-
+        # EDITAR DATOS DEL JUGADOR
+        # =========================================================
+        with st.expander("✏️ Editar información del jugador", expanded=False):
+            with st.form(f"editar_jugador_form_{jugador['ID_Jugador']}", clear_on_submit=False):
+                e_nombre = st.text_input("Nombre completo", value=jugador.get("Nombre", ""))
+                e_fecha = st.text_input("Fecha de nacimiento (dd/mm/aaaa)", value=jugador.get("Fecha_Nac", ""))
+                e_altura = st.number_input("Altura (cm)", 140, 210, int(float(jugador.get("Altura", 175))) if str(jugador.get("Altura", "")).strip() else 175)
+                e_pie = st.selectbox("Pie hábil", opciones_pies, index=opciones_pies.index(jugador["Pie_Hábil"]) if jugador["Pie_Hábil"] in opciones_pies else 0)
+                e_pos = st.selectbox("Posición", opciones_posiciones, index=opciones_posiciones.index(jugador["Posición"]) if jugador["Posición"] in opciones_posiciones else 0)
+                e_club = st.text_input("Club actual", value=jugador.get("Club", ""))
+                e_liga = st.selectbox("Liga", opciones_ligas, index=opciones_ligas.index(jugador["Liga"]) if jugador["Liga"] in opciones_ligas else 0)
+                e_nac = st.selectbox("Nacionalidad principal", opciones_paises, index=opciones_paises.index(jugador["Nacionalidad"]) if jugador["Nacionalidad"] in opciones_paises else 0)
+                e_seg_opciones = [""] + opciones_segunda_nacionalidad
+                e_seg = st.selectbox("Segunda nacionalidad (opcional)", e_seg_opciones, index=e_seg_opciones.index(jugador["Segunda_Nacionalidad"]) if jugador["Segunda_Nacionalidad"] in e_seg_opciones else 0)
+                e_car = st.multiselect("Características del jugador", opciones_caracteristicas, default=[c.strip().lower() for c in str(jugador.get("Caracteristica", "")).split(",") if c.strip().lower() in [o.lower() for o in opciones_caracteristicas]])
+                e_foto = st.text_input("URL de foto", value=str(jugador.get("URL_Foto", "")))
+                e_link = st.text_input("URL perfil externo", value=str(jugador.get("URL_Perfil", "")))
+                guardar_ed = st.form_submit_button("💾 Guardar cambios")
 
                 if guardar_ed:
                     try:
@@ -812,9 +766,10 @@ with st.expander("✏️ Editar información del jugador", expanded=False):
 
                         if not index_row.empty:
                             row_number = index_row[0] + 2
+                            e_car_str = ", ".join(e_car) if e_car else ""
                             valores = [
                                 id_jugador, e_nombre, e_fecha, e_nac, e_seg, e_altura, e_pie,
-                                e_pos, e_car, e_club, e_liga, "", e_foto, e_link
+                                e_pos, e_car_str, e_club, e_liga, "", e_foto, e_link
                             ]
                             ws.update(f"A{row_number}:N{row_number}", [valores])
                             st.cache_data.clear()
@@ -825,6 +780,7 @@ with st.expander("✏️ Editar información del jugador", expanded=False):
                             st.warning("⚠️ No se encontró el jugador en la hoja.")
                     except Exception as e:
                         st.error(f"⚠️ Error al guardar: {e}")
+
 
         # =========================================================
         # ELIMINAR JUGADOR
@@ -1392,6 +1348,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
