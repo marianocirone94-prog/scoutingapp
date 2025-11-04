@@ -1269,52 +1269,57 @@ for linea, posiciones in sistema.items():
     cantidad = len(jugadores_linea)
     with st.expander(f"{linea} ({cantidad})", expanded=True):
 
-        # ---- ARQUEROS Y DELANTEROS EN FILA ----
+        # ---- ARQUEROS Y DELANTEROS (filas de 5) ----
         if linea in ["Arqueros", "Delanteros"]:
-            # filtramos solo arqueros o delanteros centro
             if linea == "Arqueros":
                 jugadores_pos = jugadores_linea[jugadores_linea["Posición"] == "Arquero"]
             else:
                 jugadores_pos = jugadores_linea[jugadores_linea["Posición"] == "Delantero centro"]
 
-            num_cols = len(jugadores_pos) if len(jugadores_pos) > 0 else 1
-            if num_cols > 5:
-                num_cols = 5  # máximo 5 en una fila
-            cols = st.columns(num_cols)
+            if jugadores_pos.empty:
+                st.markdown(
+                    "<p style='color:gray;font-size:11px;text-align:center;'>— Vacante —</p>",
+                    unsafe_allow_html=True,
+                )
+            else:
+                jugadores_lista = list(jugadores_pos.iterrows())
+                # genera tantas filas como sea necesario de 5 en 5
+                for fila in range(0, len(jugadores_lista), 5):
+                    fila_jugadores = jugadores_lista[fila:fila + 5]
+                    fila_cols = st.columns(len(fila_jugadores))
+                    for fcol, (_, row) in zip(fila_cols, fila_jugadores):
+                        with fcol:
+                            url_foto = str(row.get("URL_Foto", "")).strip()
+                            if not url_foto.startswith("http"):
+                                url_foto = "https://via.placeholder.com/60"
 
-            for col, (_, row) in zip(cols, jugadores_pos.iterrows()):
-                with col:
-                    url_foto = str(row.get("URL_Foto", "")).strip()
-                    if not url_foto.startswith("http"):
-                        url_foto = "https://via.placeholder.com/60"
+                            partes = str(row.get("Nombre", "")).split()
+                            nombre = partes[0] if partes else "Sin nombre"
+                            apellido = partes[-1] if len(partes) > 1 else ""
+                            edad = row.get("Edad", "-")
+                            altura = row.get("Altura", "-")
+                            club = row.get("Club", "-")
+                            url_perfil = str(row.get("URL_Perfil", ""))
+                            link_html = (
+                                f"<div class='player-link'><a href='{url_perfil}' target='_blank'>Ver perfil</a></div>"
+                                if url_perfil.startswith("http")
+                                else ""
+                            )
 
-                    partes = str(row.get("Nombre", "")).split()
-                    nombre = partes[0] if partes else "Sin nombre"
-                    apellido = partes[-1] if len(partes) > 1 else ""
-                    edad = row.get("Edad", "-")
-                    altura = row.get("Altura", "-")
-                    club = row.get("Club", "-")
-                    url_perfil = str(row.get("URL_Perfil", ""))
-                    link_html = (
-                        f"<div class='player-link'><a href='{url_perfil}' target='_blank'>Ver perfil</a></div>"
-                        if url_perfil.startswith("http")
-                        else ""
-                    )
-
-                    st.markdown(
-                        f"""
-                        <div class="player-card">
-                            <img src="{url_foto}" class="player-photo"/>
-                            <div class="player-info">
-                                <h5>{nombre} {apellido}</h5>
-                                <p>{club}</p>
-                                <p>Edad: {edad} | Altura: {altura} cm</p>
-                                {link_html}
-                            </div>
-                        </div>
-                        """,
-                        unsafe_allow_html=True,
-                    )
+                            st.markdown(
+                                f"""
+                                <div class="player-card">
+                                    <img src="{url_foto}" class="player-photo"/>
+                                    <div class="player-info">
+                                        <h5>{nombre} {apellido}</h5>
+                                        <p>{club}</p>
+                                        <p>Edad: {edad} | Altura: {altura} cm</p>
+                                        {link_html}
+                                    </div>
+                                </div>
+                                """,
+                                unsafe_allow_html=True,
+                            )
 
         # ---- RESTO DE LAS LÍNEAS (defensas, mediocampistas, extremos) ----
         else:
@@ -1326,11 +1331,11 @@ for linea, posiciones in sistema.items():
                     st.markdown(f"<div class='line-title'>{pos}</div>", unsafe_allow_html=True)
 
                     if not jugadores_pos.empty:
-                        # --- para mediocampistas centrales: 2 filas de 2 ---
+                        # --- mediocampistas centrales: 2 filas de 2 ---
                         if "Mediocampista defensivo" in pos or "Mediocampista mixto" in pos:
                             jugadores_lista = list(jugadores_pos.iterrows())
                             for fila in range(0, len(jugadores_lista), 2):
-                                fila_jugadores = jugadores_lista[fila:fila+2]
+                                fila_jugadores = jugadores_lista[fila:fila + 2]
                                 fila_cols = st.columns(len(fila_jugadores))
                                 for fcol, (_, row) in zip(fila_cols, fila_jugadores):
                                     with fcol:
@@ -1349,6 +1354,7 @@ for linea, posiciones in sistema.items():
                                             if url_perfil.startswith("http")
                                             else ""
                                         )
+
                                         st.markdown(
                                             f"""
                                             <div class="player-card">
@@ -1364,8 +1370,9 @@ for linea, posiciones in sistema.items():
                                             unsafe_allow_html=True,
                                         )
                         else:
-                            # --- resto normal ---
-                            for _, row in jugadores_pos.iterrows():
+                            # --- resto normal (laterales, extremos, etc.) ---
+                            jugadores_lista = list(jugadores_pos.iterrows())
+                            for _, row in jugadores_lista:
                                 url_foto = str(row.get("URL_Foto", "")).strip()
                                 if not url_foto.startswith("http"):
                                     url_foto = "https://via.placeholder.com/60"
@@ -1405,6 +1412,7 @@ for linea, posiciones in sistema.items():
 
 
 
+
 # =========================================================
 # CIERRE PROFESIONAL (footer)
 # =========================================================
@@ -1423,6 +1431,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
