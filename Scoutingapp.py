@@ -1259,35 +1259,50 @@ if menu == "Lista corta":
     }
 
     # =========================================================
-    # RENDER DE JUGADORES
-    # =========================================================
-    for linea, posiciones in sistema.items():
-        jugadores_linea = df_filtrado[df_filtrado["Posición"].isin(posiciones)]
-        if jugadores_linea.empty:
-            continue
+# RENDER DE JUGADORES
+# =========================================================
+for linea, posiciones in sistema.items():
+    jugadores_linea = df_filtrado[df_filtrado["Posición"].isin(posiciones)]
+    if jugadores_linea.empty:
+        continue
 
-        cantidad = len(jugadores_linea)
-        with st.expander(f"{linea} ({cantidad})", expanded=True):
+    cantidad = len(jugadores_linea)
+    with st.expander(f"{linea} ({cantidad})", expanded=True):
 
-            # ---- ARQUEROS EN FILA ----
+        # ---- ARQUEROS Y DELANTEROS EN FILA ----
+        if linea in ["Arqueros", "Delanteros"]:
+            # filtramos solo arqueros o delanteros centro
             if linea == "Arqueros":
                 jugadores_pos = jugadores_linea[jugadores_linea["Posición"] == "Arquero"]
-                cols = st.columns(len(jugadores_pos) if len(jugadores_pos) > 0 else 1)
-                for col, (_, row) in zip(cols, jugadores_pos.iterrows()):
-                    with col:
-                        url_foto = str(row.get("URL_Foto", "")).strip()
-                        if not url_foto.startswith("http"):
-                            url_foto = "https://via.placeholder.com/60"
-                        partes = str(row.get("Nombre", "")).split()
-                        nombre = partes[0] if partes else "Sin nombre"
-                        apellido = partes[-1] if len(partes) > 1 else ""
-                        edad = row.get("Edad", "-")
-                        altura = row.get("Altura", "-")
-                        club = row.get("Club", "-")
-                        url_perfil = str(row.get("URL_Perfil", ""))
-                        link_html = f"<div class='player-link'><a href='{url_perfil}' target='_blank'>Ver perfil</a></div>" if url_perfil.startswith('http') else ""
+            else:
+                jugadores_pos = jugadores_linea[jugadores_linea["Posición"] == "Delantero centro"]
 
-                        col.markdown(f"""
+            num_cols = len(jugadores_pos) if len(jugadores_pos) > 0 else 1
+            if num_cols > 5:
+                num_cols = 5  # máximo 5 en una fila
+            cols = st.columns(num_cols)
+
+            for col, (_, row) in zip(cols, jugadores_pos.iterrows()):
+                with col:
+                    url_foto = str(row.get("URL_Foto", "")).strip()
+                    if not url_foto.startswith("http"):
+                        url_foto = "https://via.placeholder.com/60"
+
+                    partes = str(row.get("Nombre", "")).split()
+                    nombre = partes[0] if partes else "Sin nombre"
+                    apellido = partes[-1] if len(partes) > 1 else ""
+                    edad = row.get("Edad", "-")
+                    altura = row.get("Altura", "-")
+                    club = row.get("Club", "-")
+                    url_perfil = str(row.get("URL_Perfil", ""))
+                    link_html = (
+                        f"<div class='player-link'><a href='{url_perfil}' target='_blank'>Ver perfil</a></div>"
+                        if url_perfil.startswith("http")
+                        else ""
+                    )
+
+                    st.markdown(
+                        f"""
                         <div class="player-card">
                             <img src="{url_foto}" class="player-photo"/>
                             <div class="player-info">
@@ -1297,16 +1312,59 @@ if menu == "Lista corta":
                                 {link_html}
                             </div>
                         </div>
-                        """, unsafe_allow_html=True)
+                        """,
+                        unsafe_allow_html=True,
+                    )
 
-            # ---- RESTO DE LAS LÍNEAS ----
-            else:
-                cols = st.columns(len(posiciones))
-                for i, pos in enumerate(posiciones):
-                    jugadores_pos = jugadores_linea[jugadores_linea["Posición"] == pos]
-                    with cols[i]:
-                        if not jugadores_pos.empty:
-                            st.markdown(f"<div class='line-title'>{pos}</div>", unsafe_allow_html=True)
+        # ---- RESTO DE LAS LÍNEAS (defensas, mediocampistas, extremos) ----
+        else:
+            cols = st.columns(len(posiciones))
+            for i, pos in enumerate(posiciones):
+                jugadores_pos = jugadores_linea[jugadores_linea["Posición"] == pos]
+
+                with cols[i]:
+                    st.markdown(f"<div class='line-title'>{pos}</div>", unsafe_allow_html=True)
+
+                    if not jugadores_pos.empty:
+                        # --- para mediocampistas centrales: 2 filas de 2 ---
+                        if "Mediocampista defensivo" in pos or "Mediocampista mixto" in pos:
+                            jugadores_lista = list(jugadores_pos.iterrows())
+                            for fila in range(0, len(jugadores_lista), 2):
+                                fila_jugadores = jugadores_lista[fila:fila+2]
+                                fila_cols = st.columns(len(fila_jugadores))
+                                for fcol, (_, row) in zip(fila_cols, fila_jugadores):
+                                    with fcol:
+                                        url_foto = str(row.get("URL_Foto", "")).strip()
+                                        if not url_foto.startswith("http"):
+                                            url_foto = "https://via.placeholder.com/60"
+                                        partes = str(row.get("Nombre", "")).split()
+                                        nombre = partes[0] if partes else "Sin nombre"
+                                        apellido = partes[-1] if len(partes) > 1 else ""
+                                        edad = row.get("Edad", "-")
+                                        altura = row.get("Altura", "-")
+                                        club = row.get("Club", "-")
+                                        url_perfil = str(row.get("URL_Perfil", ""))
+                                        link_html = (
+                                            f"<div class='player-link'><a href='{url_perfil}' target='_blank'>Ver perfil</a></div>"
+                                            if url_perfil.startswith("http")
+                                            else ""
+                                        )
+                                        st.markdown(
+                                            f"""
+                                            <div class="player-card">
+                                                <img src="{url_foto}" class="player-photo"/>
+                                                <div class="player-info">
+                                                    <h5>{nombre} {apellido}</h5>
+                                                    <p>{club}</p>
+                                                    <p>Edad: {edad} | Altura: {altura} cm</p>
+                                                    {link_html}
+                                                </div>
+                                            </div>
+                                            """,
+                                            unsafe_allow_html=True,
+                                        )
+                        else:
+                            # --- resto normal ---
                             for _, row in jugadores_pos.iterrows():
                                 url_foto = str(row.get("URL_Foto", "")).strip()
                                 if not url_foto.startswith("http"):
@@ -1318,22 +1376,32 @@ if menu == "Lista corta":
                                 altura = row.get("Altura", "-")
                                 club = row.get("Club", "-")
                                 url_perfil = str(row.get("URL_Perfil", ""))
-                                link_html = f"<div class='player-link'><a href='{url_perfil}' target='_blank'>Ver perfil</a></div>" if url_perfil.startswith('http') else ""
+                                link_html = (
+                                    f"<div class='player-link'><a href='{url_perfil}' target='_blank'>Ver perfil</a></div>"
+                                    if url_perfil.startswith("http")
+                                    else ""
+                                )
 
-                                st.markdown(f"""
-                                <div class="player-card">
-                                    <img src="{url_foto}" class="player-photo"/>
-                                    <div class="player-info">
-                                        <h5>{nombre} {apellido}</h5>
-                                        <p>{club}</p>
-                                        <p>Edad: {edad} | Altura: {altura} cm</p>
-                                        {link_html}
+                                st.markdown(
+                                    f"""
+                                    <div class="player-card">
+                                        <img src="{url_foto}" class="player-photo"/>
+                                        <div class="player-info">
+                                            <h5>{nombre} {apellido}</h5>
+                                            <p>{club}</p>
+                                            <p>Edad: {edad} | Altura: {altura} cm</p>
+                                            {link_html}
+                                        </div>
                                     </div>
-                                </div>
-                                """, unsafe_allow_html=True)
-                        else:
-                            st.markdown(f"<div class='line-title'>{pos}</div>", unsafe_allow_html=True)
-                            st.markdown("<p style='color:gray;font-size:11px;text-align:center;'>— Vacante —</p>", unsafe_allow_html=True)
+                                    """,
+                                    unsafe_allow_html=True,
+                                )
+                    else:
+                        st.markdown(
+                            "<p style='color:gray;font-size:11px;text-align:center;'>— Vacante —</p>",
+                            unsafe_allow_html=True,
+                        )
+
 
 
 
@@ -1355,6 +1423,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
