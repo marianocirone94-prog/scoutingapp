@@ -29,3 +29,6 @@ st-theme>=1.2.0
 
 # --- (Opcional) para emojis, formateo y otros helpers ---
 emoji>=2.10.1
+
+weasyprint
+
