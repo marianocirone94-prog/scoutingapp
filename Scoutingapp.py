@@ -948,11 +948,16 @@ if menu == "Ver informes":
     filtro_nac = st.sidebar.multiselect("Nacionalidad", sorted(df_merged["Nacionalidad"].dropna().unique()), key="fil_nac")
 
     df_filtrado = df_merged.copy()
-    if filtro_scout: df_filtrado = df_filtrado[df_filtrado["Scout"].isin(filtro_scout)]
-    if filtro_jugador: df_filtrado = df_filtrado[df_filtrado["Nombre"].isin(filtro_jugador)]
-    if filtro_club: df_filtrado = df_filtrado[df_filtrado["Club"].isin(filtro_club)]
-    if filtro_linea: df_filtrado = df_filtrado[df_filtrado["Línea"].isin(filtro_linea)]
-    if filtro_nac: df_filtrado = df_filtrado[df_filtrado["Nacionalidad"].isin(filtro_nac)]
+    if filtro_scout:
+        df_filtrado = df_filtrado[df_filtrado["Scout"].isin(filtro_scout)]
+    if filtro_jugador:
+        df_filtrado = df_filtrado[df_filtrado["Nombre"].isin(filtro_jugador)]
+    if filtro_club:
+        df_filtrado = df_filtrado[df_filtrado["Club"].isin(filtro_club)]
+    if filtro_linea:
+        df_filtrado = df_filtrado[df_filtrado["Línea"].isin(filtro_linea)]
+    if filtro_nac:
+        df_filtrado = df_filtrado[df_filtrado["Nacionalidad"].isin(filtro_nac)]
 
     # =========================================================
     # TABLA PRINCIPAL (AgGrid)
@@ -976,9 +981,15 @@ if menu == "Ver informes":
         gb.configure_grid_options(domLayout="normal")
 
         widths = {
-            "Fecha_Informe": 100, "Nombre": 150, "Club": 130, "Línea": 120,
-            "Scout": 120, "Equipos_Resultados": 150, "Observaciones": 420
+            "Fecha_Informe": 100,
+            "Nombre": 150,
+            "Club": 130,
+            "Línea": 120,
+            "Scout": 120,
+            "Equipos_Resultados": 150,
+            "Observaciones": 420
         }
+
         for c in df_tabla.columns:
             if c == "Observaciones":
                 gb.configure_column(c, wrapText=True, autoHeight=True, width=widths[c])
@@ -994,10 +1005,26 @@ if menu == "Ver informes":
             allow_unsafe_jscode=True,
             update_mode="MODEL_CHANGED",
             custom_css={
-                ".ag-header": {"background-color": "#1e3c72", "color": "white", "font-weight": "bold", "font-size": "13px"},
-                ".ag-row-even": {"background-color": "#2a5298 !important", "color": "white !important"},
-                ".ag-row-odd": {"background-color": "#3b6bbf !important", "color": "white !important"},
-                ".ag-cell": {"white-space": "normal !important", "line-height": "1.25", "padding": "5px", "font-size": "12.5px"},
+                ".ag-header": {
+                    "background-color": "#1e3c72",
+                    "color": "white",
+                    "font-weight": "bold",
+                    "font-size": "13px"
+                },
+                ".ag-row-even": {
+                    "background-color": "#2a5298 !important",
+                    "color": "white !important"
+                },
+                ".ag-row-odd": {
+                    "background-color": "#3b6bbf !important",
+                    "color": "white !important"
+                },
+                ".ag-cell": {
+                    "white-space": "normal !important",
+                    "line-height": "1.25",
+                    "padding": "5px",
+                    "font-size": "12.5px"
+                },
             },
         )
 
@@ -1048,38 +1075,128 @@ if menu == "Ver informes":
                 if not informes_sel.empty:
                     st.markdown(f"### 📄 Informes de {j['Nombre']}")
 
-                    if st.button("📥 Exportar informes en PDF", key=f"pdf_{j['ID_Jugador']}"):
+                    # -------------------------------
+                    # Exportar informe visual PRO
+                    # -------------------------------
+                    if st.button("📥 Exportar informe visual PRO", key=f"pdf_{j['ID_Jugador']}"):
                         try:
-                            pdf = FPDF(orientation="P", unit="mm", format="A4")
-                            pdf.add_page()
-                            pdf.set_font("Arial", "B", 16)
-                            pdf.cell(0, 10, f"Informes de {j['Nombre']}", ln=True, align="C")
-                            pdf.ln(5)
-                            pdf.set_font("Arial", "", 12)
-                            pdf.cell(0, 8, f"Club: {j.get('Club','')}", ln=True)
-                            pdf.cell(0, 8, f"Posición: {j.get('Posición','')}", ln=True)
-                            pdf.ln(8)
+                            import matplotlib.pyplot as plt
+                            import base64
+                            from jinja2 import Template
+                            import pdfkit
 
-                            for _, inf in informes_sel.iterrows():
-                                pdf.set_font("Arial", "B", 12)
-                                pdf.cell(0, 8, f"{inf.get('Fecha_Partido','')} | Scout: {inf.get('Scout','')} | Línea: {inf.get('Línea','')}", ln=True)
-                                pdf.set_font("Arial", "I", 10)
-                                pdf.cell(0, 6, f"{inf.get('Equipos_Resultados','')}", ln=True)
-                                pdf.set_font("Arial", "", 10)
-                                pdf.multi_cell(0, 6, f"{inf.get('Observaciones','') or '-'}")
-                                pdf.ln(4)
+                            # --- generar gráfico radar con promedios del jugador ---
+                            prom_jugador = calcular_promedios_jugador(df_reports, j["ID_Jugador"])
+                            categorias = list(prom_jugador.keys())
+                            valores = list(prom_jugador.values())
 
-                            buffer = BytesIO()
-                            pdf.output(buffer)
-                            buffer.seek(0)
-                            st.download_button(
-                                label="📄 Descargar PDF",
-                                data=buffer,
-                                file_name=f"Informes_{j['Nombre']}.pdf",
-                                mime="application/pdf"
+                            # normalizamos si falta alguno
+                            if len(valores) < 6:
+                                while len(valores) < 6:
+                                    categorias.append(f"Atributo {len(valores)+1}")
+                                    valores.append(0)
+
+                            # crear radar
+                            import numpy as np
+                            angles = np.linspace(0, 2*np.pi, len(valores), endpoint=False).tolist()
+                            valores += valores[:1]
+                            angles += angles[:1]
+
+                            fig, ax = plt.subplots(figsize=(4, 4), subplot_kw=dict(polar=True))
+                            ax.fill(angles, valores, color="#00c6ff", alpha=0.4)
+                            ax.plot(angles, valores, color="#00c6ff", linewidth=2)
+                            ax.set_yticklabels([])
+                            ax.set_xticks(angles[:-1])
+                            ax.set_xticklabels(categorias, color="white", fontsize=8)
+                            ax.set_facecolor("#0e1117")
+                            fig.patch.set_facecolor("#0e1117")
+
+                            buffer_img = BytesIO()
+                            plt.savefig(buffer_img, format="png", bbox_inches="tight", dpi=150)
+                            buffer_img.seek(0)
+                            radar_b64 = base64.b64encode(buffer_img.read()).decode()
+
+                            # --- plantilla HTML visual ---
+                            template = Template("""
+                            <html>
+                            <head>
+                            <style>
+                            body {font-family:'Poppins',sans-serif;background:#0e1117;color:#f5f5f5;margin:0;padding:0;}
+                            .header {background:#00c6ff;color:#0e1117;text-align:center;padding:12px 0;font-weight:700;letter-spacing:1px;}
+                            .player-card {display:flex;align-items:center;background:rgba(255,255,255,0.05);
+                                          border:1px solid #00c6ff;border-radius:12px;margin:25px auto;width:85%;padding:15px;}
+                            .player-card img {border-radius:50%;width:110px;height:110px;border:2px solid #00c6ff;margin-right:20px;}
+                            .player-info h1 {margin:0;font-size:22px;color:#00c6ff;}
+                            .report-block {background:rgba(255,255,255,0.05);border-left:3px solid #00c6ff;padding:12px;
+                                           margin:15px auto;width:85%;border-radius:6px;}
+                            .radar {text-align:center;margin-top:10px;}
+                            .footer {text-align:center;font-size:11px;color:#888;margin-top:30px;}
+                            hr {border-color:#00c6ff;opacity:0.3;}
+                            </style></head><body>
+
+                            <div class="header">⚡ SCOUTING REPORT · ROSARIO CENTRAL</div>
+
+                            <div class="player-card">
+                                <img src="{{ jugador.URL_Foto }}">
+                                <div class="player-info">
+                                    <h1>{{ jugador.Nombre }}</h1>
+                                    <p><b>Posición:</b> {{ jugador.Posición }}</p>
+                                    <p><b>Club:</b> {{ jugador.Club }}</p>
+                                    <p><b>Edad:</b> {{ jugador.Edad }} · <b>Nacionalidad:</b> {{ jugador.Nacionalidad }}</p>
+                                    <p><b>Línea:</b> {{ jugador.Linea }} · <b>Scout:</b> {{ jugador.Scout }}</p>
+                                </div>
+                            </div>
+
+                            <div class="radar">
+                                <img src="data:image/png;base64,{{ radar_b64 }}" width="250"/>
+                                <p style="color:#00c6ff;font-size:13px;">Promedios generales de rendimiento</p>
+                            </div>
+
+                            {% for inf in informes %}
+                            <div class="report-block">
+                                <p><b>📅 {{ inf.Fecha_Partido }}</b> — {{ inf.Equipos_Resultados }}</p>
+                                <hr>
+                                <p>{{ inf.Observaciones }}</p>
+                                <br>
+                                <p style="font-size:12px;color:#bbb;">Scout: {{ inf.Scout }} · Línea: {{ inf.Línea }}</p>
+                            </div>
+                            {% endfor %}
+
+                            <div class="footer">Desarrollado por Área de Scouting Profesional · Rosario Central · © 2025</div>
+
+                            </body></html>
+                            """)
+
+                            jugador_info = {
+                                "Nombre": j["Nombre"],
+                                "Club": j["Club"],
+                                "Posición": j["Posición"],
+                                "Edad": calcular_edad(j["Fecha_Nac"]),
+                                "Nacionalidad": j["Nacionalidad"],
+                                "Scout": informes_sel.iloc[0]["Scout"],
+                                "Linea": informes_sel.iloc[0]["Línea"],
+                                "URL_Foto": j["URL_Foto"] if pd.notna(j["URL_Foto"]) else "https://via.placeholder.com/100"
+                            }
+
+                            html = template.render(
+                                jugador=jugador_info,
+                                informes=informes_sel.to_dict("records"),
+                                radar_b64=radar_b64
                             )
+
+                            output_path = f"Informe_{j['Nombre']}.pdf"
+                            pdfkit.from_string(html, output_path)
+
+                            with open(output_path, "rb") as f:
+                                st.download_button(
+                                    label="📄 Descargar Informe Visual PRO",
+                                    data=f,
+                                    file_name=output_path,
+                                    mime="application/pdf"
+                                )
+
                         except Exception as e:
-                            st.error(f"⚠️ Error al generar PDF: {e}")
+                            st.error(f"⚠️ Error al generar PDF visual: {e}")
 
                     # --- Expander editable para cada informe ---
                     for idx, inf in enumerate(informes_sel.itertuples()):
@@ -1103,7 +1220,7 @@ if menu == "Ver informes":
                                 if guardar:
                                     try:
                                         df_reports.loc[df_reports["ID_Informe"] == getattr(inf, "ID_Informe"), [
-                                            "Scout","Fecha_Partido","Equipos_Resultados","Línea","Observaciones"
+                                            "Scout", "Fecha_Partido", "Equipos_Resultados", "Línea", "Observaciones"
                                         ]] = [nuevo_scout, nueva_fecha, nuevos_equipos, nueva_linea, nuevas_obs]
                                         ws_inf = obtener_hoja("Informes")
                                         ws_inf.update([df_reports.columns.values.tolist()] + df_reports.values.tolist())
@@ -1112,6 +1229,7 @@ if menu == "Ver informes":
                                         st.error(f"⚠️ Error al actualizar el informe: {e}")
         else:
             st.info("📍 Seleccioná un registro para ver la ficha del jugador.")
+
 
 # =========================================================
 # BLOQUE 5 / 5 — Lista corta táctica (versión final con privacidad y gestor de eliminación)
@@ -1380,6 +1498,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
