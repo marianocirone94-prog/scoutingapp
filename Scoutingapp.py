@@ -922,7 +922,7 @@ if menu == "Jugadores":
 
 
 # =========================================================
-# BLOQUE 4 / 5 — Ver Informes (optimizado y con ficha completa)
+# BLOQUE 4 / 5 — Ver Informes (optimizado y con ficha completa, diseño moderno PDF)
 # =========================================================
 
 if menu == "Ver informes":
@@ -968,7 +968,6 @@ if menu == "Ver informes":
         columnas = ["Fecha_Informe", "Nombre", "Club", "Línea", "Scout", "Equipos_Resultados", "Observaciones"]
         df_tabla = df_filtrado[[c for c in columnas if c in df_filtrado.columns]].copy()
 
-        # Ordenar por fecha
         try:
             df_tabla["Fecha_dt"] = pd.to_datetime(df_tabla["Fecha_Informe"], format="%d/%m/%Y", errors="coerce")
             df_tabla = df_tabla.sort_values("Fecha_dt", ascending=False).drop(columns="Fecha_dt")
@@ -989,7 +988,6 @@ if menu == "Ver informes":
             "Equipos_Resultados": 150,
             "Observaciones": 420
         }
-
         for c in df_tabla.columns:
             if c == "Observaciones":
                 gb.configure_column(c, wrapText=True, autoHeight=True, width=widths[c])
@@ -1004,32 +1002,10 @@ if menu == "Ver informes":
             height=580,
             allow_unsafe_jscode=True,
             update_mode="MODEL_CHANGED",
-            custom_css={
-                ".ag-header": {
-                    "background-color": "#1e3c72",
-                    "color": "white",
-                    "font-weight": "bold",
-                    "font-size": "13px"
-                },
-                ".ag-row-even": {
-                    "background-color": "#2a5298 !important",
-                    "color": "white !important"
-                },
-                ".ag-row-odd": {
-                    "background-color": "#3b6bbf !important",
-                    "color": "white !important"
-                },
-                ".ag-cell": {
-                    "white-space": "normal !important",
-                    "line-height": "1.25",
-                    "padding": "5px",
-                    "font-size": "12.5px"
-                },
-            },
         )
 
         # =========================================================
-        # FICHA ARRIBA (clic funcional)
+        # FICHA (clic en jugador)
         # =========================================================
         selected_data = grid_response.get("selected_rows", [])
         if isinstance(selected_data, pd.DataFrame):
@@ -1037,7 +1013,7 @@ if menu == "Ver informes":
         elif isinstance(selected_data, dict):
             selected_data = [selected_data]
 
-        if selected_data and isinstance(selected_data, (list, tuple)) and len(selected_data) > 0:
+        if selected_data:
             jugador_sel = selected_data[0]
             nombre_jug = jugador_sel.get("Nombre", "")
             jugador_data = df_players[df_players["Nombre"] == nombre_jug]
@@ -1069,7 +1045,7 @@ if menu == "Ver informes":
                         st.markdown(f"[🌐 Perfil externo]({j['URL_Perfil']})", unsafe_allow_html=True)
 
                 # =========================================================
-                # INFORMES ASOCIADOS + EDICIÓN + PDF VISUAL PRO
+                # INFORMES ASOCIADOS + PDF VISUAL
                 # =========================================================
                 informes_sel = df_reports[df_reports["ID_Jugador"] == j["ID_Jugador"]]
                 if not informes_sel.empty:
@@ -1083,8 +1059,11 @@ if menu == "Ver informes":
                             from reportlab.lib.utils import ImageReader
                             import matplotlib.pyplot as plt
                             import numpy as np
+                            import requests
+                            from io import BytesIO
+                            from PIL import Image, ImageDraw
 
-                            # --- generar radar ---
+                            # --- Radar promedio ---
                             prom_jugador = calcular_promedios_jugador(df_reports, j["ID_Jugador"])
                             categorias = list(prom_jugador.keys())
                             valores = list(prom_jugador.values())
@@ -1098,90 +1077,95 @@ if menu == "Ver informes":
                             valores += valores[:1]
                             angles += angles[:1]
 
-                            fig, ax = plt.subplots(figsize=(3.5, 3.5), subplot_kw=dict(polar=True))
-                            ax.fill(angles, valores, color="#00c6ff", alpha=0.4)
+                            fig, ax = plt.subplots(figsize=(3.3, 3.3), subplot_kw=dict(polar=True))
+                            ax.fill(angles, valores, color="#00c6ff", alpha=0.25)
                             ax.plot(angles, valores, color="#00c6ff", linewidth=2)
                             ax.set_yticklabels([])
                             ax.set_xticks(angles[:-1])
-                            ax.set_xticklabels(categorias, color="white", fontsize=7)
+                            ax.set_xticklabels(categorias, color="white", fontsize=8)
                             ax.set_facecolor("#0e1117")
                             fig.patch.set_facecolor("#0e1117")
 
                             radar_buffer = BytesIO()
-                            plt.savefig(radar_buffer, format="png", bbox_inches="tight", dpi=150)
+                            plt.savefig(radar_buffer, format="png", bbox_inches="tight", dpi=160)
                             plt.close(fig)
                             radar_buffer.seek(0)
 
-                            # --- generar PDF ---
+                            # --- Crear PDF ---
                             output_path = f"Informe_{j['Nombre']}.pdf"
                             c = canvas.Canvas(output_path, pagesize=A4)
                             width, height = A4
-
-                            # Fondo oscuro
-                            c.setFillColorRGB(0.05, 0.07, 0.09)
+                            c.setFillColor(colors.HexColor("#0e1117"))
                             c.rect(0, 0, width, height, stroke=0, fill=1)
 
-                            # Encabezado
-                            c.setFillColor(colors.HexColor("#00c6ff"))
-                            c.setFont("Helvetica-Bold", 18)
-                            c.drawCentredString(width/2, height-50, "SCOUTING REPORT · ROSARIO CENTRAL")
-
-                            # Foto jugador
+                            # --- Foto redondeada ---
                             foto_url = j.get("URL_Foto")
                             if pd.notna(foto_url) and str(foto_url).startswith("http"):
                                 try:
-                                    import requests
                                     img_data = requests.get(foto_url).content
-                                    img_stream = BytesIO(img_data)
-                                    c.drawImage(ImageReader(img_stream), 40, height-230, width=120, height=120, mask='auto')
+                                    img = Image.open(BytesIO(img_data)).convert("RGB").resize((200, 200))
+                                    mask = Image.new("L", (200, 200), 0)
+                                    draw = ImageDraw.Draw(mask)
+                                    draw.ellipse((0, 0, 200, 200), fill=255)
+                                    circular_img = Image.new("RGB", (200, 200))
+                                    circular_img.paste(img, (0, 0), mask=mask)
+                                    buf = BytesIO()
+                                    circular_img.save(buf, format="PNG")
+                                    buf.seek(0)
+                                    c.drawImage(ImageReader(buf), 60, height-280, width=150, height=150, mask='auto')
                                 except:
                                     pass
 
-                            # Info jugador
+                            # --- Texto principal ---
+                            c.setFillColor(colors.HexColor("#00c6ff"))
+                            c.setFont("Helvetica-Bold", 22)
+                            c.drawString(230, height-90, j['Nombre'])
                             c.setFillColor(colors.white)
-                            c.setFont("Helvetica-Bold", 13)
-                            c.drawString(180, height-120, f"{j['Nombre']}")
-                            c.setFont("Helvetica", 11)
-                            c.drawString(180, height-140, f"📍 Club: {j.get('Club','-')}")
-                            c.drawString(180, height-155, f"🎯 Posición: {j.get('Posición','-')}")
-                            c.drawString(180, height-170, f"👟 Pie hábil: {j.get('Pie_Hábil','-')}")
-                            c.drawString(180, height-185, f"📏 Altura: {j.get('Altura','-')} cm")
-                            c.drawString(180, height-200, f"🌍 Nacionalidad: {j.get('Nacionalidad','-')}")
-                            c.drawString(180, height-215, f"🧠 Característica: {j.get('Caracteristica','-')}")
+                            c.setFont("Helvetica", 12)
+                            c.drawString(230, height-110, f"📍 Club: {j.get('Club','-')}")
+                            c.drawString(230, height-125, f"🎯 Posición: {j.get('Posición','-')}")
+                            c.drawString(230, height-140, f"📅 Edad: {calcular_edad(j.get('Fecha_Nac'))} años")
+                            c.drawString(230, height-155, f"🌍 Nacionalidad: {j.get('Nacionalidad','-')}")
 
-                            # Radar
-                            c.drawImage(ImageReader(radar_buffer), width-230, height-300, width=180, height=180, mask='auto')
+                            # --- Radar ---
+                            c.drawImage(ImageReader(radar_buffer), width-240, height-320, width=170, height=170, mask='auto')
 
-                            # Línea separadora
+                            # --- Línea separadora ---
                             c.setStrokeColor(colors.HexColor("#00c6ff"))
-                            c.setLineWidth(1)
-                            c.line(40, height-330, width-40, height-330)
+                            c.setLineWidth(0.8)
+                            c.line(60, height-330, width-60, height-330)
 
-                            # Informes
+                            # --- Informes recientes ---
                             c.setFont("Helvetica-Bold", 14)
-                            c.drawString(40, height-350, "Informes recientes:")
+                            c.setFillColor(colors.HexColor("#00c6ff"))
+                            c.drawString(60, height-355, "Informes recientes")
                             c.setFont("Helvetica", 10)
+                            c.setFillColor(colors.white)
 
-                            y = height - 370
-                            for _, inf in informes_sel.iterrows():
+                            y = height - 375
+                            for _, inf in informes_sel.head(3).iterrows():
                                 texto = f"{inf.get('Fecha_Partido','')} | {inf.get('Equipos_Resultados','')} | Scout: {inf.get('Scout','')}"
                                 obs = inf.get("Observaciones", "-").replace("\n", " ")
-                                for line in [texto, obs]:
-                                    c.drawString(50, y, line[:115])
-                                    y -= 14
+                                c.drawString(70, y, texto[:110])
+                                y -= 14
+                                for line in [obs[i:i+110] for i in range(0, len(obs), 110)]:
+                                    c.drawString(85, y, line)
+                                    y -= 12
                                 y -= 8
-                                if y < 80:
+                                if y < 100:
                                     c.showPage()
                                     y = height - 100
-                                    c.setFillColorRGB(0.05, 0.07, 0.09)
+                                    c.setFillColor(colors.HexColor("#0e1117"))
                                     c.rect(0, 0, width, height, stroke=0, fill=1)
                                     c.setFillColor(colors.white)
                                     c.setFont("Helvetica", 10)
 
-                            # Footer
+                            # --- Footer ---
+                            c.setStrokeColor(colors.HexColor("#00c6ff"))
+                            c.line(60, 60, width-60, 60)
                             c.setFillColor(colors.HexColor("#00c6ff"))
                             c.setFont("Helvetica-Oblique", 9)
-                            c.drawCentredString(width/2, 40, "Desarrollado por Área de Scouting Profesional · Rosario Central · © 2025")
+                            c.drawCentredString(width/2, 45, "Scouting Report · © 2025")
 
                             c.save()
 
@@ -1196,7 +1180,7 @@ if menu == "Ver informes":
                         except Exception as e:
                             st.error(f"⚠️ Error al generar PDF visual: {e}")
 
-                    # --- Expander editable para cada informe ---
+                    # --- Expander editable ---
                     for idx, inf in enumerate(informes_sel.itertuples()):
                         titulo = f"{getattr(inf, 'Fecha_Partido', '')} | Scout: {getattr(inf, 'Scout', '')} | Línea: {getattr(inf, 'Línea', '')}"
                         with st.expander(titulo):
@@ -1214,7 +1198,6 @@ if menu == "Ver informes":
                                 )
                                 nuevas_obs = st.text_area("Observaciones", getattr(inf, "Observaciones", ""), height=120, key=f"obs_{inf.ID_Informe}_{idx}")
                                 guardar = st.form_submit_button("💾 Guardar cambios")
-
                                 if guardar:
                                     try:
                                         df_reports.loc[df_reports["ID_Informe"] == getattr(inf, "ID_Informe"), [
@@ -1227,7 +1210,6 @@ if menu == "Ver informes":
                                         st.error(f"⚠️ Error al actualizar el informe: {e}")
         else:
             st.info("📍 Seleccioná un registro para ver la ficha del jugador.")
-
 
 
 # =========================================================
@@ -1497,6 +1479,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
