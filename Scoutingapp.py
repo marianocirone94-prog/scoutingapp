@@ -1114,7 +1114,7 @@ if menu == "Ver informes":
             st.info("📍 Seleccioná un registro para ver la ficha del jugador.")
 
 # =========================================================
-# BLOQUE 5 / 5 — Lista corta táctica (versión final con privacidad por usuario)
+# BLOQUE 5 / 5 — Lista corta táctica (versión final con privacidad por usuario y eliminación)
 # =========================================================
 
 if menu == "Lista corta":
@@ -1277,13 +1277,9 @@ if menu == "Lista corta":
                     jugadores_pos = jugadores_linea[jugadores_linea["Posición"] == "Delantero centro"]
 
                 if jugadores_pos.empty:
-                    st.markdown(
-                        "<p style='color:gray;font-size:11px;text-align:center;'>— Vacante —</p>",
-                        unsafe_allow_html=True,
-                    )
+                    st.markdown("<p style='color:gray;font-size:11px;text-align:center;'>— Vacante —</p>", unsafe_allow_html=True)
                 else:
                     jugadores_lista = list(jugadores_pos.iterrows())
-                    # genera tantas filas como sea necesario de 5 en 5
                     for fila in range(0, len(jugadores_lista), 5):
                         fila_jugadores = jugadores_lista[fila:fila + 5]
                         fila_cols = st.columns(len(fila_jugadores))
@@ -1306,8 +1302,7 @@ if menu == "Lista corta":
                                     else ""
                                 )
 
-                                st.markdown(
-                                    f"""
+                                st.markdown(f"""
                                     <div class="player-card">
                                         <img src="{url_foto}" class="player-photo"/>
                                         <div class="player-info">
@@ -1317,97 +1312,99 @@ if menu == "Lista corta":
                                             {link_html}
                                         </div>
                                     </div>
-                                    """,
-                                    unsafe_allow_html=True,
-                                )
+                                """, unsafe_allow_html=True)
+
+                                # --- Botón eliminar ---
+                                if st.button(f"🗑️ Eliminar {nombre} {apellido}", key=f"del_{row['ID_Jugador']}"):
+                                    try:
+                                        ws_short = obtener_hoja("Lista corta")
+                                        data_short = ws_short.get_all_records()
+                                        df_short_local = pd.DataFrame(data_short)
+                                        fila = df_short_local.index[
+                                            df_short_local["ID_Jugador"].astype(str) == str(row["ID_Jugador"])
+                                        ]
+                                        if not fila.empty:
+                                            df_short_local = df_short_local.drop(fila[0])
+                                            ws_short.clear()
+                                            ws_short.append_row(list(df_short_local.columns))
+                                            if not df_short_local.empty:
+                                                ws_short.update(
+                                                    [df_short_local.columns.values.tolist()] + df_short_local.values.tolist()
+                                                )
+                                            st.toast(f"🗑️ Jugador {nombre} {apellido} eliminado.", icon="🗑️")
+                                            st.cache_data.clear()
+                                            st.experimental_rerun()
+                                    except Exception as e:
+                                        st.error(f"⚠️ Error al eliminar: {e}")
 
             # ---- RESTO DE LAS LÍNEAS (defensas, mediocampistas, extremos) ----
             else:
                 cols = st.columns(len(posiciones))
                 for i, pos in enumerate(posiciones):
                     jugadores_pos = jugadores_linea[jugadores_linea["Posición"] == pos]
-
                     with cols[i]:
                         st.markdown(f"<div class='line-title'>{pos}</div>", unsafe_allow_html=True)
-
-                        if not jugadores_pos.empty:
-                            # --- mediocampistas centrales: 2 filas de 2 ---
-                            if "Mediocampista defensivo" in pos or "Mediocampista mixto" in pos:
-                                jugadores_lista = list(jugadores_pos.iterrows())
-                                for fila in range(0, len(jugadores_lista), 2):
-                                    fila_jugadores = jugadores_lista[fila:fila + 2]
-                                    fila_cols = st.columns(len(fila_jugadores))
-                                    for fcol, (_, row) in zip(fila_cols, fila_jugadores):
-                                        with fcol:
-                                            url_foto = str(row.get("URL_Foto", "")).strip()
-                                            if not url_foto.startswith("http"):
-                                                url_foto = "https://via.placeholder.com/60"
-                                            partes = str(row.get("Nombre", "")).split()
-                                            nombre = partes[0] if partes else "Sin nombre"
-                                            apellido = partes[-1] if len(partes) > 1 else ""
-                                            edad = row.get("Edad", "-")
-                                            altura = row.get("Altura", "-")
-                                            club = row.get("Club", "-")
-                                            url_perfil = str(row.get("URL_Perfil", ""))
-                                            link_html = (
-                                                f"<div class='player-link'><a href='{url_perfil}' target='_blank'>Ver perfil</a></div>"
-                                                if url_perfil.startswith("http")
-                                                else ""
-                                            )
-
-                                            st.markdown(
-                                                f"""
-                                                <div class="player-card">
-                                                    <img src="{url_foto}" class="player-photo"/>
-                                                    <div class="player-info">
-                                                        <h5>{nombre} {apellido}</h5>
-                                                        <p>{club}</p>
-                                                        <p>Edad: {edad} | Altura: {altura} cm</p>
-                                                        {link_html}
-                                                    </div>
-                                                </div>
-                                                """,
-                                                unsafe_allow_html=True,
-                                            )
-                            else:
-                                # --- resto normal (laterales, extremos, etc.) ---
-                                jugadores_lista = list(jugadores_pos.iterrows())
-                                for _, row in jugadores_lista:
-                                    url_foto = str(row.get("URL_Foto", "")).strip()
-                                    if not url_foto.startswith("http"):
-                                        url_foto = "https://via.placeholder.com/60"
-                                    partes = str(row.get("Nombre", "")).split()
-                                    nombre = partes[0] if partes else "Sin nombre"
-                                    apellido = partes[-1] if len(partes) > 1 else ""
-                                    edad = row.get("Edad", "-")
-                                    altura = row.get("Altura", "-")
-                                    club = row.get("Club", "-")
-                                    url_perfil = str(row.get("URL_Perfil", ""))
-                                    link_html = (
-                                        f"<div class='player-link'><a href='{url_perfil}' target='_blank'>Ver perfil</a></div>"
-                                        if url_perfil.startswith("http")
-                                        else ""
-                                    )
-
-                                    st.markdown(
-                                        f"""
-                                        <div class="player-card">
-                                            <img src="{url_foto}" class="player-photo"/>
-                                            <div class="player-info">
-                                                <h5>{nombre} {apellido}</h5>
-                                                <p>{club}</p>
-                                                <p>Edad: {edad} | Altura: {altura} cm</p>
-                                                {link_html}
-                                            </div>
-                                        </div>
-                                        """,
-                                        unsafe_allow_html=True,
-                                    )
+                        if jugadores_pos.empty:
+                            st.markdown("<p style='color:gray;font-size:11px;text-align:center;'>— Vacante —</p>", unsafe_allow_html=True)
                         else:
-                            st.markdown(
-                                "<p style='color:gray;font-size:11px;text-align:center;'>— Vacante —</p>",
-                                unsafe_allow_html=True,
-                            )
+                            jugadores_lista = list(jugadores_pos.iterrows())
+                            salto = 2 if "Mediocampista" in pos else 1
+                            for fila in range(0, len(jugadores_lista), salto):
+                                fila_jugadores = jugadores_lista[fila:fila + salto]
+                                fila_cols = st.columns(len(fila_jugadores))
+                                for fcol, (_, row) in zip(fila_cols, fila_jugadores):
+                                    with fcol:
+                                        url_foto = str(row.get("URL_Foto", "")).strip()
+                                        if not url_foto.startswith("http"):
+                                            url_foto = "https://via.placeholder.com/60"
+                                        partes = str(row.get("Nombre", "")).split()
+                                        nombre = partes[0] if partes else "Sin nombre"
+                                        apellido = partes[-1] if len(partes) > 1 else ""
+                                        edad = row.get("Edad", "-")
+                                        altura = row.get("Altura", "-")
+                                        club = row.get("Club", "-")
+                                        url_perfil = str(row.get("URL_Perfil", ""))
+                                        link_html = (
+                                            f"<div class='player-link'><a href='{url_perfil}' target='_blank'>Ver perfil</a></div>"
+                                            if url_perfil.startswith("http")
+                                            else ""
+                                        )
+
+                                        st.markdown(f"""
+                                            <div class="player-card">
+                                                <img src="{url_foto}" class="player-photo"/>
+                                                <div class="player-info">
+                                                    <h5>{nombre} {apellido}</h5>
+                                                    <p>{club}</p>
+                                                    <p>Edad: {edad} | Altura: {altura} cm</p>
+                                                    {link_html}
+                                                </div>
+                                            </div>
+                                        """, unsafe_allow_html=True)
+
+                                        # --- Botón eliminar ---
+                                        if st.button(f"🗑️ Eliminar {nombre} {apellido}", key=f"del_{row['ID_Jugador']}_{i}"):
+                                            try:
+                                                ws_short = obtener_hoja("Lista corta")
+                                                data_short = ws_short.get_all_records()
+                                                df_short_local = pd.DataFrame(data_short)
+                                                fila = df_short_local.index[
+                                                    df_short_local["ID_Jugador"].astype(str) == str(row["ID_Jugador"])
+                                                ]
+                                                if not fila.empty:
+                                                    df_short_local = df_short_local.drop(fila[0])
+                                                    ws_short.clear()
+                                                    ws_short.append_row(list(df_short_local.columns))
+                                                    if not df_short_local.empty:
+                                                        ws_short.update(
+                                                            [df_short_local.columns.values.tolist()] + df_short_local.values.tolist()
+                                                        )
+                                                    st.toast(f"🗑️ Jugador {nombre} {apellido} eliminado.", icon="🗑️")
+                                                    st.cache_data.clear()
+                                                    st.experimental_rerun()
+                                            except Exception as e:
+                                                st.error(f"⚠️ Error al eliminar: {e}")
+
 
 
 # =========================================================
@@ -1428,6 +1425,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
