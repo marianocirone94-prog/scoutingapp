@@ -1069,34 +1069,29 @@ if menu == "Ver informes":
                         st.markdown(f"[🌐 Perfil externo]({j['URL_Perfil']})", unsafe_allow_html=True)
 
                 # =========================================================
-                # INFORMES ASOCIADOS + EDICIÓN + PDF
+                # INFORMES ASOCIADOS + EDICIÓN + PDF VISUAL PRO
                 # =========================================================
                 informes_sel = df_reports[df_reports["ID_Jugador"] == j["ID_Jugador"]]
                 if not informes_sel.empty:
                     st.markdown(f"### 📄 Informes de {j['Nombre']}")
 
-                    # -------------------------------
-                    # Exportar informe visual PRO
-                    # -------------------------------
                     if st.button("📥 Exportar informe visual PRO", key=f"pdf_{j['ID_Jugador']}"):
                         try:
                             import matplotlib.pyplot as plt
                             import base64
                             from jinja2 import Template
-                            import pdfkit
+                            from weasyprint import HTML
 
-                            # --- generar gráfico radar con promedios del jugador ---
+                            # --- generar gráfico radar ---
                             prom_jugador = calcular_promedios_jugador(df_reports, j["ID_Jugador"])
                             categorias = list(prom_jugador.keys())
                             valores = list(prom_jugador.values())
 
-                            # normalizamos si falta alguno
                             if len(valores) < 6:
                                 while len(valores) < 6:
                                     categorias.append(f"Atributo {len(valores)+1}")
                                     valores.append(0)
 
-                            # crear radar
                             import numpy as np
                             angles = np.linspace(0, 2*np.pi, len(valores), endpoint=False).tolist()
                             valores += valores[:1]
@@ -1185,7 +1180,7 @@ if menu == "Ver informes":
                             )
 
                             output_path = f"Informe_{j['Nombre']}.pdf"
-                            pdfkit.from_string(html, output_path)
+                            HTML(string=html).write_pdf(output_path)
 
                             with open(output_path, "rb") as f:
                                 st.download_button(
@@ -1229,6 +1224,7 @@ if menu == "Ver informes":
                                         st.error(f"⚠️ Error al actualizar el informe: {e}")
         else:
             st.info("📍 Seleccioná un registro para ver la ficha del jugador.")
+
 
 
 # =========================================================
@@ -1498,6 +1494,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
