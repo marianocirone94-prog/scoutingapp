@@ -1,15 +1,15 @@
 # =========================================================
 # 🕐 BLOQUE 6 / 6 — Agenda de Seguimiento — ScoutingApp PRO
 # =========================================================
-# - Integración directa con Google Sheets (hoja “Agenda”)
-# - Registro de seguimientos: jugador, scout, motivo y fecha
-# - Visualización de pendientes y vistos (tarjetas 5x5)
-# - Compatible con import desde Scoutingapp.py
+# - Conectada a Google Sheets (crea hoja "Agenda" si no existe)
+# - Jugadores obtenidos directamente desde df_players
+# - Tarjetas visuales 5x5 con opción de marcar visto
 # =========================================================
 
 import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
+import uuid  # 🔑 para claves únicas
 
 # =========================================================
 # FUNCIÓN PRINCIPAL
@@ -43,7 +43,7 @@ def render_agenda(current_user, current_role, df_players):
         df_agenda["Fecha_Revisar"] = pd.to_datetime(df_agenda["Fecha_Revisar"], errors="coerce")
 
     # =========================================================
-    # ESTILOS VISUALES
+    # CSS VISUAL
     # =========================================================
     st.markdown("""
     <style>
@@ -61,22 +61,9 @@ def render_agenda(current_user, current_role, df_players):
         transform: scale(1.03);
         box-shadow: 0 0 10px #00c6ff;
     }
-    .agenda-title {
-        color: #00c6ff;
-        font-size: 14px;
-        font-weight: bold;
-        margin-bottom: 4px;
-    }
-    .agenda-sub {
-        font-size: 12.5px;
-        color: #b0b0b0;
-        margin: 2px 0;
-    }
-    .agenda-date {
-        font-size: 12px;
-        color: white;
-        margin-top: 3px;
-    }
+    .agenda-title { color: #00c6ff; font-size: 14px; font-weight: bold; margin-bottom: 4px; }
+    .agenda-sub { font-size: 12.5px; color: #b0b0b0; margin: 2px 0; }
+    .agenda-date { font-size: 12px; color: white; margin-top: 3px; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -143,7 +130,8 @@ def render_agenda(current_user, current_role, df_players):
                         if pd.notnull(row["Fecha_Revisar"])
                         else "-"
                     )
-                    unique_key = f"btn_{row['Nombre']}_{str(row['Fecha_Revisar'])}_{fila}_{col_idx}"
+                    # ✅ UUID evita errores de duplicado
+                    unique_key = f"{uuid.uuid4()}"
                     st.markdown(f"""
                     <div class="agenda-card">
                         <div class="agenda-title">{row['Nombre']}</div>
@@ -202,5 +190,3 @@ def render_agenda(current_user, current_role, df_players):
 # =========================================================
 # FIN DEL BLOQUE AGENDA
 # =========================================================
-
-
