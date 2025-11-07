@@ -1483,7 +1483,7 @@ if menu == "Lista corta":
 # - Integrado dentro del archivo principal
 # - Usa obtener_hoja() y df_players reales
 # - Diseño visual con cards, etiquetas dinámicas y hover
-# - Sin errores de ID ni imports externos
+# - Protegido contra eliminación accidental de hojas
 # =========================================================
 
 if menu == "Agenda":
@@ -1525,7 +1525,7 @@ if menu == "Agenda":
     """, unsafe_allow_html=True)
 
     # =========================================================
-    # CARGA / CREACIÓN DE HOJA
+    # CARGA / CREACIÓN DE HOJA "Agenda"
     # =========================================================
     columnas = ["ID_Jugador", "Nombre", "Scout", "Fecha_Revisar", "Motivo", "Visto"]
 
@@ -1534,42 +1534,53 @@ if menu == "Agenda":
         data = ws.get_all_records()
         df_agenda = pd.DataFrame(data)
     except Exception as e:
-        st.error(f"⚠️ No se pudo conectar a la hoja Agenda: {e}")
-        st.stop()
+        st.warning("⚠️ No existía la hoja 'Agenda'. Se creará automáticamente en la base de datos.")
+        try:
+            ws = obtener_hoja("Agenda", columnas)  # la crea si no existe
+            ws.append_row(columnas)
+            df_agenda = pd.DataFrame(columns=columnas)
+        except Exception as err:
+            st.error(f"❌ No se pudo crear la hoja Agenda: {err}")
+            st.stop()
 
     if df_agenda.empty:
         df_agenda = pd.DataFrame(columns=columnas)
 
     df_agenda["Fecha_Revisar"] = pd.to_datetime(df_agenda["Fecha_Revisar"], errors="coerce")
-    df_agenda["Visto"] = df_agenda["Visto"].astype(str).str.lower().isin(["si","sí","true","1"])
+    df_agenda["Visto"] = df_agenda["Visto"].astype(str).str.lower().isin(["si", "sí", "true", "1"])
 
     hoy = pd.Timestamp(datetime.now().date())
     pendientes = df_agenda[df_agenda["Visto"] == False]
     vistos = df_agenda[df_agenda["Visto"] == True]
 
     # =========================================================
-    # FUNCIÓN: MARCAR VISTO
+    # FUNCIÓN: MARCAR VISTO (segura, sin clear)
     # =========================================================
     def marcar_visto(nombre):
         df_agenda.loc[df_agenda["Nombre"] == nombre, "Visto"] = "Sí"
-        ws.clear()
-        ws.update([df_agenda.columns.values.tolist()] + df_agenda.fillna("").values.tolist())
-        st.toast(f"✅ {nombre} marcado como visto.", icon="✅")
-        st.cache_data.clear()
-        st.rerun()
+        try:
+            ws.update([df_agenda.columns.values.tolist()] + df_agenda.fillna("").values.tolist())
+            st.toast(f"✅ {nombre} marcado como visto.", icon="✅")
+            st.cache_data.clear()
+            st.rerun()
+        except Exception as e:
+            st.error(f"⚠️ Error al actualizar seguimiento: {e}")
 
     # =========================================================
     # FUNCIÓN: GUARDAR NUEVO
     # =========================================================
     def guardar_nuevo(id_jugador, nombre, scout, fecha, motivo):
         nueva = [id_jugador, nombre, scout, fecha.strftime("%Y-%m-%d"), motivo, "Pendiente"]
-        ws.append_row(nueva)
-        st.success(f"✅ Seguimiento agendado para {nombre} el {fecha.strftime('%d/%m/%Y')}")
-        st.cache_data.clear()
-        st.rerun()
+        try:
+            ws.append_row(nueva)
+            st.success(f"✅ Seguimiento agendado para {nombre} el {fecha.strftime('%d/%m/%Y')}")
+            st.cache_data.clear()
+            st.rerun()
+        except Exception as e:
+            st.error(f"⚠️ Error al guardar seguimiento: {e}")
 
     # =========================================================
-    # BLOQUE PENDIENTES (5 columnas por fila)
+    # BLOQUE PENDIENTES (máx 5 columnas por fila)
     # =========================================================
     with st.expander("🕐 Seguimientos pendientes", expanded=True):
         if pendientes.empty:
@@ -1601,7 +1612,7 @@ if menu == "Agenda":
                         st.button("👁 Marcar visto", key=f"mark_{nombre}_{i}", on_click=marcar_visto, args=(nombre,))
 
     # =========================================================
-    # BLOQUE YA VISTOS (5 columnas por fila)
+    # BLOQUE YA VISTOS (máx 5 columnas por fila)
     # =========================================================
     with st.expander("👁 Seguimientos ya vistos", expanded=False):
         if vistos.empty:
@@ -1645,7 +1656,6 @@ if menu == "Agenda":
 
 
 
-
 # =========================================================
 # CIERRE PROFESIONAL (footer)
 # =========================================================
@@ -1664,6 +1674,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
