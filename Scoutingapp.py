@@ -15,12 +15,17 @@ import streamlit as st
 import matplotlib.pyplot as plt
 
 from io import BytesIO
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from fpdf import FPDF
 from st_aggrid import AgGrid, GridOptionsBuilder
 import matplotlib.patches as patches
 import gspread
 from google.oauth2.service_account import Credentials
+
+# =========================================================
+# 🕐 BLOQUE AGENDA — Integración
+# =========================================================
+import bloque_agenda
 
 # =========================================================
 # BLOQUE DE CONEXIÓN A GOOGLE SHEETS (FINAL - SEGURO Y MULTIUSUARIO)
@@ -580,7 +585,7 @@ elif CURRENT_ROLE == "viewer":
 # --- Menú lateral principal ---
 menu = st.sidebar.radio(
     "📋 Menú principal",
-    ["Jugadores", "Ver informes", "Lista corta"]
+    ["Agenda", "Jugadores", "Ver informes", "Lista corta"]
 )
 
 
@@ -1477,6 +1482,11 @@ if menu == "Lista corta":
                     st.error(f"⚠️ Error al eliminar: {e}")
 
 
+# =========================================================
+# BLOQUE 6 / 6 — Agenda de Seguimientos
+# =========================================================
+if menu == "Agenda":
+    bloque_agenda.render_agenda(CURRENT_USER, CURRENT_ROLE, df_players)
 
 
 # =========================================================
@@ -1497,6 +1507,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
