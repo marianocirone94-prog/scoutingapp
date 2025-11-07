@@ -3,13 +3,13 @@
 # =========================================================
 # - Conectada a Google Sheets (crea hoja "Agenda" si no existe)
 # - Jugadores obtenidos directamente desde df_players
-# - Tarjetas visuales 5x5 con opción de marcar visto
+# - Tarjetas visuales 5x5 con botón de "Marcar visto"
 # =========================================================
 
 import streamlit as st
 import pandas as pd
-from datetime import datetime, timedelta
-import uuid  # 🔑 para claves únicas
+from datetime import datetime
+import uuid
 
 # =========================================================
 # FUNCIÓN PRINCIPAL
@@ -27,8 +27,16 @@ def render_agenda(current_user, current_role, df_players):
         return
 
     columnas_base = ["ID_Jugador", "Nombre", "Scout", "Fecha_Revisar", "Motivo", "Visto"]
-    ws = obtener_hoja("Agenda", columnas_base)
 
+    try:
+        ws = obtener_hoja("Agenda", columnas_base)
+    except Exception as e:
+        st.error(f"⚠️ No se pudo acceder o crear la hoja Agenda: {e}")
+        return
+
+    # =========================================================
+    # LECTURA DE DATOS
+    # =========================================================
     try:
         data = ws.get_all_records()
         df_agenda = pd.DataFrame(data)
@@ -39,31 +47,31 @@ def render_agenda(current_user, current_role, df_players):
     if df_agenda.empty:
         df_agenda = pd.DataFrame(columns=columnas_base)
 
-    if not df_agenda.empty and "Fecha_Revisar" in df_agenda.columns:
+    if "Fecha_Revisar" in df_agenda.columns:
         df_agenda["Fecha_Revisar"] = pd.to_datetime(df_agenda["Fecha_Revisar"], errors="coerce")
 
     # =========================================================
-    # CSS VISUAL
+    # CSS VISUAL (tema oscuro coherente)
     # =========================================================
     st.markdown("""
     <style>
     .agenda-card {
         background: linear-gradient(90deg,#0e1117,#1e3c72);
-        border-radius: 12px;
+        border-radius: 14px;
         padding: 10px 12px;
         margin: 8px 0;
         color: white;
-        box-shadow: 0 0 8px rgba(0,0,0,0.4);
+        box-shadow: 0 0 10px rgba(0,0,0,0.45);
         transition: 0.2s ease-in-out;
-        min-height: 110px;
+        min-height: 115px;
     }
     .agenda-card:hover {
         transform: scale(1.03);
-        box-shadow: 0 0 10px #00c6ff;
+        box-shadow: 0 0 12px #00c6ff;
     }
-    .agenda-title { color: #00c6ff; font-size: 14px; font-weight: bold; margin-bottom: 4px; }
-    .agenda-sub { font-size: 12.5px; color: #b0b0b0; margin: 2px 0; }
-    .agenda-date { font-size: 12px; color: white; margin-top: 3px; }
+    .agenda-title { color: #00c6ff; font-size: 14px; font-weight: bold; margin-bottom: 4px; text-align:center; }
+    .agenda-sub { font-size: 12.5px; color: #b0b0b0; margin: 2px 0; text-align:center; }
+    .agenda-date { font-size: 12px; color: white; margin-top: 3px; text-align:center; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -94,13 +102,16 @@ def render_agenda(current_user, current_role, df_players):
                             id_jug,
                             jugador_sel,
                             scout,
-                            fecha_rev.strftime("%d/%m/%Y"),
+                            fecha_rev.strftime("%Y-%m-%d"),
                             motivo,
                             "Pendiente"
                         ]
                         ws.append_row(nueva_fila)
                         st.success(f"✅ Seguimiento agendado para {jugador_sel} el {fecha_rev.strftime('%d/%m/%Y')}")
-                        st.cache_data.clear()
+                        try:
+                            st.cache_data.clear()
+                        except Exception:
+                            pass
                         st.rerun()
                     except Exception as e:
                         st.error(f"⚠️ Error al guardar seguimiento: {e}")
@@ -130,8 +141,9 @@ def render_agenda(current_user, current_role, df_players):
                         if pd.notnull(row["Fecha_Revisar"])
                         else "-"
                     )
-                    # ✅ UUID evita errores de duplicado
-                    unique_key = f"{uuid.uuid4()}"
+
+                    unique_key = f"mark_{row['ID_Jugador']}_{str(row['Fecha_Revisar'])}"
+
                     st.markdown(f"""
                     <div class="agenda-card">
                         <div class="agenda-title">{row['Nombre']}</div>
@@ -144,16 +156,18 @@ def render_agenda(current_user, current_role, df_players):
                     if st.button("✅ Marcar visto", key=unique_key):
                         try:
                             df_agenda.loc[
-                                (df_agenda["Nombre"] == row["Nombre"]) &
+                                (df_agenda["ID_Jugador"] == row["ID_Jugador"]) &
                                 (df_agenda["Fecha_Revisar"] == row["Fecha_Revisar"]),
                                 "Visto"
                             ] = "Sí"
 
                             ws.clear()
-                            ws.append_row(list(df_agenda.columns))
-                            ws.update([df_agenda.columns.values.tolist()] + df_agenda.values.tolist())
+                            ws.update([df_agenda.columns.values.tolist()] + df_agenda.fillna("").values.tolist())
                             st.success(f"👀 Marcado como visto: {row['Nombre']}")
-                            st.cache_data.clear()
+                            try:
+                                st.cache_data.clear()
+                            except Exception:
+                                pass
                             st.rerun()
                         except Exception as e:
                             st.error(f"⚠️ Error al actualizar: {e}")
