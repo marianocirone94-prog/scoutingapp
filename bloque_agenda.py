@@ -1,10 +1,10 @@
 # =========================================================
-# 🕐 BLOQUE 6 / 6 — Agenda de Seguimientos (versión definitiva)
+# 🕐 BLOQUE 6 / 6 — Agenda de Seguimientos (versión definitiva con namespace)
 # =========================================================
-# - Totalmente integrada con ScoutingApp principal
-# - Usa obtener_hoja() ya definida en el main
-# - Claves únicas 100% estables para botones (sin duplicados)
-# - Crea hoja "Agenda" si no existe
+# - Integrada al ScoutingApp principal (usa obtener_hoja)
+# - Claves únicas aisladas por sesión (namespace)
+# - Crea hoja "Agenda" si no existe en Scouting_DB
+# - Sin duplicados de botones ni conflictos de importación
 # =========================================================
 
 import streamlit as st
@@ -14,6 +14,12 @@ import time
 
 def render_agenda(current_user, current_role, df_players):
     st.markdown("<h2 style='text-align:center;color:#00c6ff;'>📅 Agenda de Seguimiento</h2>", unsafe_allow_html=True)
+
+    # =========================================================
+    # NAMESPACE ÚNICO (EVITA COLISIÓN DE BOTONES ENTRE MÓDULOS)
+    # =========================================================
+    st.session_state.setdefault("agenda_namespace", f"agenda_{time.time_ns()}")
+    namespace = st.session_state["agenda_namespace"]
 
     # =========================================================
     # CONEXIÓN A GOOGLE SHEETS (usa la función del main)
@@ -40,16 +46,16 @@ def render_agenda(current_user, current_role, df_players):
     st.markdown("### ➕ Agendar nuevo seguimiento")
 
     with st.expander("Nuevo seguimiento", expanded=False):
-        with st.form("form_agenda"):
+        with st.form(f"{namespace}_form_agenda"):
             col1, col2 = st.columns(2)
             with col1:
-                jugador_sel = st.selectbox("Jugador", [""] + sorted(df_players["Nombre"].dropna().unique()))
-                scout = st.text_input("Scout", value=current_user)
+                jugador_sel = st.selectbox("Jugador", [""] + sorted(df_players["Nombre"].dropna().unique()), key=f"{namespace}_jugador_sel")
+                scout = st.text_input("Scout", value=current_user, key=f"{namespace}_scout")
             with col2:
-                fecha_rev = st.date_input("Fecha de revisión", format="DD/MM/YYYY")
-                motivo = st.text_input("Motivo del seguimiento")
+                fecha_rev = st.date_input("Fecha de revisión", format="DD/MM/YYYY", key=f"{namespace}_fecha_rev")
+                motivo = st.text_input("Motivo del seguimiento", key=f"{namespace}_motivo")
 
-            guardar = st.form_submit_button("💾 Guardar seguimiento")
+            guardar = st.form_submit_button("💾 Guardar seguimiento", key=f"{namespace}_guardar")
 
             if guardar:
                 if not jugador_sel or not fecha_rev:
@@ -79,7 +85,7 @@ def render_agenda(current_user, current_role, df_players):
     vistos = df_agenda[df_agenda["Visto"] == "Sí"] if not df_agenda.empty else pd.DataFrame()
 
     # =========================================================
-    # CSS VISUAL
+    # CSS VISUAL (tema oscuro RC)
     # =========================================================
     st.markdown("""
     <style>
@@ -123,8 +129,8 @@ def render_agenda(current_user, current_role, df_players):
                         else "-"
                     )
 
-                    # ✅ Clave única definitiva con timestamp global
-                    unique_key = f"btn_{row['ID_Jugador']}_{row.name}_{time.time_ns()}"
+                    # 🔑 Clave única aislada por namespace
+                    unique_key = f"{namespace}_mark_{row['ID_Jugador']}_{row.name}"
 
                     st.markdown(f"""
                     <div class="agenda-card">
