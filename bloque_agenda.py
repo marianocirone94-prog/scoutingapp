@@ -184,7 +184,7 @@ def render_agenda(current_user, current_role, df_players):
                     </div>
                     """, unsafe_allow_html=True)
 
-                    if st.button(f"✅ Marcar visto {row['Nombre']}", key=f"btn_{row['Nombre']}_{fila}"):
+                    if st.button(f"✅ Marcar visto {row['Nombre']}", key=f"btn_{row['Nombre']}_{fila}_{row['Fecha_Revisar']}"):
                         try:
                             df_agenda.loc[
                                 (df_agenda["Nombre"] == row["Nombre"]) &
