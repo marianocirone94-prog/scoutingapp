@@ -4,7 +4,7 @@
 # - Se integra con Google Sheets (hoja “Agenda”)
 # - Crea automáticamente la hoja si no existe
 # - Permite agendar seguimientos, ver pendientes y marcar vistos
-# - Estilo visual consistente con el resto de la app
+# - Estilo visual coherente con toda la App
 # =========================================================
 
 import streamlit as st
@@ -39,7 +39,6 @@ def render_agenda(current_user, current_role, df_players):
     if df_agenda.empty:
         df_agenda = pd.DataFrame(columns=columnas_base)
 
-    # Formato de fecha
     if not df_agenda.empty:
         df_agenda["Fecha_Revisar"] = pd.to_datetime(df_agenda["Fecha_Revisar"], errors="coerce")
 
@@ -58,7 +57,7 @@ def render_agenda(current_user, current_role, df_players):
         color: white;
         box-shadow: 0 0 8px rgba(0,0,0,0.4);
         transition: 0.2s ease-in-out;
-        min-height: 120px;
+        min-height: 110px;
     }
     .agenda-card:hover {
         transform: scale(1.03);
@@ -168,13 +167,14 @@ def render_agenda(current_user, current_role, df_players):
         for fila in range(0, len(pendientes), 5):
             cols = st.columns(5)
             sub = pendientes.iloc[fila:fila + 5]
-            for col, (_, row) in zip(cols, sub.iterrows()):
-                with col:
+            for col_idx, (_, row) in enumerate(sub.iterrows()):
+                with cols[col_idx]:
                     fecha_txt = (
                         row["Fecha_Revisar"].strftime("%d/%m/%Y")
                         if pd.notnull(row["Fecha_Revisar"])
                         else "-"
                     )
+                    unique_key = f"btn_{row['Nombre']}_{str(row['Fecha_Revisar'])}_{fila}_{col_idx}"
                     st.markdown(f"""
                     <div class="agenda-card">
                         <div class="agenda-title">{row['Nombre']}</div>
@@ -184,13 +184,14 @@ def render_agenda(current_user, current_role, df_players):
                     </div>
                     """, unsafe_allow_html=True)
 
-                    if st.button(f"✅ Marcar visto {row['Nombre']}", key=f"btn_{row['Nombre']}_{fila}_{row['Fecha_Revisar']}"):
+                    if st.button(f"✅ Marcar visto", key=unique_key):
                         try:
                             df_agenda.loc[
                                 (df_agenda["Nombre"] == row["Nombre"]) &
                                 (df_agenda["Fecha_Revisar"] == row["Fecha_Revisar"]),
                                 "Visto"
                             ] = "Sí"
+
                             ws.clear()
                             ws.append_row(list(df_agenda.columns))
                             ws.update([df_agenda.columns.values.tolist()] + df_agenda.values.tolist())
@@ -212,8 +213,8 @@ def render_agenda(current_user, current_role, df_players):
         for fila in range(0, len(vistos), 5):
             cols = st.columns(5)
             sub = vistos.iloc[fila:fila + 5]
-            for col, (_, row) in zip(cols, sub.iterrows()):
-                with col:
+            for col_idx, (_, row) in enumerate(sub.iterrows()):
+                with cols[col_idx]:
                     fecha_txt = (
                         row["Fecha_Revisar"].strftime("%d/%m/%Y")
                         if pd.notnull(row["Fecha_Revisar"])
@@ -226,5 +227,7 @@ def render_agenda(current_user, current_role, df_players):
                         <div class="agenda-sub">Motivo: {row['Motivo']}</div>
                         <div class="agenda-date">📅 {fecha_txt}</div>
                     </div>
+                    """, unsafe_allow_html=True)
+
                     """, unsafe_allow_html=True)
 
