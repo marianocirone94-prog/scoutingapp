@@ -1,97 +1,36 @@
 # =========================================================
-# 🕐 BLOQUE 6 / 6 — Agenda de Seguimiento — ScoutingApp PRO
+# 🕐 BLOQUE 6 / 6 — Agenda de Seguimientos (integrado al core)
 # =========================================================
-# - Usa las mismas credenciales y conexión que Scouting_DB
+# - Usa la función obtener_hoja() del main (sin credenciales propias)
 # - Crea hoja "Agenda" si no existe
-# - Sin dependencias del módulo principal
-# - Sin errores de botón duplicado
+# - Guarda y actualiza en la misma Scouting_DB
 # =========================================================
 
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-import gspread
-from google.oauth2.service_account import Credentials
 
-# =========================================================
-# CONFIGURACIÓN DE GOOGLE SHEETS
-# =========================================================
-SHEET_NAME = "Scouting_DB"
-SCOPE = [
-    "https://www.googleapis.com/auth/spreadsheets",
-    "https://www.googleapis.com/auth/drive"
-]
-
-@st.cache_resource
-def conectar_gsheets():
-    creds = Credentials.from_service_account_file(
-        "credentials/credentials.json",
-        scopes=SCOPE
-    )
-    cliente = gspread.authorize(creds)
-    return cliente
-
-def obtener_hoja_agenda():
-    cliente = conectar_gsheets()
-    sh = cliente.open(SHEET_NAME)
-    columnas = ["ID_Jugador", "Nombre", "Scout", "Fecha_Revisar", "Motivo", "Visto"]
-
-    try:
-        ws = sh.worksheet("Agenda")
-    except gspread.exceptions.WorksheetNotFound:
-        ws = sh.add_worksheet(title="Agenda", rows="200", cols=str(len(columnas)))
-        ws.append_row(columnas)
-
-    return ws
-
-# =========================================================
-# FUNCIÓN PRINCIPAL
-# =========================================================
 def render_agenda(current_user, current_role, df_players):
     st.markdown("<h2 style='text-align:center;color:#00c6ff;'>📅 Agenda de Seguimiento</h2>", unsafe_allow_html=True)
 
     # =========================================================
-    # CONEXIÓN Y LECTURA
+    # CARGAR / CREAR HOJA AGENDA (usa obtener_hoja del main)
     # =========================================================
     try:
-        ws = obtener_hoja_agenda()
+        from Scoutingapp import obtener_hoja  # usa tu función principal
+        columnas = ["ID_Jugador", "Nombre", "Scout", "Fecha_Revisar", "Motivo", "Visto"]
+        ws = obtener_hoja("Agenda", columnas)
         data = ws.get_all_records()
         df_agenda = pd.DataFrame(data)
     except Exception as e:
         st.error(f"⚠️ No se pudo conectar a la hoja Agenda: {e}")
         return
 
-    columnas = ["ID_Jugador", "Nombre", "Scout", "Fecha_Revisar", "Motivo", "Visto"]
     if df_agenda.empty:
         df_agenda = pd.DataFrame(columns=columnas)
 
     if "Fecha_Revisar" in df_agenda.columns:
         df_agenda["Fecha_Revisar"] = pd.to_datetime(df_agenda["Fecha_Revisar"], errors="coerce")
-
-    # =========================================================
-    # CSS VISUAL
-    # =========================================================
-    st.markdown("""
-    <style>
-    .agenda-card {
-        background: linear-gradient(90deg,#0e1117,#1e3c72);
-        border-radius: 14px;
-        padding: 10px 12px;
-        margin: 8px 0;
-        color: white;
-        box-shadow: 0 0 10px rgba(0,0,0,0.45);
-        transition: 0.2s ease-in-out;
-        min-height: 115px;
-    }
-    .agenda-card:hover {
-        transform: scale(1.03);
-        box-shadow: 0 0 12px #00c6ff;
-    }
-    .agenda-title { color: #00c6ff; font-size: 14px; font-weight: bold; margin-bottom: 4px; text-align:center; }
-    .agenda-sub { font-size: 12.5px; color: #b0b0b0; margin: 2px 0; text-align:center; }
-    .agenda-date { font-size: 12px; color: white; margin-top: 3px; text-align:center; }
-    </style>
-    """, unsafe_allow_html=True)
 
     # =========================================================
     # FORMULARIO NUEVO SEGUIMIENTO
@@ -126,10 +65,7 @@ def render_agenda(current_user, current_role, df_players):
                         ]
                         ws.append_row(nueva_fila)
                         st.success(f"✅ Seguimiento agendado para {jugador_sel} el {fecha_rev.strftime('%d/%m/%Y')}")
-                        try:
-                            st.cache_data.clear()
-                        except Exception:
-                            pass
+                        st.cache_data.clear()
                         st.rerun()
                     except Exception as e:
                         st.error(f"⚠️ Error al guardar seguimiento: {e}")
@@ -139,6 +75,31 @@ def render_agenda(current_user, current_role, df_players):
     # =========================================================
     pendientes = df_agenda[df_agenda["Visto"] != "Sí"] if not df_agenda.empty else pd.DataFrame()
     vistos = df_agenda[df_agenda["Visto"] == "Sí"] if not df_agenda.empty else pd.DataFrame()
+
+    # =========================================================
+    # CSS VISUAL
+    # =========================================================
+    st.markdown("""
+    <style>
+    .agenda-card {
+        background: linear-gradient(90deg,#0e1117,#1e3c72);
+        border-radius: 14px;
+        padding: 10px 12px;
+        margin: 8px 0;
+        color: white;
+        box-shadow: 0 0 10px rgba(0,0,0,0.45);
+        transition: 0.2s ease-in-out;
+        min-height: 115px;
+    }
+    .agenda-card:hover {
+        transform: scale(1.03);
+        box-shadow: 0 0 12px #00c6ff;
+    }
+    .agenda-title { color: #00c6ff; font-size: 14px; font-weight: bold; margin-bottom: 4px; text-align:center; }
+    .agenda-sub { font-size: 12.5px; color: #b0b0b0; margin: 2px 0; text-align:center; }
+    .agenda-date { font-size: 12px; color: white; margin-top: 3px; text-align:center; }
+    </style>
+    """, unsafe_allow_html=True)
 
     # =========================================================
     # BLOQUE PENDIENTES
@@ -159,7 +120,6 @@ def render_agenda(current_user, current_role, df_players):
                         if pd.notnull(row["Fecha_Revisar"])
                         else "-"
                     )
-
                     unique_key = f"mark_{row['ID_Jugador']}_{str(row['Fecha_Revisar'])}"
 
                     st.markdown(f"""
@@ -182,10 +142,7 @@ def render_agenda(current_user, current_role, df_players):
                             ws.clear()
                             ws.update([df_agenda.columns.values.tolist()] + df_agenda.fillna("").values.tolist())
                             st.success(f"👀 Marcado como visto: {row['Nombre']}")
-                            try:
-                                st.cache_data.clear()
-                            except Exception:
-                                pass
+                            st.cache_data.clear()
                             st.rerun()
                         except Exception as e:
                             st.error(f"⚠️ Error al actualizar: {e}")
@@ -217,6 +174,7 @@ def render_agenda(current_user, current_role, df_players):
                         <div class="agenda-date">📅 {fecha_txt}</div>
                     </div>
                     """, unsafe_allow_html=True)
+
 
 # =========================================================
 # FIN DEL BLOQUE AGENDA
