@@ -1,15 +1,48 @@
 # =========================================================
 # 🕐 BLOQUE 6 / 6 — Agenda de Seguimiento — ScoutingApp PRO
 # =========================================================
-# - Conectada a Google Sheets (crea hoja "Agenda" si no existe)
-# - Jugadores obtenidos directamente desde df_players
-# - Tarjetas visuales 5x5 con botón de "Marcar visto"
+# - Usa las mismas credenciales y conexión que Scouting_DB
+# - Crea hoja "Agenda" si no existe
+# - Sin dependencias del módulo principal
+# - Sin errores de botón duplicado
 # =========================================================
 
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-import uuid
+import gspread
+from google.oauth2.service_account import Credentials
+
+# =========================================================
+# CONFIGURACIÓN DE GOOGLE SHEETS
+# =========================================================
+SHEET_NAME = "Scouting_DB"
+SCOPE = [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive"
+]
+
+@st.cache_resource
+def conectar_gsheets():
+    creds = Credentials.from_service_account_file(
+        "credentials/credentials.json",
+        scopes=SCOPE
+    )
+    cliente = gspread.authorize(creds)
+    return cliente
+
+def obtener_hoja_agenda():
+    cliente = conectar_gsheets()
+    sh = cliente.open(SHEET_NAME)
+    columnas = ["ID_Jugador", "Nombre", "Scout", "Fecha_Revisar", "Motivo", "Visto"]
+
+    try:
+        ws = sh.worksheet("Agenda")
+    except gspread.exceptions.WorksheetNotFound:
+        ws = sh.add_worksheet(title="Agenda", rows="200", cols=str(len(columnas)))
+        ws.append_row(columnas)
+
+    return ws
 
 # =========================================================
 # FUNCIÓN PRINCIPAL
@@ -18,40 +51,25 @@ def render_agenda(current_user, current_role, df_players):
     st.markdown("<h2 style='text-align:center;color:#00c6ff;'>📅 Agenda de Seguimiento</h2>", unsafe_allow_html=True)
 
     # =========================================================
-    # CONEXIÓN CON GOOGLE SHEETS
+    # CONEXIÓN Y LECTURA
     # =========================================================
     try:
-        from Scoutingapp import obtener_hoja
-    except Exception as e:
-        st.error(f"⚠️ No se pudo importar funciones base: {e}")
-        return
-
-    columnas_base = ["ID_Jugador", "Nombre", "Scout", "Fecha_Revisar", "Motivo", "Visto"]
-
-    try:
-        ws = obtener_hoja("Agenda", columnas_base)
-    except Exception as e:
-        st.error(f"⚠️ No se pudo acceder o crear la hoja Agenda: {e}")
-        return
-
-    # =========================================================
-    # LECTURA DE DATOS
-    # =========================================================
-    try:
+        ws = obtener_hoja_agenda()
         data = ws.get_all_records()
         df_agenda = pd.DataFrame(data)
     except Exception as e:
-        st.error(f"⚠️ No se pudo leer la hoja Agenda: {e}")
+        st.error(f"⚠️ No se pudo conectar a la hoja Agenda: {e}")
         return
 
+    columnas = ["ID_Jugador", "Nombre", "Scout", "Fecha_Revisar", "Motivo", "Visto"]
     if df_agenda.empty:
-        df_agenda = pd.DataFrame(columns=columnas_base)
+        df_agenda = pd.DataFrame(columns=columnas)
 
     if "Fecha_Revisar" in df_agenda.columns:
         df_agenda["Fecha_Revisar"] = pd.to_datetime(df_agenda["Fecha_Revisar"], errors="coerce")
 
     # =========================================================
-    # CSS VISUAL (tema oscuro coherente)
+    # CSS VISUAL
     # =========================================================
     st.markdown("""
     <style>
@@ -199,7 +217,6 @@ def render_agenda(current_user, current_role, df_players):
                         <div class="agenda-date">📅 {fecha_txt}</div>
                     </div>
                     """, unsafe_allow_html=True)
-
 
 # =========================================================
 # FIN DEL BLOQUE AGENDA
