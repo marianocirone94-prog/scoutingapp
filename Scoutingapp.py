@@ -1478,110 +1478,165 @@ if menu == "Lista corta":
 
 
 # =========================================================
-# BLOQUE 6 / 6 — Agenda de Seguimientos (inline y estable)
+# 🕐 BLOQUE 6 / 6 — Agenda de Seguimientos — ScoutingApp PRO
 # =========================================================
-# - Se integra dentro del archivo principal Scoutingapp.py
-# - Usa la función obtener_hoja() y conexión ya configurada
-# - Crea la hoja "Agenda" automáticamente si no existe
-# - Sin imports externos ni conflictos de IDs
+# - Integrado dentro del archivo principal
+# - Usa obtener_hoja() y df_players reales
+# - Diseño visual con cards, etiquetas dinámicas y hover
+# - Sin errores de ID ni imports externos
 # =========================================================
 
 if menu == "Agenda":
-    st.markdown("<h2 style='text-align:center;color:#00c6ff;'>📅 Agenda de Seguimiento</h2>", unsafe_allow_html=True)
+    import os
+    from datetime import datetime, timedelta
+    import pandas as pd
 
+    st.markdown("<h2 style='text-align:center;color:#00c6ff;'>📅 Agenda de Seguimiento — ScoutingApp PRO</h2>", unsafe_allow_html=True)
+
+    # =========================================================
+    # CSS PERSONALIZADO
+    # =========================================================
+    st.markdown("""
+    <style>
+    body, .stApp { background-color:#0e1117 !important; color:white !important; font-family:'Segoe UI',sans-serif; }
+    h1,h2,h3,h4,h5,h6 { color:white !important; }
+    .card-container {
+        display:flex; flex-wrap:wrap; justify-content:center; gap:14px; margin-bottom:1em;
+    }
+    .card {
+        background:linear-gradient(90deg,#0e1117,#1e3c72);
+        border-radius:10px; padding:0.7em 1em; color:white;
+        box-shadow:0 0 8px rgba(0,0,0,0.5); transition:0.2s ease-in-out;
+        width:220px; min-height:135px;
+    }
+    .card:hover { transform:scale(1.04); box-shadow:0 0 10px #00c6ff; }
+    .card h5 { color:#00c6ff; font-size:14px; margin:0 0 3px 0; text-align:left; }
+    .card p { font-size:12px; color:#b0b0b0; margin:2px 0; }
+    .card.visto { opacity:0.7; background:linear-gradient(90deg,#1a1f2e,#2a3a5a); }
+    .label {
+        display:inline-block; font-size:11px; padding:2px 6px; border-radius:5px;
+        font-weight:bold; margin-bottom:5px;
+    }
+    .vencido { background-color:#8b0000; color:white; }
+    .hoy { background-color:#ffd700; color:black; }
+    .proximo { background-color:#006400; color:white; }
+    .futuro { background-color:#004488; color:white; }
+    </style>
+    """, unsafe_allow_html=True)
+
+    # =========================================================
+    # CARGA / CREACIÓN DE HOJA
+    # =========================================================
     columnas = ["ID_Jugador", "Nombre", "Scout", "Fecha_Revisar", "Motivo", "Visto"]
 
-    # =========================================================
-    # CONEXIÓN CON GOOGLE SHEETS
-    # =========================================================
     try:
         ws = obtener_hoja("Agenda", columnas)
-        df_agenda = pd.DataFrame(ws.get_all_records())
+        data = ws.get_all_records()
+        df_agenda = pd.DataFrame(data)
     except Exception as e:
-        st.error(f"⚠️ No se pudo abrir la hoja Agenda: {e}")
+        st.error(f"⚠️ No se pudo conectar a la hoja Agenda: {e}")
         st.stop()
 
     if df_agenda.empty:
         df_agenda = pd.DataFrame(columns=columnas)
 
-    if "Fecha_Revisar" in df_agenda.columns:
-        df_agenda["Fecha_Revisar"] = pd.to_datetime(df_agenda["Fecha_Revisar"], errors="coerce")
+    df_agenda["Fecha_Revisar"] = pd.to_datetime(df_agenda["Fecha_Revisar"], errors="coerce")
+    df_agenda["Visto"] = df_agenda["Visto"].astype(str).str.lower().isin(["si","sí","true","1"])
+
+    hoy = pd.Timestamp(datetime.now().date())
+    pendientes = df_agenda[df_agenda["Visto"] == False]
+    vistos = df_agenda[df_agenda["Visto"] == True]
+
+    # =========================================================
+    # FUNCIÓN: MARCAR VISTO
+    # =========================================================
+    def marcar_visto(nombre):
+        df_agenda.loc[df_agenda["Nombre"] == nombre, "Visto"] = "Sí"
+        ws.clear()
+        ws.update([df_agenda.columns.values.tolist()] + df_agenda.fillna("").values.tolist())
+        st.toast(f"✅ {nombre} marcado como visto.", icon="✅")
+        st.cache_data.clear()
+        st.rerun()
+
+    # =========================================================
+    # FUNCIÓN: GUARDAR NUEVO
+    # =========================================================
+    def guardar_nuevo(id_jugador, nombre, scout, fecha, motivo):
+        nueva = [id_jugador, nombre, scout, fecha.strftime("%Y-%m-%d"), motivo, "Pendiente"]
+        ws.append_row(nueva)
+        st.success(f"✅ Seguimiento agendado para {nombre} el {fecha.strftime('%d/%m/%Y')}")
+        st.cache_data.clear()
+        st.rerun()
+
+    # =========================================================
+    # BLOQUE PENDIENTES
+    # =========================================================
+    with st.expander("🕐 Seguimientos pendientes", expanded=True):
+        if pendientes.empty:
+            st.info("No hay seguimientos pendientes.")
+        else:
+            st.markdown("<div class='card-container'>", unsafe_allow_html=True)
+            for _, row in pendientes.sort_values("Fecha_Revisar").iterrows():
+                nombre, scout, fecha, motivo = row["Nombre"], row["Scout"], row["Fecha_Revisar"], row["Motivo"]
+                if pd.isnull(fecha): continue
+                dias = (fecha - hoy).days
+                if dias < 0: label = "<span class='label vencido'>Vencido</span>"
+                elif dias == 0: label = "<span class='label hoy'>Hoy</span>"
+                elif dias <= 7: label = f"<span class='label proximo'>En {dias} días</span>"
+                else: label = f"<span class='label futuro'>En {dias} días</span>"
+
+                st.markdown(f"""
+                <div class='card'>
+                    {label}
+                    <h5>{nombre}</h5>
+                    <p>Scout: {scout}</p>
+                    <p>📅 {fecha.strftime('%d/%m/%Y')}</p>
+                    <p><i>{motivo}</i></p>
+                </div>
+                """, unsafe_allow_html=True)
+                st.button("👁 Marcar visto", key=f"mark_{nombre}_{_}", on_click=marcar_visto, args=(nombre,))
+            st.markdown("</div>", unsafe_allow_html=True)
+
+    # =========================================================
+    # BLOQUE YA VISTOS
+    # =========================================================
+    with st.expander("👁 Seguimientos ya vistos", expanded=False):
+        if vistos.empty:
+            st.info("No hay jugadores vistos aún.")
+        else:
+            st.markdown("<div class='card-container'>", unsafe_allow_html=True)
+            for _, row in vistos.sort_values("Fecha_Revisar").iterrows():
+                nombre, scout, fecha, motivo = row["Nombre"], row["Scout"], row["Fecha_Revisar"], row["Motivo"]
+                if pd.isnull(fecha): continue
+                st.markdown(f"""
+                <div class='card visto'>
+                    <span class='label futuro'>Visto</span>
+                    <h5>{nombre}</h5>
+                    <p>Scout: {scout}</p>
+                    <p>📅 {fecha.strftime('%d/%m/%Y')}</p>
+                    <p><i>{motivo}</i></p>
+                </div>
+                """, unsafe_allow_html=True)
+            st.markdown("</div>", unsafe_allow_html=True)
 
     # =========================================================
     # FORMULARIO NUEVO SEGUIMIENTO
     # =========================================================
-    st.markdown("### ➕ Agendar nuevo seguimiento")
-
-    with st.expander("Nuevo seguimiento", expanded=False):
-        with st.form("form_agenda"):
-            c1, c2 = st.columns(2)
-            with c1:
-                jugador_sel = st.selectbox("Jugador", [""] + sorted(df_players["Nombre"].dropna().unique()))
-                scout = st.text_input("Scout", value=CURRENT_USER)
-            with c2:
-                fecha_rev = st.date_input("Fecha de revisión", format="DD/MM/YYYY")
-                motivo = st.text_input("Motivo del seguimiento")
-
-            guardar = st.form_submit_button("💾 Guardar seguimiento")
-
-            if guardar:
-                if not jugador_sel or not fecha_rev:
-                    st.warning("⚠️ Debes seleccionar jugador y fecha.")
-                else:
-                    try:
-                        id_jug = df_players.loc[df_players["Nombre"] == jugador_sel, "ID_Jugador"].iloc[0]
-                        nueva = [id_jug, jugador_sel, scout, fecha_rev.strftime("%Y-%m-%d"), motivo, "Pendiente"]
-                        ws.append_row(nueva)
-                        st.success(f"✅ Seguimiento agendado para {jugador_sel}")
-                        st.cache_data.clear()
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"⚠️ Error al guardar seguimiento: {e}")
-
-    # =========================================================
-    # SEPARAR PENDIENTES Y VISTOS
-    # =========================================================
-    pendientes = df_agenda[df_agenda["Visto"] != "Sí"]
-    vistos = df_agenda[df_agenda["Visto"] == "Sí"]
-
-    # =========================================================
-    # BLOQUE DE PENDIENTES
-    # =========================================================
     st.markdown("---")
-    st.markdown("### 🟡 Seguimientos pendientes")
+    with st.expander("➕ Agendar nuevo seguimiento", expanded=False):
+        jugadores_dict = {row["Nombre"]: row["ID_Jugador"] for _, row in df_players.iterrows()}
+        col1, col2 = st.columns(2)
+        with col1:
+            jugador_sel = st.selectbox("Seleccioná un jugador", [""] + list(jugadores_dict.keys()))
+            scout = st.text_input("Scout responsable", value=CURRENT_USER)
+        with col2:
+            fecha_rev = st.date_input("Fecha de revisión", value=datetime.now().date() + timedelta(days=7))
+            motivo = st.text_area("Motivo del seguimiento", height=70)
 
-    if pendientes.empty:
-        st.info("No hay seguimientos pendientes.")
-    else:
-        for idx, row in pendientes.iterrows():
-            fecha_txt = row["Fecha_Revisar"].strftime("%d/%m/%Y") if pd.notnull(row["Fecha_Revisar"]) else "-"
-            col1, col2 = st.columns([3, 1])
-            with col1:
-                st.markdown(f"**{row['Nombre']}** — {row['Motivo']}  \n📅 {fecha_txt} | 👤 {row['Scout']}")
-            with col2:
-                if st.button("✅ Marcar visto", key=f"pend_{idx}_{row['ID_Jugador']}"):
-                    try:
-                        df_agenda.loc[idx, "Visto"] = "Sí"
-                        ws.clear()
-                        ws.update([df_agenda.columns.values.tolist()] + df_agenda.fillna("").values.tolist())
-                        st.success(f"{row['Nombre']} marcado como visto.")
-                        st.cache_data.clear()
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"⚠️ Error al actualizar: {e}")
+        if jugador_sel and st.button("💾 Guardar seguimiento"):
+            id_jugador = jugadores_dict[jugador_sel]
+            guardar_nuevo(id_jugador, jugador_sel, scout, fecha_rev, motivo)
 
-    # =========================================================
-    # BLOQUE DE YA VISTOS
-    # =========================================================
-    st.markdown("---")
-    st.markdown("### 🟢 Seguimientos ya vistos")
-
-    if vistos.empty:
-        st.info("No hay seguimientos vistos aún.")
-    else:
-        for idx, row in vistos.iterrows():
-            fecha_txt = row["Fecha_Revisar"].strftime("%d/%m/%Y") if pd.notnull(row["Fecha_Revisar"]) else "-"
-            st.markdown(f"✅ **{row['Nombre']}** — {row['Motivo']}  \n📅 {fecha_txt} | 👤 {row['Scout']}")
 
 
 
@@ -1603,6 +1658,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
