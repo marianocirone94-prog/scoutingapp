@@ -1,9 +1,10 @@
 # =========================================================
-# 🕐 BLOQUE 6 / 6 — Agenda de Seguimientos (integrado al core)
+# 🕐 BLOQUE 6 / 6 — Agenda de Seguimientos (versión final)
 # =========================================================
-# - Usa la función obtener_hoja() del main (sin credenciales propias)
-# - Crea hoja "Agenda" si no existe
-# - Guarda y actualiza en la misma Scouting_DB
+# - Usa la función obtener_hoja() del archivo principal
+# - Crea hoja "Agenda" si no existe en Scouting_DB
+# - Permite agendar, listar y marcar vistos
+# - Claves únicas por fila (sin errores de ID duplicado)
 # =========================================================
 
 import streamlit as st
@@ -14,10 +15,10 @@ def render_agenda(current_user, current_role, df_players):
     st.markdown("<h2 style='text-align:center;color:#00c6ff;'>📅 Agenda de Seguimiento</h2>", unsafe_allow_html=True)
 
     # =========================================================
-    # CARGAR / CREAR HOJA AGENDA (usa obtener_hoja del main)
+    # CONEXIÓN A GOOGLE SHEETS (usa la función del main)
     # =========================================================
     try:
-        from Scoutingapp import obtener_hoja  # usa tu función principal
+        from Scoutingapp import obtener_hoja  # se conecta con tu sistema base
         columnas = ["ID_Jugador", "Nombre", "Scout", "Fecha_Revisar", "Motivo", "Visto"]
         ws = obtener_hoja("Agenda", columnas)
         data = ws.get_all_records()
@@ -77,7 +78,7 @@ def render_agenda(current_user, current_role, df_players):
     vistos = df_agenda[df_agenda["Visto"] == "Sí"] if not df_agenda.empty else pd.DataFrame()
 
     # =========================================================
-    # CSS VISUAL
+    # CSS VISUAL (estilo uniforme con la app)
     # =========================================================
     st.markdown("""
     <style>
@@ -120,7 +121,9 @@ def render_agenda(current_user, current_role, df_players):
                         if pd.notnull(row["Fecha_Revisar"])
                         else "-"
                     )
-                    unique_key = f"mark_{row['ID_Jugador']}_{str(row['Fecha_Revisar'])}"
+
+                    # ✅ Clave única corregida
+                    unique_key = f"mark_{row['ID_Jugador']}_{str(row['Fecha_Revisar'])}_{row.name}"
 
                     st.markdown(f"""
                     <div class="agenda-card">
@@ -174,8 +177,3 @@ def render_agenda(current_user, current_role, df_players):
                         <div class="agenda-date">📅 {fecha_txt}</div>
                     </div>
                     """, unsafe_allow_html=True)
-
-
-# =========================================================
-# FIN DEL BLOQUE AGENDA
-# =========================================================
