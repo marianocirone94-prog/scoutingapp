@@ -1569,55 +1569,61 @@ if menu == "Agenda":
         st.rerun()
 
     # =========================================================
-    # BLOQUE PENDIENTES
+    # BLOQUE PENDIENTES (5 columnas por fila)
     # =========================================================
     with st.expander("🕐 Seguimientos pendientes", expanded=True):
         if pendientes.empty:
             st.info("No hay seguimientos pendientes.")
         else:
-            st.markdown("<div class='card-container'>", unsafe_allow_html=True)
-            for _, row in pendientes.sort_values("Fecha_Revisar").iterrows():
-                nombre, scout, fecha, motivo = row["Nombre"], row["Scout"], row["Fecha_Revisar"], row["Motivo"]
-                if pd.isnull(fecha): continue
-                dias = (fecha - hoy).days
-                if dias < 0: label = "<span class='label vencido'>Vencido</span>"
-                elif dias == 0: label = "<span class='label hoy'>Hoy</span>"
-                elif dias <= 7: label = f"<span class='label proximo'>En {dias} días</span>"
-                else: label = f"<span class='label futuro'>En {dias} días</span>"
+            jugadores_lista = list(pendientes.sort_values("Fecha_Revisar").iterrows())
+            for i in range(0, len(jugadores_lista), 5):
+                fila = jugadores_lista[i:i+5]
+                cols = st.columns(len(fila))
+                for col, (_, row) in zip(cols, fila):
+                    nombre, scout, fecha, motivo = row["Nombre"], row["Scout"], row["Fecha_Revisar"], row["Motivo"]
+                    if pd.isnull(fecha): continue
+                    dias = (fecha - hoy).days
+                    if dias < 0: label = "<span class='label vencido'>Vencido</span>"
+                    elif dias == 0: label = "<span class='label hoy'>Hoy</span>"
+                    elif dias <= 7: label = f"<span class='label proximo'>En {dias} días</span>"
+                    else: label = f"<span class='label futuro'>En {dias} días</span>"
 
-                st.markdown(f"""
-                <div class='card'>
-                    {label}
-                    <h5>{nombre}</h5>
-                    <p>Scout: {scout}</p>
-                    <p>📅 {fecha.strftime('%d/%m/%Y')}</p>
-                    <p><i>{motivo}</i></p>
-                </div>
-                """, unsafe_allow_html=True)
-                st.button("👁 Marcar visto", key=f"mark_{nombre}_{_}", on_click=marcar_visto, args=(nombre,))
-            st.markdown("</div>", unsafe_allow_html=True)
+                    with col:
+                        st.markdown(f"""
+                        <div class='card'>
+                            {label}
+                            <h5>{nombre}</h5>
+                            <p>Scout: {scout}</p>
+                            <p>📅 {fecha.strftime('%d/%m/%Y')}</p>
+                            <p><i>{motivo}</i></p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        st.button("👁 Marcar visto", key=f"mark_{nombre}_{i}", on_click=marcar_visto, args=(nombre,))
 
     # =========================================================
-    # BLOQUE YA VISTOS
+    # BLOQUE YA VISTOS (5 columnas por fila)
     # =========================================================
     with st.expander("👁 Seguimientos ya vistos", expanded=False):
         if vistos.empty:
             st.info("No hay jugadores vistos aún.")
         else:
-            st.markdown("<div class='card-container'>", unsafe_allow_html=True)
-            for _, row in vistos.sort_values("Fecha_Revisar").iterrows():
-                nombre, scout, fecha, motivo = row["Nombre"], row["Scout"], row["Fecha_Revisar"], row["Motivo"]
-                if pd.isnull(fecha): continue
-                st.markdown(f"""
-                <div class='card visto'>
-                    <span class='label futuro'>Visto</span>
-                    <h5>{nombre}</h5>
-                    <p>Scout: {scout}</p>
-                    <p>📅 {fecha.strftime('%d/%m/%Y')}</p>
-                    <p><i>{motivo}</i></p>
-                </div>
-                """, unsafe_allow_html=True)
-            st.markdown("</div>", unsafe_allow_html=True)
+            jugadores_lista = list(vistos.sort_values("Fecha_Revisar").iterrows())
+            for i in range(0, len(jugadores_lista), 5):
+                fila = jugadores_lista[i:i+5]
+                cols = st.columns(len(fila))
+                for col, (_, row) in zip(cols, fila):
+                    nombre, scout, fecha, motivo = row["Nombre"], row["Scout"], row["Fecha_Revisar"], row["Motivo"]
+                    if pd.isnull(fecha): continue
+                    with col:
+                        st.markdown(f"""
+                        <div class='card visto'>
+                            <span class='label futuro'>Visto</span>
+                            <h5>{nombre}</h5>
+                            <p>Scout: {scout}</p>
+                            <p>📅 {fecha.strftime('%d/%m/%Y')}</p>
+                            <p><i>{motivo}</i></p>
+                        </div>
+                        """, unsafe_allow_html=True)
 
     # =========================================================
     # FORMULARIO NUEVO SEGUIMIENTO
@@ -1658,6 +1664,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
