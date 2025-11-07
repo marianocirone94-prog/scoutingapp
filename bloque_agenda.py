@@ -1,10 +1,10 @@
 # =========================================================
 # 🕐 BLOQUE 6 / 6 — Agenda de Seguimiento — ScoutingApp PRO
 # =========================================================
-# - Se integra con Google Sheets (hoja “Agenda”)
-# - Crea automáticamente la hoja si no existe
-# - Permite agendar seguimientos, ver pendientes y marcar vistos
-# - Estilo visual coherente con toda la App
+# - Integración directa con Google Sheets (hoja “Agenda”)
+# - Registro de seguimientos: jugador, scout, motivo y fecha
+# - Visualización de pendientes y vistos (tarjetas 5x5)
+# - Compatible con import desde Scoutingapp.py
 # =========================================================
 
 import streamlit as st
@@ -12,13 +12,13 @@ import pandas as pd
 from datetime import datetime, timedelta
 
 # =========================================================
-# RENDER PRINCIPAL
+# FUNCIÓN PRINCIPAL
 # =========================================================
 def render_agenda(current_user, current_role, df_players):
     st.markdown("<h2 style='text-align:center;color:#00c6ff;'>📅 Agenda de Seguimiento</h2>", unsafe_allow_html=True)
 
     # =========================================================
-    # CONEXIÓN A GOOGLE SHEETS
+    # CONEXIÓN CON GOOGLE SHEETS
     # =========================================================
     try:
         from Scoutingapp import obtener_hoja
@@ -39,13 +39,11 @@ def render_agenda(current_user, current_role, df_players):
     if df_agenda.empty:
         df_agenda = pd.DataFrame(columns=columnas_base)
 
-    if not df_agenda.empty:
+    if not df_agenda.empty and "Fecha_Revisar" in df_agenda.columns:
         df_agenda["Fecha_Revisar"] = pd.to_datetime(df_agenda["Fecha_Revisar"], errors="coerce")
 
-    hoy = datetime.now().date()
-
     # =========================================================
-    # CSS PERSONALIZADO
+    # ESTILOS VISUALES
     # =========================================================
     st.markdown("""
     <style>
@@ -99,61 +97,32 @@ def render_agenda(current_user, current_role, df_players):
 
             guardar = st.form_submit_button("💾 Guardar seguimiento")
 
-            if guardar and jugador_sel and fecha_rev:
-                try:
-                    id_jug = df_players.loc[df_players["Nombre"] == jugador_sel, "ID_Jugador"].iloc[0]
-                    nueva_fila = [id_jug, jugador_sel, scout, fecha_rev.strftime("%d/%m/%Y"), motivo, "Pendiente"]
-                    ws.append_row(nueva_fila)
-                    st.success(f"✅ Seguimiento agendado para {jugador_sel} el {fecha_rev.strftime('%d/%m/%Y')}")
-                    st.cache_data.clear()
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"⚠️ Error al guardar seguimiento: {e}")
-
-    # =========================================================
-    # FILTROS
-    # =========================================================
-    st.markdown("---")
-    st.markdown("### 🔍 Filtros de búsqueda")
-
-    colf1, colf2, colf3 = st.columns(3)
-    with colf1:
-        filtro_scout = st.selectbox("Scout", [""] + sorted(df_agenda["Scout"].dropna().unique()))
-    with colf2:
-        filtro_estado = st.selectbox("Estado", ["", "Pendiente", "Visto"])
-    with colf3:
-        filtro_fecha = st.selectbox("Rango temporal", ["Todos", "Hoy", "Próximos 7 días", "Próximos 30 días"])
-
-    df_filtrado = df_agenda.copy()
-
-    if filtro_scout:
-        df_filtrado = df_filtrado[df_filtrado["Scout"] == filtro_scout]
-    if filtro_estado:
-        df_filtrado = df_filtrado[df_filtrado["Visto"] == filtro_estado]
-
-    if filtro_fecha != "Todos" and not df_filtrado.empty:
-        if "Fecha_Revisar" in df_filtrado.columns:
-            hoy = datetime.now().date()
-            df_filtrado["Fecha_dt"] = pd.to_datetime(df_filtrado["Fecha_Revisar"], errors="coerce")
-            if filtro_fecha == "Hoy":
-                df_filtrado = df_filtrado[df_filtrado["Fecha_dt"].dt.date == hoy]
-            elif filtro_fecha == "Próximos 7 días":
-                df_filtrado = df_filtrado[
-                    (df_filtrado["Fecha_dt"].dt.date >= hoy)
-                    & (df_filtrado["Fecha_dt"].dt.date <= hoy + timedelta(days=7))
-                ]
-            elif filtro_fecha == "Próximos 30 días":
-                df_filtrado = df_filtrado[
-                    (df_filtrado["Fecha_dt"].dt.date >= hoy)
-                    & (df_filtrado["Fecha_dt"].dt.date <= hoy + timedelta(days=30))
-                ]
-            df_filtrado = df_filtrado.drop(columns=["Fecha_dt"], errors="ignore")
+            if guardar:
+                if not jugador_sel or not fecha_rev:
+                    st.warning("⚠️ Debes seleccionar jugador y fecha.")
+                else:
+                    try:
+                        id_jug = df_players.loc[df_players["Nombre"] == jugador_sel, "ID_Jugador"].iloc[0]
+                        nueva_fila = [
+                            id_jug,
+                            jugador_sel,
+                            scout,
+                            fecha_rev.strftime("%d/%m/%Y"),
+                            motivo,
+                            "Pendiente"
+                        ]
+                        ws.append_row(nueva_fila)
+                        st.success(f"✅ Seguimiento agendado para {jugador_sel} el {fecha_rev.strftime('%d/%m/%Y')}")
+                        st.cache_data.clear()
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"⚠️ Error al guardar seguimiento: {e}")
 
     # =========================================================
     # SEPARACIÓN DE ESTADOS
     # =========================================================
-    pendientes = df_filtrado[df_filtrado["Visto"] != "Sí"] if not df_filtrado.empty else pd.DataFrame()
-    vistos = df_filtrado[df_filtrado["Visto"] == "Sí"] if not df_filtrado.empty else pd.DataFrame()
+    pendientes = df_agenda[df_agenda["Visto"] != "Sí"] if not df_agenda.empty else pd.DataFrame()
+    vistos = df_agenda[df_agenda["Visto"] == "Sí"] if not df_agenda.empty else pd.DataFrame()
 
     # =========================================================
     # BLOQUE PENDIENTES
@@ -184,7 +153,7 @@ def render_agenda(current_user, current_role, df_players):
                     </div>
                     """, unsafe_allow_html=True)
 
-                    if st.button(f"✅ Marcar visto", key=unique_key):
+                    if st.button("✅ Marcar visto", key=unique_key):
                         try:
                             df_agenda.loc[
                                 (df_agenda["Nombre"] == row["Nombre"]) &
@@ -229,5 +198,9 @@ def render_agenda(current_user, current_role, df_players):
                     </div>
                     """, unsafe_allow_html=True)
 
-                    """, unsafe_allow_html=True)
+
+# =========================================================
+# FIN DEL BLOQUE AGENDA
+# =========================================================
+
 
