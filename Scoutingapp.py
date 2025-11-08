@@ -1480,16 +1480,15 @@ if menu == "Lista corta":
 # =========================================================
 # 🕐 BLOQUE 6 / 6 — Agenda de Seguimientos — ScoutingApp PRO
 # =========================================================
-# - Integrado dentro del archivo principal
-# - Usa obtener_hoja() y df_players reales
-# - Diseño visual con cards, etiquetas dinámicas y hover
-# - Protegido contra eliminación accidental de hojas
+# - Versión FINAL BLINDADA (2025)
+# - Sin errores JSON, sin borrado de hojas, con backup automático
+# - Cards en filas de 5 columnas, con etiquetas dinámicas y hover
 # =========================================================
 
 if menu == "Agenda":
     import os
-    from datetime import datetime, timedelta
     import pandas as pd
+    from datetime import datetime, timedelta
 
     st.markdown("<h2 style='text-align:center;color:#00c6ff;'>📅 Agenda de Seguimiento — ScoutingApp PRO</h2>", unsafe_allow_html=True)
 
@@ -1500,9 +1499,7 @@ if menu == "Agenda":
     <style>
     body, .stApp { background-color:#0e1117 !important; color:white !important; font-family:'Segoe UI',sans-serif; }
     h1,h2,h3,h4,h5,h6 { color:white !important; }
-    .card-container {
-        display:flex; flex-wrap:wrap; justify-content:center; gap:14px; margin-bottom:1em;
-    }
+    .card-container { display:flex; flex-wrap:wrap; justify-content:center; gap:14px; margin-bottom:1em; }
     .card {
         background:linear-gradient(90deg,#0e1117,#1e3c72);
         border-radius:10px; padding:0.7em 1em; color:white;
@@ -1536,7 +1533,7 @@ if menu == "Agenda":
     except Exception as e:
         st.warning("⚠️ No existía la hoja 'Agenda'. Se creará automáticamente en la base de datos.")
         try:
-            ws = obtener_hoja("Agenda", columnas)  # la crea si no existe
+            ws = obtener_hoja("Agenda", columnas)
             ws.append_row(columnas)
             df_agenda = pd.DataFrame(columns=columnas)
         except Exception as err:
@@ -1554,12 +1551,29 @@ if menu == "Agenda":
     vistos = df_agenda[df_agenda["Visto"] == True]
 
     # =========================================================
-    # FUNCIÓN: MARCAR VISTO (segura, sin clear)
+    # FUNCIÓN DE BACKUP LOCAL
+    # =========================================================
+    def backup_local(df):
+        try:
+            df.to_csv("agenda_backup.csv", index=False, encoding="utf-8")
+        except Exception:
+            pass
+
+    # =========================================================
+    # FUNCIÓN: MARCAR VISTO (segura y serializable)
     # =========================================================
     def marcar_visto(nombre):
         df_agenda.loc[df_agenda["Nombre"] == nombre, "Visto"] = "Sí"
+
+        # Convertir fechas a texto antes de enviar
+        df_tmp = df_agenda.copy()
+        if "Fecha_Revisar" in df_tmp.columns:
+            df_tmp["Fecha_Revisar"] = df_tmp["Fecha_Revisar"].astype(str)
+
+        backup_local(df_tmp)
+
         try:
-            ws.update([df_agenda.columns.values.tolist()] + df_agenda.fillna("").values.tolist())
+            ws.update([df_tmp.columns.values.tolist()] + df_tmp.fillna("").values.tolist())
             st.toast(f"✅ {nombre} marcado como visto.", icon="✅")
             st.cache_data.clear()
             st.rerun()
@@ -1567,12 +1581,21 @@ if menu == "Agenda":
             st.error(f"⚠️ Error al actualizar seguimiento: {e}")
 
     # =========================================================
-    # FUNCIÓN: GUARDAR NUEVO
+    # FUNCIÓN: GUARDAR NUEVO (con backup)
     # =========================================================
     def guardar_nuevo(id_jugador, nombre, scout, fecha, motivo):
         nueva = [id_jugador, nombre, scout, fecha.strftime("%Y-%m-%d"), motivo, "Pendiente"]
         try:
             ws.append_row(nueva)
+            df_local = pd.concat([df_agenda, pd.DataFrame([{
+                "ID_Jugador": id_jugador,
+                "Nombre": nombre,
+                "Scout": scout,
+                "Fecha_Revisar": fecha.strftime("%Y-%m-%d"),
+                "Motivo": motivo,
+                "Visto": "Pendiente"
+            }])], ignore_index=True)
+            backup_local(df_local)
             st.success(f"✅ Seguimiento agendado para {nombre} el {fecha.strftime('%d/%m/%Y')}")
             st.cache_data.clear()
             st.rerun()
@@ -1656,6 +1679,7 @@ if menu == "Agenda":
 
 
 
+
 # =========================================================
 # CIERRE PROFESIONAL (footer)
 # =========================================================
@@ -1674,6 +1698,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
