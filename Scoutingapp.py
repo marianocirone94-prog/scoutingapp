@@ -968,7 +968,6 @@ if menu == "Ver informes":
         columnas = ["Fecha_Informe", "Nombre", "Club", "Línea", "Scout", "Equipos_Resultados", "Observaciones"]
         df_tabla = df_filtrado[[c for c in columnas if c in df_filtrado.columns]].copy()
 
-        # Ordenar por fecha
         try:
             df_tabla["Fecha_dt"] = pd.to_datetime(df_tabla["Fecha_Informe"], format="%d/%m/%Y", errors="coerce")
             df_tabla = df_tabla.sort_values("Fecha_dt", ascending=False).drop(columns="Fecha_dt")
@@ -1002,17 +1001,40 @@ if menu == "Ver informes":
             fit_columns_on_grid_load=True,
             theme="blue",
             height=580,
-            allow_unsafe_jscode=True
+            allow_unsafe_jscode=True,
+            update_mode="MODEL_CHANGED",
+            custom_css={
+                ".ag-header": {
+                    "background-color": "#1e3c72",
+                    "color": "white",
+                    "font-weight": "bold",
+                    "font-size": "13px"
+                },
+                ".ag-row-even": {
+                    "background-color": "#2a5298 !important",
+                    "color": "white !important"
+                },
+                ".ag-row-odd": {
+                    "background-color": "#3b6bbf !important",
+                    "color": "white !important"
+                },
+                ".ag-cell": {
+                    "white-space": "normal !important",
+                    "line-height": "1.25",
+                    "padding": "5px",
+                    "font-size": "12.5px"
+                },
+            },
         )
 
         # =========================================================
-        # FICHA DEL JUGADOR (clic funcional)
+        # FICHA DEL JUGADOR
         # =========================================================
         selected_data = grid_response.get("selected_rows", [])
-        if isinstance(selected_data, dict):
-            selected_data = [selected_data]
-        elif isinstance(selected_data, pd.DataFrame):
+        if isinstance(selected_data, pd.DataFrame):
             selected_data = selected_data.to_dict("records")
+        elif isinstance(selected_data, dict):
+            selected_data = [selected_data]
 
         if selected_data:
 
@@ -1026,24 +1048,29 @@ if menu == "Ver informes":
                 st.markdown("---")
                 st.markdown(f"### 🧾 Ficha del jugador: **{j['Nombre']}**")
 
-                col1, col2, col3 = st.columns([1,1,1])
+                col1, col2, col3 = st.columns([1, 1, 1])
                 with col1:
                     st.markdown(f"**📍 Club:** {j.get('Club','-')}")
                     st.markdown(f"**🎯 Posición:** {j.get('Posición','-')}")
                     st.markdown(f"**📏 Altura:** {j.get('Altura','-')} cm")
-                    st.markdown(f"**📅 Edad:** {calcular_edad(j.get('Fecha_Nac'))} años")
+                    edad_jugador = calcular_edad(j.get("Fecha_Nac"))
+                    st.markdown(f"**📅 Edad:** {edad_jugador} años")
 
                 with col2:
                     st.markdown(f"**👟 Pie hábil:** {j.get('Pie_Hábil','-')}")
-                    st.markdown(f"🌍 Nacionalidad: {j.get('Nacionalidad','-')}")
-                    st.markdown(f"🏆 Liga: {j.get('Liga','-')}")
+                    st.markdown(f"**🌍 Nacionalidad:** {j.get('Nacionalidad','-')}")
+                    st.markdown(f"**🏆 Liga:** {j.get('Liga','-')}")
 
                 with col3:
-                    st.markdown(f"**2° Nacionalidad:** {j.get('Segunda_Nacionalidad','-')}")
+                    st.markdown(f"**2ª Nacionalidad:** {j.get('Segunda_Nacionalidad','-')}")
                     st.markdown(f"**🧠 Característica:** {j.get('Caracteristica','-')}")
+                    if pd.notna(j.get("URL_Foto")) and str(j["URL_Foto"]).startswith("http"):
+                        st.image(j["URL_Foto"], width=130)
+                    if pd.notna(j.get("URL_Perfil")) and str(j["URL_Perfil"]).startswith("http"):
+                        st.markdown(f"[🌐 Perfil externo]({j['URL_Perfil']})", unsafe_allow_html=True)
 
                 # =========================================================
-                # EXPORTAR PDF (VERSIÓN SIMPLE)
+                # EXPORTAR PDF (VERSIÓN SIMPLE) — ***REEMPLAZO SOLICITADO***
                 # =========================================================
                 if st.button("📥 Exportar informe simple", key=f"pdf_{j['ID_Jugador']}"):
                     try:
@@ -1093,19 +1120,16 @@ if menu == "Ver informes":
                         st.error(f"⚠️ Error PDF simple: {e}")
 
                 # =========================================================
-                # Edición de informes (SIN CAMBIOS)
+                # Expander editable para cada informe
                 # =========================================================
 
+                # OJO: informes_sel debe existir — lo defino acá igual que antes
                 try:
-                    if "Nombre" in df_reports.columns:
-                        informes_sel = df_reports[df_reports["Nombre"] == j["Nombre"]]
-                    else:
-                        informes_sel = pd.DataFrame()
+                    informes_sel = df_reports[df_reports["Nombre"] == j["Nombre"]]
                 except:
                     informes_sel = pd.DataFrame()
 
                 for idx, inf in enumerate(informes_sel.itertuples()):
-
                     titulo = (
                         f"{getattr(inf, 'Fecha_Partido', '')} | "
                         f"Scout: {getattr(inf, 'Scout', '')} | "
@@ -1115,41 +1139,45 @@ if menu == "Ver informes":
                     with st.expander(titulo):
                         with st.form(f"form_edit_{inf.ID_Informe}_{idx}"):
 
-                            nuevo_scout = st.text_input("Scout", inf.Scout)
-                            nueva_fecha = st.text_input("Fecha del partido", inf.Fecha_Partido)
-                            nuevos_equipos = st.text_input("Equipos y resultado", inf.Equipos_Resultados)
+                            nuevo_scout = st.text_input("Scout", inf.Scout, key=f"scout_{inf.ID_Informe}_{idx}")
+                            nueva_fecha = st.text_input("Fecha del partido", inf.Fecha_Partido, key=f"fecha_{inf.ID_Informe}_{idx}")
+                            nuevos_equipos = st.text_input("Equipos y resultado", inf.Equipos_Resultados, key=f"equipos_{inf.ID_Informe}_{idx}")
 
                             opciones_linea = [
-                                "1ra (Fichar)",
-                                "2da (Seguir)",
-                                "3ra (Ver más adelante)",
-                                "4ta (Descartar)",
-                                "Joven Promesa"
+                                "1ra (Fichar)", "2da (Seguir)", "3ra (Ver más adelante)",
+                                "4ta (Descartar)", "Joven Promesa"
                             ]
-                            nueva_linea = st.selectbox("Línea", opciones_linea,
-                                index=opciones_linea.index(inf.Línea) if inf.Línea in opciones_linea else 2)
 
-                            nuevas_obs = st.text_area("Observaciones", inf.Observaciones, height=120)
+                            valor_linea = inf.Línea
+                            nueva_linea = st.selectbox(
+                                "Línea", opciones_linea,
+                                index=opciones_linea.index(valor_linea) if valor_linea in opciones_linea else 2,
+                                key=f"linea_{inf.ID_Informe}_{idx}"
+                            )
+
+                            nuevas_obs = st.text_area("Observaciones", inf.Observaciones, height=120,
+                                                      key=f"obs_{inf.ID_Informe}_{idx}")
 
                             guardar = st.form_submit_button("💾 Guardar cambios")
 
                             if guardar:
                                 try:
-                                    df_reports.loc[df_reports["ID_Informe"] == inf.ID_Informe,
-                                        ["Scout","Fecha_Partido","Equipos_Resultados","Línea","Observaciones"]
+                                    df_reports.loc[
+                                        df_reports["ID_Informe"] == inf.ID_Informe,
+                                        ["Scout", "Fecha_Partido", "Equipos_Resultados", "Línea", "Observaciones"]
                                     ] = [
                                         nuevo_scout, nueva_fecha, nuevos_equipos, nueva_linea, nuevas_obs
                                     ]
 
                                     ws_inf = obtener_hoja("Informes")
                                     ws_inf.update(
-                                        [df_reports.columns.values.tolist()] + df_reports.values.tolist()
+                                        [df_reports.columns.values.tolist()] +
+                                        df_reports.values.tolist()
                                     )
 
-                                    st.toast("✅ Informe actualizado correctamente.")
-
+                                    st.toast("✅ Informe actualizado correctamente.", icon="✅")
                                 except Exception as e:
-                                    st.error(f"⚠️ Error al actualizar: {e}")
+                                    st.error(f"⚠️ Error al actualizar el informe: {e}")
 
         else:
             st.info("📍 Seleccioná un registro para ver la ficha del jugador.")
@@ -1626,6 +1654,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
