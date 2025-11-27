@@ -922,8 +922,18 @@ if menu == "Jugadores":
 
 
 # =========================================================
-# BLOQUE 4 / 5 — Ver Informes (optimizado y con ficha completa) + FIX KeyError
+# BLOQUE 4 / 5 — Ver Informes (versión final, estable y sin errores)
 # =========================================================
+
+# Sanitizador para PDF (evita errores de espacio)
+def sanitize_text(text, max_len=200):
+    if not isinstance(text, str):
+        return ""
+    text = text.replace("\n", " ").replace("\r", " ")
+    if len(text) > max_len:
+        return text[:max_len] + "..."
+    return text
+
 
 if menu == "Ver informes":
     st.subheader("📝 Informes cargados")
@@ -1034,7 +1044,7 @@ if menu == "Ver informes":
         )
 
         # =========================================================
-        # FICHA DEL JUGADOR (clic de tabla)
+        # FICHA DEL JUGADOR
         # =========================================================
         selected_data = grid_response.get("selected_rows", [])
 
@@ -1057,7 +1067,6 @@ if menu == "Ver informes":
 
                 col1, col2, col3 = st.columns([1, 1, 1])
 
-                # --- COLUMNA 1 ---
                 with col1:
                     st.markdown(f"**📍 Club:** {j.get('Club','-')}")
                     st.markdown(f"**🎯 Posición:** {j.get('Posición','-')}")
@@ -1065,13 +1074,11 @@ if menu == "Ver informes":
                     edad_jugador = calcular_edad(j.get("Fecha_Nac"))
                     st.markdown(f"**📅 Edad:** {edad_jugador} años")
 
-                # --- COLUMNA 2 ---
                 with col2:
                     st.markdown(f"**👟 Pie hábil:** {j.get('Pie_Hábil','-')}")
                     st.markdown(f"**🌍 Nacionalidad:** {j.get('Nacionalidad','-')}")
                     st.markdown(f"**🏆 Liga:** {j.get('Liga','-')}")
 
-                # --- COLUMNA 3 ---
                 with col3:
                     st.markdown(f"**2ª Nacionalidad:** {j.get('Segunda_Nacionalidad','-')}")
                     st.markdown(f"**🧠 Característica:** {j.get('Caracteristica','-')}")
@@ -1081,9 +1088,10 @@ if menu == "Ver informes":
                         st.markdown(f"[🌐 Perfil externo]({j['URL_Perfil']})", unsafe_allow_html=True)
 
                 # =========================================================
-                # EXPORTAR PDF (PRO)
+                # EXPORTAR PDF SIN ERRORES
                 # =========================================================
                 if st.button("📥 Exportar informe visual PRO", key=f"pdf_{j['ID_Jugador']}"):
+
                     try:
                         from fpdf import FPDF
                         import requests
@@ -1093,15 +1101,14 @@ if menu == "Ver informes":
                         pdf.set_auto_page_break(auto=True, margin=15)
                         pdf.add_page()
 
-                        # --- TÍTULO ---
+                        # Título
                         pdf.set_font("Arial", "B", 18)
                         pdf.set_text_color(20, 60, 120)
                         pdf.cell(0, 10, "SCOUTING REPORT", ln=True, align="C")
                         pdf.ln(5)
 
-                        # --- CAJA DATOS ---
+                        # Caja datos del jugador
                         pdf.set_draw_color(180, 180, 180)
-                        pdf.set_line_width(0.4)
                         pdf.rect(10, 25, 190, 55)
 
                         foto_url = j.get("URL_Foto", "")
@@ -1116,29 +1123,30 @@ if menu == "Ver informes":
 
                         pdf.set_xy(55, 30)
                         pdf.set_font("Arial", "B", 14)
-                        pdf.cell(0, 8, j["Nombre"], ln=True)
+                        pdf.cell(0, 8, sanitize_text(j["Nombre"], 50), ln=True)
 
                         pdf.set_font("Arial", "", 11)
                         info = [
-                            f"Club: {j.get('Club','-')}",
-                            f"Posición: {j.get('Posición','-')}",
-                            f"Pie hábil: {j.get('Pie_Hábil','-')}",
-                            f"Altura: {j.get('Altura','-')} cm",
-                            f"Nacionalidad: {j.get('Nacionalidad','-')}",
+                            f"Club: {sanitize_text(j.get('Club','-'))}",
+                            f"Posición: {sanitize_text(j.get('Posición','-'))}",
+                            f"Pie hábil: {sanitize_text(j.get('Pie_Hábil','-'))}",
+                            f"Altura: {sanitize_text(str(j.get('Altura','-')))} cm",
+                            f"Nacionalidad: {sanitize_text(j.get('Nacionalidad','-'))}",
                         ]
-                        for x in info:
+                        for item in info:
                             pdf.set_x(55)
-                            pdf.cell(0, 6, x, ln=True)
+                            pdf.cell(0, 6, item, ln=True)
 
                         if isinstance(j.get("URL_Perfil"), str) and j["URL_Perfil"].startswith("http"):
+                            perfil_txt = sanitize_text(j["URL_Perfil"], max_len=120)
                             pdf.set_text_color(0, 0, 200)
                             pdf.set_x(55)
-                            pdf.cell(0, 6, f"Perfil: {j['URL_Perfil']}", ln=True)
+                            pdf.cell(0, 6, f"Perfil: {perfil_txt}", ln=True)
 
                         pdf.set_text_color(0, 0, 0)
                         pdf.ln(10)
 
-                        # --- TÍTULO INFORMES ---
+                        # Título de informes
                         pdf.set_font("Arial", "B", 14)
                         pdf.set_text_color(20, 60, 120)
                         pdf.cell(0, 10, "Informes recientes", ln=True)
@@ -1147,9 +1155,7 @@ if menu == "Ver informes":
                         pdf.line(10, pdf.get_y(), 200, pdf.get_y())
                         pdf.ln(5)
 
-                        # =========================================================
-                        # INFORMES DEL JUGADOR — SIN KEYERROR
-                        # =========================================================
+                        # Informes correspondientes — SIN KEYERROR & SANITIZED
                         try:
                             if "Nombre" in df_filtrado.columns:
                                 informes_sel_pdf = df_filtrado[df_filtrado["Nombre"] == j["Nombre"]]
@@ -1159,25 +1165,23 @@ if menu == "Ver informes":
                             informes_sel_pdf = pd.DataFrame()
 
                         pdf.set_font("Arial", "", 11)
-                        pdf.set_text_color(0, 0, 0)
 
                         for _, inf in informes_sel_pdf.iterrows():
+
                             y0 = pdf.get_y()
 
-                            pdf.set_draw_color(200, 200, 200)
-                            pdf.set_line_width(0.3)
-
-                            pdf.set_font("Arial", "B", 11)
-                            pdf.multi_cell(
-                                0, 6,
+                            linea_texto = sanitize_text(
                                 f"{inf.get('Fecha_Partido','')} | "
                                 f"{inf.get('Equipos_Resultados','')} | "
                                 f"Scout: {inf.get('Scout','')} | "
-                                f"Línea: {inf.get('Línea','')}"
+                                f"Línea: {inf.get('Línea','')}",
+                                max_len=160
                             )
 
-                            pdf.set_font("Arial", "", 11)
-                            pdf.multi_cell(0, 6, f"Observaciones: {inf.get('Observaciones','-')}")
+                            pdf.multi_cell(0, 6, linea_texto)
+
+                            obs = sanitize_text(inf.get("Observaciones", "-"), max_len=180)
+                            pdf.multi_cell(0, 6, f"Observaciones: {obs}")
 
                             y1 = pdf.get_y()
                             pdf.rect(10, y0 - 2, 190, (y1 - y0) + 4)
@@ -1195,10 +1199,10 @@ if menu == "Ver informes":
                         )
 
                     except Exception as e:
-                        st.error(f"⚠️ Error al generar PDF: {e}")
+                        st.error(f"⚠️ Error al generar PDF (bloque final): {e}")
 
                 # =========================================================
-                # LISTA DE INFORMES EDITABLES — SIN ERRORES
+                # INFORMES EDITABLES — SIN ERRORES
                 # =========================================================
                 try:
                     if "Nombre" in df_reports.columns:
@@ -1219,23 +1223,9 @@ if menu == "Ver informes":
                     with st.expander(titulo):
                         with st.form(f"form_edit_{inf.ID_Informe}_{idx}"):
 
-                            nuevo_scout = st.text_input(
-                                "Scout",
-                                getattr(inf, "Scout", ""),
-                                key=f"scout_{inf.ID_Informe}_{idx}"
-                            )
-
-                            nueva_fecha = st.text_input(
-                                "Fecha del partido",
-                                getattr(inf, "Fecha_Partido", ""),
-                                key=f"fecha_{inf.ID_Informe}_{idx}"
-                            )
-
-                            nuevos_equipos = st.text_input(
-                                "Equipos y resultado",
-                                getattr(inf, "Equipos_Resultados", ""),
-                                key=f"equipos_{inf.ID_Informe}_{idx}"
-                            )
+                            nuevo_scout = st.text_input("Scout", getattr(inf, "Scout", ""), key=f"scout_{inf.ID_Informe}_{idx}")
+                            nueva_fecha = st.text_input("Fecha del partido", getattr(inf, "Fecha_Partido", ""), key=f"fecha_{inf.ID_Informe}_{idx}")
+                            nuevos_equipos = st.text_input("Equipos y resultado", getattr(inf, "Equipos_Resultados", ""), key=f"equipos_{inf.ID_Informe}_{idx}")
 
                             opciones_linea = [
                                 "1ra (Fichar)",
@@ -1264,7 +1254,8 @@ if menu == "Ver informes":
 
                             if guardar:
                                 try:
-                                    df_reports.loc[df_reports["ID_Informe"] == inf.ID_Informe,
+                                    df_reports.loc[
+                                        df_reports["ID_Informe"] == inf.ID_Informe,
                                         ["Scout", "Fecha_Partido", "Equipos_Resultados", "Línea", "Observaciones"]
                                     ] = [
                                         nuevo_scout,
@@ -1287,6 +1278,7 @@ if menu == "Ver informes":
 
         else:
             st.info("📍 Seleccioná un registro para ver la ficha del jugador.")
+
 
 
 
@@ -1758,6 +1750,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
