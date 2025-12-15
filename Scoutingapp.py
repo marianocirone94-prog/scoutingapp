@@ -209,7 +209,7 @@ st.set_page_config(
 )
 
 # =========================================================
-# CARGAR ESTILOS Y CSS PERSONALIZADO
+# CARGAR ESTILOS Y CSS PERSONALIZADO (GLOBAL)
 # =========================================================
 try:
     from ui.style import load_custom_css
@@ -219,6 +219,7 @@ except Exception:
 
 st.markdown("""
 <style>
+/* estilos globales */
 .stSlider > div[data-baseweb="slider"] > div { background: transparent !important; }
 .stSlider > div[data-baseweb="slider"] > div > div { background-color: #00c6ff !important; }
 .stSlider [role="slider"] {
@@ -233,6 +234,79 @@ h1, h2, h3, h4, h5, h6, .stMarkdown { color: white !important; }
 body, .stApp { background-color: #0e1117 !important; }
 </style>
 """, unsafe_allow_html=True)
+
+# =========================================================
+# 🎨 CSS ESPECÍFICO — PANEL GENERAL (NO TOCAR LUEGO)
+# =========================================================
+st.markdown("""
+<style>
+
+/* KPIs */
+.kpi-container {
+    display:flex;
+    justify-content:center;
+    gap:22px;
+    margin:25px 0 35px 0;
+    flex-wrap:wrap;
+}
+.kpi-card {
+    background:linear-gradient(90deg,#0e1117,#1e3c72);
+    border-radius:14px;
+    padding:18px 22px;
+    min-width:220px;
+    text-align:center;
+    box-shadow:0 0 12px rgba(0,0,0,0.45);
+}
+.kpi-title {
+    color:#00c6ff;
+    font-size:14px;
+    font-weight:700;
+}
+.kpi-value {
+    font-size:30px;
+    font-weight:800;
+    color:white;
+}
+
+/* Rankings */
+.panel-title {
+    color:#00c6ff;
+    font-weight:700;
+    font-size:16px;
+    margin:14px 0 8px 0;
+    text-align:center;
+}
+.rank-card {
+    background:linear-gradient(90deg,#0e1117,#1e3c72);
+    border-radius:10px;
+    padding:8px 12px;
+    margin-bottom:6px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+.rank-left {
+    display:flex;
+    gap:10px;
+    align-items:center;
+}
+.rank-num {
+    color:#ffd700;
+    font-weight:700;
+    width:22px;
+}
+.rank-name {
+    font-size:13px;
+    font-weight:700;
+}
+.rank-score {
+    color:#00c6ff;
+    font-weight:700;
+}
+
+</style>
+""", unsafe_allow_html=True)
+
 
 # =========================================================
 # ARCHIVOS LOCALES (usuarios y cancha)
@@ -1481,15 +1555,14 @@ if menu == "Agenda":
             guardar_nuevo(id_jugador, jugador_sel, scout, fecha_rev, motivo)
 
 # =========================================================
-# 🏠 PANEL GENERAL — ScoutingApp PRO (VERSIÓN ESTABLE)
+# 🏠 PANEL GENERAL — ScoutingApp PRO (ESTABLE + ESTÉTICO)
 # =========================================================
-
 if menu == "Panel General":
 
     st.markdown("<h2 style='text-align:center;color:#00c6ff;'>📊 Panel General — ScoutingApp PRO</h2>", unsafe_allow_html=True)
 
     # =========================
-    # DATA (DESDE SESSION)
+    # DATA DESDE SESSION
     # =========================
     df_players = st.session_state["df_players"].copy()
     df_reports = st.session_state["df_reports"].copy()
@@ -1505,22 +1578,22 @@ if menu == "Panel General":
     )
 
     hoy = datetime.today()
-    hace_30_dias = hoy - timedelta(days=30)
+    hace_30 = hoy - timedelta(days=30)
 
     # =========================
-    # EDAD (NUMÉRICA REAL)
+    # EDAD SEGURA
     # =========================
-    def calcular_edad_segura(fecha):
+    def edad_segura(fecha):
         try:
             f = datetime.strptime(str(fecha), "%d/%m/%Y")
             return int((hoy - f).days / 365.25)
         except:
             return None
 
-    df_players["Edad"] = df_players["Fecha_Nac"].apply(calcular_edad_segura)
+    df_players["Edad"] = df_players["Fecha_Nac"].apply(edad_segura)
 
     # =========================
-    # MÉTRICAS (LIMPIAS)
+    # MÉTRICAS LIMPIAS
     # =========================
     metricas = [
         "Controles","Perfiles","Pase_corto","Pase_largo","Pase_filtrado",
@@ -1563,49 +1636,42 @@ if menu == "Panel General":
     # =========================
     # KPIs
     # =========================
-    mes = hoy.month
-    inicio_semestre = datetime(hoy.year, 1, 1) if mes <= 6 else datetime(hoy.year, 7, 1)
+    inicio_semestre = datetime(hoy.year, 1, 1) if hoy.month <= 6 else datetime(hoy.year, 7, 1)
 
-    jugadores_semestre = df_reports[
-        df_reports["Fecha_Informe_dt"] >= inicio_semestre
-    ]["ID_Jugador"].nunique()
-
-    informes_30_dias = df_reports[
-        df_reports["Fecha_Informe_dt"] >= hace_30_dias
-    ].shape[0]
+    jugadores_sem = df_reports[df_reports["Fecha_Informe_dt"] >= inicio_semestre]["ID_Jugador"].nunique()
+    informes_30 = df_reports[df_reports["Fecha_Informe_dt"] >= hace_30].shape[0]
 
     st.markdown(f"""
     <div class="kpi-container">
         <div class="kpi-card"><div class="kpi-title">Jugadores evaluados</div><div class="kpi-value">{df_players["ID_Jugador"].nunique()}</div></div>
         <div class="kpi-card"><div class="kpi-title">Informes cargados</div><div class="kpi-value">{len(df_reports)}</div></div>
         <div class="kpi-card"><div class="kpi-title">Scouts activos</div><div class="kpi-value">{df_reports["Scout"].nunique()}</div></div>
-        <div class="kpi-card"><div class="kpi-title">Jugadores este semestre</div><div class="kpi-value">{jugadores_semestre}</div></div>
-        <div class="kpi-card"><div class="kpi-title">Informes últimos 30 días</div><div class="kpi-value">{informes_30_dias}</div></div>
+        <div class="kpi-card"><div class="kpi-title">Jugadores este semestre</div><div class="kpi-value">{jugadores_sem}</div></div>
+        <div class="kpi-card"><div class="kpi-title">Informes últimos 30 días</div><div class="kpi-value">{informes_30}</div></div>
     </div>
     """, unsafe_allow_html=True)
 
     # =========================
-    # FUNCIÓN RENDER (MISMA QUE TU EJEMPLO)
+    # FUNCIÓN RENDER (TU FORMATO)
     # =========================
     def render_top(df, titulo, campo):
         st.markdown(f"<div class='panel-title'>{titulo}</div>", unsafe_allow_html=True)
         if df.empty:
             st.info("Sin datos")
             return
-        for i, row in enumerate(df.head(10).itertuples(), 1):
-            valor = round(getattr(row, campo), 2)
+        for i, r in enumerate(df.head(10).itertuples(), 1):
             st.markdown(f"""
             <div class='rank-card'>
                 <div class='rank-left'>
                     <div class='rank-num'>#{i}</div>
-                    <div class='rank-name'>{row.Nombre}</div>
+                    <div class='rank-name'>{r.Nombre}</div>
                 </div>
-                <div class='rank-score'>{valor}</div>
+                <div class='rank-score'>{round(getattr(r, campo),2)}</div>
             </div>
             """, unsafe_allow_html=True)
 
     # =========================
-    # TOP POR POSICIÓN (4 COLUMNAS)
+    # TOP POR POSICIÓN (4 COL)
     # =========================
     posiciones = [
         ("Arquero","🧤 Arqueros"),
@@ -1622,60 +1688,10 @@ if menu == "Panel General":
     ]
 
     cols = st.columns(4)
-    for i, (pos, titulo) in enumerate(posiciones):
+    for i,(pos,titulo) in enumerate(posiciones):
         with cols[i % 4]:
             render_top(df_scores[df_scores["Posición"] == pos], titulo, "Score_Total")
 
-    st.markdown("---")
-
-    # =========================
-    # CONSENSO ENTRE SCOUTS (≥ 3 SCOUTS)
-    # =========================
-    scouts_por_jugador = (
-        df_reports.groupby("ID_Jugador")["Scout"]
-        .nunique()
-        .reset_index(name="Scouts")
-    )
-
-    consenso = (
-        df_reports
-        .groupby(["ID_Jugador","Línea"])
-        .size()
-        .reset_index(name="Cantidad")
-        .merge(
-            df_reports.groupby("ID_Jugador").size().reset_index(name="Total"),
-            on="ID_Jugador"
-        )
-        .merge(
-            scouts_por_jugador,
-            on="ID_Jugador"
-        )
-    )
-
-    consenso = consenso[consenso["Scouts"] >= 3]  # 🔥 FILTRO CLAVE
-
-    consenso["Consenso_Pct"] = consenso["Cantidad"] / consenso["Total"] * 100
-
-    df_consenso = (
-        consenso
-        .sort_values("Consenso_Pct", ascending=False)
-        .drop_duplicates("ID_Jugador")
-        .merge(df_players[["ID_Jugador","Nombre"]], on="ID_Jugador")
-    )
-
-    cols2 = st.columns(4)
-
-    with cols2[0]:
-        render_top(df_scores[df_scores["Edad"] < 20], "🟢 Top Sub 20", "Score_Total")
-
-    with cols2[1]:
-        render_top(df_scores[(df_scores["Edad"] >= 20) & (df_scores["Edad"] <= 28)], "🔵 Top 20–28", "Score_Total")
-
-    with cols2[2]:
-        render_top(df_scores[df_scores["Edad"] > 28], "🟣 Top +28", "Score_Total")
-
-    with cols2[3]:
-        render_top(df_consenso, "🤝 Consenso scouts (≥ 3)", "Consenso_Pct")
 
 # =========================================================
 # CIERRE PROFESIONAL (footer)
@@ -1695,6 +1711,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
