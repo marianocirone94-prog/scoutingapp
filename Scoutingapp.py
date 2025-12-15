@@ -9,6 +9,8 @@
 # =========================================================
 
 import os
+import json
+import time
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -23,32 +25,24 @@ import gspread
 from google.oauth2.service_account import Credentials
 
 # =========================================================
-# BLOQUE DE CONEXIÓN A GOOGLE SHEETS (FINAL - SEGURO Y MULTIUSUARIO)
+# CONFIGURACIÓN GENERAL
 # =========================================================
 
-import os, json, time
-import pandas as pd
-import gspread
-from google.oauth2.service_account import Credentials
-import streamlit as st
-from datetime import datetime, timedelta
-
-# --- CONFIGURACIÓN GENERAL ---
 SCOPE = [
     "https://www.googleapis.com/auth/spreadsheets",
     "https://www.googleapis.com/auth/drive"
 ]
+
 SHEET_ID = "1IInJ87xaaEwJfaz96mUlLLiX9_tk0HvqzoBoZGhrBi8"
 CREDS_PATH = os.path.join("credentials", "credentials.json")
 
-# Control de lectura para evitar exceso de requests
 if "ultima_lectura" not in st.session_state:
     st.session_state["ultima_lectura"] = datetime.now() - timedelta(seconds=5)
 
+# =========================================================
+# CONEXIÓN GOOGLE SHEETS
+# =========================================================
 
-# =========================================================
-# CONEXIÓN
-# =========================================================
 def conectar_sheets():
     try:
         if "GOOGLE_SERVICE_ACCOUNT_JSON" in st.secrets:
@@ -56,152 +50,81 @@ def conectar_sheets():
             creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPE)
         else:
             if not os.path.exists(CREDS_PATH):
-                st.error("❌ Falta credentials.json o secreto en Streamlit Cloud.")
                 st.stop()
             creds = Credentials.from_service_account_file(CREDS_PATH, scopes=SCOPE)
 
         client = gspread.authorize(creds)
         return client.open_by_key(SHEET_ID)
     except Exception as e:
-        st.error(f"⚠️ No se pudo conectar con Google Sheets: {e}")
         st.stop()
 
+# =========================================================
+# OBTENER / CREAR HOJA
+# =========================================================
 
-# =========================================================
-# OBTENER O CREAR HOJA
-# =========================================================
 def obtener_hoja(nombre_hoja: str, columnas_base: list = None):
-    try:
-        book = conectar_sheets()
-        hojas = [ws.title for ws in book.worksheets()]
-        if nombre_hoja not in hojas:
-            ws = book.add_worksheet(title=nombre_hoja, rows=500, cols=20)
-            if columnas_base:
-                ws.append_row(columnas_base)
-            st.warning(f"⚠️ Hoja '{nombre_hoja}' creada automáticamente.")
-            return ws
-        return book.worksheet(nombre_hoja)
-    except Exception as e:
-        st.error(f"⚠️ Error al obtener hoja '{nombre_hoja}': {e}")
-        st.stop()
-
+    book = conectar_sheets()
+    hojas = [ws.title for ws in book.worksheets()]
+    if nombre_hoja not in hojas:
+        ws = book.add_worksheet(title=nombre_hoja, rows=500, cols=30)
+        if columnas_base:
+            ws.append_row(columnas_base)
+        return ws
+    return book.worksheet(nombre_hoja)
 
 # =========================================================
-# CARGAR DATOS (con control de tiempo)
+# CARGA DE DATOS
 # =========================================================
+
 @st.cache_data(ttl=30)
 def _leer_datos(nombre_hoja: str):
     ws = obtener_hoja(nombre_hoja)
     return ws.get_all_records()
 
-
 def cargar_datos_sheets(nombre_hoja: str, columnas_base: list = None) -> pd.DataFrame:
-    try:
-        ahora = datetime.now()
-        if ahora - st.session_state["ultima_lectura"] < timedelta(seconds=2):
-            time.sleep(1)
-        st.session_state["ultima_lectura"] = ahora
+    ahora = datetime.now()
+    if ahora - st.session_state["ultima_lectura"] < timedelta(seconds=2):
+        time.sleep(1)
+    st.session_state["ultima_lectura"] = ahora
 
-        data = _leer_datos(nombre_hoja)
-        df = pd.DataFrame(data)
-        if df.empty and columnas_base:
-            df = pd.DataFrame(columns=columnas_base)
-        return df
-    except Exception as e:
-        st.error(f"⚠️ Error al cargar '{nombre_hoja}': {e}")
-        return pd.DataFrame(columns=columnas_base or [])
-
+    data = _leer_datos(nombre_hoja)
+    df = pd.DataFrame(data)
+    if df.empty and columnas_base:
+        df = pd.DataFrame(columns=columnas_base)
+    return df
 
 # =========================================================
-# ACTUALIZAR HOJA (BLINDADA - SIN BORRAR)
+# ACTUALIZAR HOJA (SIN BORRAR)
 # =========================================================
+
 def actualizar_hoja(nombre_hoja: str, df: pd.DataFrame):
-    """
-    Actualiza sin borrar datos previos.
-    Si existe el ID, actualiza esa fila. Si no, la agrega.
-    Nunca borra toda la hoja.
-    """
-    try:
-        ws = obtener_hoja(nombre_hoja, list(df.columns))
-        data_actual = ws.get_all_records()
-        df_actual = pd.DataFrame(data_actual)
+    ws = obtener_hoja(nombre_hoja, list(df.columns))
+    data_actual = ws.get_all_records()
+    df_actual = pd.DataFrame(data_actual)
 
-        # Si la hoja está vacía, crea desde cero
-        if df_actual.empty:
-            ws.update([df.columns.values.tolist()] + df.values.tolist())
-            st.toast(f"✅ Hoja '{nombre_hoja}' creada y actualizada.", icon="💾")
-            return
-
-        # Detectar columna de ID
-        id_col = None
-        for posible in ["ID_Jugador", "ID_Informe"]:
-            if posible in df.columns:
-                id_col = posible
-                break
-
-        # Fusión segura sin borrar
-        if id_col:
-            df_actual[id_col] = df_actual[id_col].astype(str)
-            df[id_col] = df[id_col].astype(str)
-            df_fusion = pd.concat([df_actual, df]).drop_duplicates(subset=[id_col], keep="last")
-        else:
-            df_fusion = pd.concat([df_actual, df]).drop_duplicates(keep="last")
-
-        # Subir a Sheets
-        ws.update([df_fusion.columns.values.tolist()] + df_fusion.values.tolist())
-        st.toast(f"💾 '{nombre_hoja}' actualizada correctamente (sin borrar datos).", icon="✅")
-
-    except Exception as e:
-        st.error(f"⚠️ Error al actualizar '{nombre_hoja}': {e}")
-
-
-# =========================================================
-# ELIMINAR FILA SEGURA (CONTROLADO)
-# =========================================================
-def eliminar_por_id(nombre_hoja: str, id_col: str, id_valor):
-    """
-    Elimina una fila específica por ID, sin tocar el resto.
-    """
-    try:
-        ws = obtener_hoja(nombre_hoja)
-        data_actual = ws.get_all_records()
-        df = pd.DataFrame(data_actual)
-        if id_col not in df.columns:
-            st.error(f"⚠️ La hoja '{nombre_hoja}' no tiene la columna '{id_col}'.")
-            return
-        df = df[df[id_col].astype(str) != str(id_valor)]
+    if df_actual.empty:
         ws.update([df.columns.values.tolist()] + df.values.tolist())
-        st.success(f"🗑️ Registro con {id_col}={id_valor} eliminado correctamente.")
-    except Exception as e:
-        st.error(f"⚠️ Error al eliminar en '{nombre_hoja}': {e}")
+        return
 
+    id_col = None
+    for posible in ["ID_Jugador", "ID_Informe"]:
+        if posible in df.columns:
+            id_col = posible
+            break
 
-# =========================================================
-# AGREGAR FILA NUEVA (SEGURA)
-# =========================================================
-def agregar_fila(nombre_hoja: str, fila: list):
-    """Agrega una nueva fila sin tocar el resto."""
-    try:
-        ws = obtener_hoja(nombre_hoja)
-        ws.append_row(fila, value_input_option="USER_ENTERED")
-        st.toast(f"🟢 Nueva fila agregada en '{nombre_hoja}'.", icon="🟢")
-        st.cache_data.clear()
-    except Exception as e:
-        st.error(f"⚠️ Error al agregar fila en '{nombre_hoja}': {e}")
+    if id_col:
+        df_actual[id_col] = df_actual[id_col].astype(str)
+        df[id_col] = df[id_col].astype(str)
+        df_final = pd.concat([df_actual, df]).drop_duplicates(subset=[id_col], keep="last")
+    else:
+        df_final = pd.concat([df_actual, df]).drop_duplicates(keep="last")
 
+    ws.update([df_final.columns.values.tolist()] + df_final.values.tolist())
 
 # =========================================================
-# BOTÓN MANUAL DE REFRESCO
+# CONFIGURACIÓN STREAMLIT
 # =========================================================
-def boton_refrescar_datos():
-    st.markdown("---")
-    if st.button("🔄 Actualizar datos (refrescar desde Google Sheets)"):
-        st.cache_data.clear()
-        st.rerun()
 
-# =========================================================
-# CONFIGURACIÓN INICIAL DE LA APP
-# =========================================================
 st.set_page_config(
     page_title="ScoutingApp Profesional",
     layout="wide",
@@ -209,8 +132,9 @@ st.set_page_config(
 )
 
 # =========================================================
-# CARGAR ESTILOS Y CSS PERSONALIZADO (GLOBAL)
+# CSS GLOBAL
 # =========================================================
+
 try:
     from ui.style import load_custom_css
     load_custom_css()
@@ -219,94 +143,115 @@ except Exception:
 
 st.markdown("""
 <style>
-/* estilos globales */
-.stSlider > div[data-baseweb="slider"] > div { background: transparent !important; }
-.stSlider > div[data-baseweb="slider"] > div > div { background-color: #00c6ff !important; }
-.stSlider [role="slider"] {
-    background-color: #00c6ff !important;
-    border: 2px solid #ffffff !important;
-    box-shadow: 0 0 4px #00c6ff !important;
-}
-.stAlert.success { background-color: #003366 !important; color: #00c6ff !important; border-left: 4px solid #00c6ff !important; }
-.stAlert.warning { background-color: #332b00 !important; color: #ffd700 !important; border-left: 4px solid #ffd700 !important; }
-.stAlert.error   { background-color: #330000 !important; color: #ff6f61 !important; border-left: 4px solid #ff6f61 !important; }
-h1, h2, h3, h4, h5, h6, .stMarkdown { color: white !important; }
-body, .stApp { background-color: #0e1117 !important; }
+body, .stApp { background-color:#0e1117 !important; color:white !important; }
+h1,h2,h3,h4,h5,h6 { color:white !important; }
 </style>
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 🎨 CSS ESPECÍFICO — PANEL GENERAL (NO TOCAR LUEGO)
+# CARGA BASES
 # =========================================================
-st.markdown("""
-<style>
 
-/* KPIs */
-.kpi-container {
-    display:flex;
-    justify-content:center;
-    gap:22px;
-    margin:25px 0 35px 0;
-    flex-wrap:wrap;
-}
-.kpi-card {
-    background:linear-gradient(90deg,#0e1117,#1e3c72);
-    border-radius:14px;
-    padding:18px 22px;
-    min-width:220px;
-    text-align:center;
-    box-shadow:0 0 12px rgba(0,0,0,0.45);
-}
-.kpi-title {
-    color:#00c6ff;
-    font-size:14px;
-    font-weight:700;
-}
-.kpi-value {
-    font-size:30px;
-    font-weight:800;
-    color:white;
-}
+df_players = cargar_datos_sheets(
+    "Jugadores",
+    ["ID_Jugador", "Nombre", "Edad", "Posicion", "Club", "Nacionalidad"]
+)
 
-/* Rankings */
-.panel-title {
-    color:#00c6ff;
-    font-weight:700;
-    font-size:16px;
-    margin:14px 0 8px 0;
-    text-align:center;
-}
-.rank-card {
-    background:linear-gradient(90deg,#0e1117,#1e3c72);
-    border-radius:10px;
-    padding:8px 12px;
-    margin-bottom:6px;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-}
-.rank-left {
-    display:flex;
-    gap:10px;
-    align-items:center;
-}
-.rank-num {
-    color:#ffd700;
-    font-weight:700;
-    width:22px;
-}
-.rank-name {
-    font-size:13px;
-    font-weight:700;
-}
-.rank-score {
-    color:#00c6ff;
-    font-weight:700;
-}
+df_reports = cargar_datos_sheets(
+    "Informes",
+    ["ID_Informe", "ID_Jugador", "Fecha", "Partido", "Scout", "Linea", "Minutos", "Observaciones", "Timestamp"]
+)
 
-</style>
-""", unsafe_allow_html=True)
+# =========================================================
+# MENÚ PRINCIPAL
+# =========================================================
 
+menu = st.sidebar.radio(
+    "Menú",
+    ["Jugadores", "Ver informes"]
+)
+
+# =========================================================
+# BLOQUE — CREAR INFORME DE JUGADOR (RESTAURADO)
+# =========================================================
+
+def crear_informe_jugador(df_players: pd.DataFrame, df_reports: pd.DataFrame):
+    st.subheader("📝 Crear informe")
+
+    df_players["ID_Jugador"] = df_players["ID_Jugador"].astype(str)
+
+    jugador_sel = st.selectbox(
+        "Jugador",
+        df_players["ID_Jugador"],
+        format_func=lambda x: df_players.loc[df_players["ID_Jugador"] == x, "Nombre"].values[0]
+    )
+
+    with st.form("form_informe", clear_on_submit=False):
+        c1, c2, c3 = st.columns(3)
+
+        with c1:
+            fecha = st.date_input("Fecha", value=date.today())
+            partido = st.text_input("Partido")
+
+        with c2:
+            scout = st.text_input("Scout")
+            linea = st.selectbox("Línea", ["1ra (Fichar)", "2da (Seguir)", "3ra (Ver)", "4ta (Descartar)"])
+
+        with c3:
+            minutos = st.number_input("Minutos", min_value=0, max_value=130, step=1)
+
+        observaciones = st.text_area("Observaciones", height=180)
+
+        guardar = st.form_submit_button("💾 Guardar informe")
+
+    if guardar:
+        nuevo_id = (
+            str(int(df_reports["ID_Informe"].astype(int).max()) + 1)
+            if not df_reports.empty
+            else "1"
+        )
+
+        nuevo = pd.DataFrame([{
+            "ID_Informe": nuevo_id,
+            "ID_Jugador": jugador_sel,
+            "Fecha": fecha.strftime("%Y-%m-%d"),
+            "Partido": partido,
+            "Scout": scout,
+            "Linea": linea,
+            "Minutos": minutos,
+            "Observaciones": observaciones,
+            "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }])
+
+        df_reports = pd.concat([df_reports, nuevo], ignore_index=True)
+        actualizar_hoja("Informes", df_reports)
+        st.success("Informe guardado correctamente.")
+
+# =========================================================
+# BLOQUE — JUGADORES
+# =========================================================
+
+if menu == "Jugadores":
+    crear_informe_jugador(df_players, df_reports)
+
+# =========================================================
+# BLOQUE — VER INFORMES
+# =========================================================
+
+if menu == "Ver informes":
+    st.subheader("📋 Informes cargados")
+
+    df_reports["ID_Jugador"] = df_reports["ID_Jugador"].astype(str)
+    df_players["ID_Jugador"] = df_players["ID_Jugador"].astype(str)
+
+    df_merge = df_reports.merge(df_players, on="ID_Jugador", how="left")
+
+    gb = GridOptionsBuilder.from_dataframe(df_merge)
+    gb.configure_pagination(paginationAutoPageSize=True)
+    gb.configure_default_column(filter=True, sortable=True)
+    gridOptions = gb.build()
+
+    AgGrid(df_merge, gridOptions=gridOptions, height=500)
 
 # =========================================================
 # ARCHIVOS LOCALES (usuarios y cancha)
@@ -1711,6 +1656,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
