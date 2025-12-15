@@ -394,6 +394,99 @@ def generar_id_unico(df, columna="ID_Jugador"):
     return max(nums) + 1 if nums else 1
 
 
+# ---------------------------------------------------------
+# FUNCIONES DE PROMEDIOS (OBLIGATORIAS PARA BLOQUE 3)
+# ---------------------------------------------------------
+
+def calcular_promedios_jugador(df_reports, id_jugador):
+    if df_reports.empty:
+        return None
+
+    df = df_reports.copy()
+    df["ID_Jugador"] = df["ID_Jugador"].astype(str)
+    informes = df[df["ID_Jugador"] == str(id_jugador)]
+
+    if informes.empty:
+        return None
+
+    metricas = [
+        "Controles","Perfiles","Pase_corto","Pase_largo","Pase_filtrado",
+        "1v1_defensivo","Recuperacion","Intercepciones","Duelos_aereos",
+        "Regate","Velocidad","Duelos_ofensivos",
+        "Resiliencia","Liderazgo","Inteligencia_tactica",
+        "Inteligencia_emocional","Posicionamiento",
+        "Vision_de_juego","Movimientos_sin_pelota"
+    ]
+
+    promedios = {}
+    for m in metricas:
+        if m in informes.columns:
+            try:
+                valores = (
+                    informes[m]
+                    .astype(str)
+                    .str.replace(",", ".", regex=False)
+                    .replace(["", "nan", "None", "-", "—"], 0)
+                    .astype(float)
+                )
+                promedios[m] = round(valores.mean(), 2)
+            except Exception:
+                promedios[m] = 0.0
+        else:
+            promedios[m] = 0.0
+
+    return promedios
+
+
+def calcular_promedios_posicion(df_reports, df_players, posicion):
+    if not posicion or df_reports.empty or df_players.empty:
+        return None
+
+    df_r = df_reports.copy()
+    df_p = df_players.copy()
+
+    df_r["ID_Jugador"] = df_r["ID_Jugador"].astype(str)
+    df_p["ID_Jugador"] = df_p["ID_Jugador"].astype(str)
+
+    ids = df_p[df_p["Posición"] == posicion]["ID_Jugador"].tolist()
+    informes = df_r[df_r["ID_Jugador"].isin(ids)]
+
+    if informes.empty:
+        return None
+
+    metricas = [
+        "Controles","Perfiles","Pase_corto","Pase_largo","Pase_filtrado",
+        "1v1_defensivo","Recuperacion","Intercepciones","Duelos_aereos",
+        "Regate","Velocidad","Duelos_ofensivos",
+        "Resiliencia","Liderazgo","Inteligencia_tactica",
+        "Inteligencia_emocional","Posicionamiento",
+        "Vision_de_juego","Movimientos_sin_pelota"
+    ]
+
+    promedios = {}
+    for m in metricas:
+        if m in informes.columns:
+            try:
+                valores = (
+                    informes[m]
+                    .astype(str)
+                    .str.replace(",", ".", regex=False)
+                    .replace(["", "nan", "None", "-", "—"], 0)
+                    .astype(float)
+                )
+                promedios[m] = round(valores.mean(), 2)
+            except Exception:
+                promedios[m] = 0.0
+        else:
+            promedios[m] = 0.0
+
+    return promedios
+
+
+# ---------------------------------------------------------
+# RADAR
+# ---------------------------------------------------------
+
 def radar_chart(prom_jugador, prom_posicion):
     if not prom_jugador:
         return
@@ -474,6 +567,7 @@ menu = st.sidebar.radio(
     "📋 Menú principal",
     ["Panel General", "Agenda", "Jugadores", "Ver informes", "Lista corta"]
 )
+
 # =========================================================
 # BLOQUE 3 / 5 — Sección Jugadores
 # =========================================================
@@ -1622,6 +1716,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
