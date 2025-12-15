@@ -577,7 +577,7 @@ if menu == "Jugadores":
     st.subheader("Gestión de jugadores e informes individuales")
 
     # -----------------------------------------------------
-    # OPCIONES PREDEFINIDAS
+    # OPCIONES
     # -----------------------------------------------------
     opciones_pies = ["Derecho", "Izquierdo", "Ambidiestro"]
 
@@ -591,7 +591,7 @@ if menu == "Jugadores":
 
     opciones_formaciones = [
         "4-4-2","4-3-3","4-2-3-1","3-5-2","3-4-3",
-        "5-3-2","5-4-1","4-1-4-1","4-3-1-2","Otro"
+        "5-3-2","4-1-4-1","4-3-1-2","Otro"
     ]
 
     opciones_ligas = [
@@ -604,58 +604,29 @@ if menu == "Jugadores":
     ]
 
     opciones_paises = [
-        "Argentina","Brasil","Chile","Uruguay","Paraguay","Colombia",
-        "México","España","Italia","Francia","Inglaterra","Otro"
+        "Argentina","Brasil","Chile","Uruguay","Paraguay",
+        "Colombia","México","España","Italia","Francia",
+        "Inglaterra","Otro"
     ]
 
     # -----------------------------------------------------
-    # BUSCADOR DE JUGADORES
+    # UTILIDAD SAFE INDEX
     # -----------------------------------------------------
-    if not df_players.empty:
-        opciones = {
-            f"{row['Nombre']} - {row['Club']}": row["ID_Jugador"]
-            for _, row in df_players.iterrows()
-        }
-    else:
-        opciones = {}
+    def safe_index(lista, valor):
+        try:
+            return lista.index(valor)
+        except Exception:
+            return 0
+
+    # -----------------------------------------------------
+    # BUSCADOR
+    # -----------------------------------------------------
+    opciones = (
+        {f"{r['Nombre']} - {r['Club']}": r["ID_Jugador"] for _, r in df_players.iterrows()}
+        if not df_players.empty else {}
+    )
 
     seleccion_jug = st.selectbox("🔍 Buscar jugador", [""] + list(opciones.keys()))
-
-    # =====================================================
-    # CREAR NUEVO JUGADOR
-    # =====================================================
-    if not seleccion_jug:
-        with st.expander("➕ Agregar nuevo jugador"):
-            with st.form("nuevo_jugador_form", clear_on_submit=True):
-
-                nombre = st.text_input("Nombre completo")
-                fecha = st.text_input("Fecha de nacimiento (dd/mm/aaaa)")
-                altura = st.number_input("Altura (cm)", 140, 210, 175)
-                pie = st.selectbox("Pie hábil", opciones_pies)
-                posicion = st.selectbox("Posición", opciones_posiciones)
-                club = st.text_input("Club")
-                liga = st.selectbox("Liga", opciones_ligas)
-                nac = st.selectbox("Nacionalidad", opciones_paises)
-                seg_nac = st.text_input("Segunda nacionalidad (opcional)")
-                foto = st.text_input("URL Foto")
-                perfil = st.text_input("URL Perfil")
-                instagram = st.text_input("Instagram")
-
-                guardar = st.form_submit_button("💾 Guardar jugador")
-
-                if guardar and nombre:
-                    nuevo_id = generar_id_unico(df_players, "ID_Jugador")
-                    fila = [
-                        nuevo_id, nombre, fecha, nac, seg_nac,
-                        altura, pie, posicion, "",
-                        club, liga, "",
-                        foto, perfil, instagram
-                    ]
-                    obtener_hoja("Jugadores").append_row(
-                        fila, value_input_option="USER_ENTERED"
-                    )
-                    st.cache_data.clear()
-                    st.experimental_rerun()
 
     # =====================================================
     # JUGADOR SELECCIONADO
@@ -665,10 +636,10 @@ if menu == "Jugadores":
         id_jugador = opciones[seleccion_jug]
         jugador = df_players[df_players["ID_Jugador"] == id_jugador].iloc[0]
 
-        col1, col2, col3 = st.columns([1.2, 1.2, 1.6])
+        # ===================== FICHA ======================
+        col_ficha, col_data = st.columns([1.4, 2.6])
 
-        # ---------------- FICHA ----------------
-        with col1:
+        with col_ficha:
             st.markdown(f"### {jugador['Nombre']}")
 
             if jugador.get("URL_Foto"):
@@ -691,18 +662,18 @@ if menu == "Jugadores":
                 if jugador.get("URL_Perfil"):
                     st.link_button("🌐 Perfil", jugador["URL_Perfil"])
 
-            # -------- EDITAR JUGADOR --------
+            # ========== EDITAR JUGADOR ==========
             with st.expander("✏️ Editar jugador"):
-                with st.form("editar_jugador_form"):
+                with st.form("editar_jugador"):
 
                     e_nombre = st.text_input("Nombre", jugador["Nombre"])
                     e_fecha = st.text_input("Fecha nac", jugador["Fecha_Nac"])
                     e_altura = st.number_input("Altura", 140, 210, int(jugador["Altura"]))
-                    e_pie = st.selectbox("Pie", opciones_pies, opciones_pies.index(jugador["Pie_Hábil"]))
-                    e_pos = st.selectbox("Posición", opciones_posiciones, opciones_posiciones.index(jugador["Posición"]))
+                    e_pie = st.selectbox("Pie", opciones_pies, safe_index(opciones_pies, jugador["Pie_Hábil"]))
+                    e_pos = st.selectbox("Posición", opciones_posiciones, safe_index(opciones_posiciones, jugador["Posición"]))
                     e_club = st.text_input("Club", jugador["Club"])
-                    e_liga = st.selectbox("Liga", opciones_ligas, opciones_ligas.index(jugador["Liga"]))
-                    e_nac = st.selectbox("Nacionalidad", opciones_paises, opciones_paises.index(jugador["Nacionalidad"]))
+                    e_liga = st.selectbox("Liga", opciones_ligas, safe_index(opciones_ligas, jugador["Liga"]))
+                    e_nac = st.selectbox("Nacionalidad", opciones_paises, safe_index(opciones_paises, jugador["Nacionalidad"]))
                     e_foto = st.text_input("Foto", jugador["URL_Foto"])
                     e_perfil = st.text_input("Perfil", jugador["URL_Perfil"])
                     e_instagram = st.text_input("Instagram", jugador["Instagram"])
@@ -710,9 +681,8 @@ if menu == "Jugadores":
                     guardar_edit = st.form_submit_button("💾 Guardar cambios")
 
                 if guardar_edit:
-                    ws = obtener_hoja("Jugadores")
                     fila = df_players.index[df_players["ID_Jugador"] == id_jugador][0] + 2
-                    ws.update(f"A{fila}:O{fila}", [[
+                    obtener_hoja("Jugadores").update(f"A{fila}:O{fila}", [[
                         id_jugador, e_nombre, e_fecha, e_nac, "",
                         e_altura, e_pie, e_pos, "",
                         e_club, e_liga, "",
@@ -721,9 +691,9 @@ if menu == "Jugadores":
                     st.cache_data.clear()
                     st.experimental_rerun()
 
-        # ---------------- DATA ----------------
-        with col2:
-            st.markdown("### 🔍 Comparativa")
+        # ===================== DATA ======================
+        with col_data:
+            st.markdown("### 📊 Perfil de rendimiento")
 
             prom_jugador = calcular_promedios_jugador(df_reports, id_jugador)
             prom_posicion = calcular_promedios_posicion(df_reports, df_players, jugador["Posición"])
@@ -731,14 +701,11 @@ if menu == "Jugadores":
             if prom_jugador:
                 radar_chart(prom_jugador, prom_posicion)
             else:
-                st.info("Sin informes cargados")
+                st.info("ℹ️ Sin informes cargados")
 
-        # ---------------- INFORME ----------------
-        with col3:
-            st.markdown("### 📝 Crear informe")
-
-            with st.expander("Nuevo informe", expanded=True):
-                with st.form(f"informe_{id_jugador}", clear_on_submit=True):
+            # ========== CREAR INFORME ==========
+            with st.expander("📝 Crear informe", expanded=False):
+                with st.form(f"informe_{id_jugador}"):
 
                     with st.expander("📌 Contexto", expanded=True):
                         fecha_partido = st.text_input("Fecha partido")
@@ -769,7 +736,8 @@ if menu == "Jugadores":
                         ]:
                             valores[m] = st.slider(m, 0.0, 5.0, 0.5)
 
-                    obs = st.text_area("Observaciones", height=140)
+                    with st.expander("📝 Observaciones"):
+                        obs = st.text_area("Observaciones", height=140)
 
                     guardar_inf = st.form_submit_button("💾 Guardar informe")
 
@@ -1666,6 +1634,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
