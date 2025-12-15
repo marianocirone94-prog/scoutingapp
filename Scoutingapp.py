@@ -576,195 +576,554 @@ if menu == "Jugadores":
 
     st.subheader("Gestión de jugadores e informes individuales")
 
-    # -----------------------------------------------------
-    # OPCIONES
-    # -----------------------------------------------------
+    # ---------------------------------------------------------
+    # OPCIONES PREDEFINIDAS
+    # ---------------------------------------------------------
     opciones_pies = ["Derecho", "Izquierdo", "Ambidiestro"]
 
     opciones_posiciones = [
-        "Arquero","Lateral derecho","Defensa central derecho",
-        "Defensa central izquierdo","Lateral izquierdo",
-        "Mediocampista defensivo","Mediocampista mixto",
-        "Mediocampista ofensivo","Extremo derecho",
-        "Extremo izquierdo","Delantero centro"
-    ]
-
-    opciones_formaciones = [
-        "4-4-2","4-3-3","4-2-3-1","3-5-2","3-4-3",
-        "5-3-2","4-1-4-1","4-3-1-2","Otro"
+        "Arquero",
+        "Lateral derecho",
+        "Defensa central derecho",
+        "Defensa central izquierdo",
+        "Lateral izquierdo",
+        "Mediocampista defensivo",
+        "Mediocampista mixto",
+        "Mediocampista ofensivo",
+        "Extremo derecho",
+        "Extremo izquierdo",
+        "Delantero centro"
     ]
 
     opciones_ligas = [
-        "Argentina - LPF","Argentina - Primera Nacional","Argentina - Federal A",
-        "Brasil - Serie A","Brasil - Serie B","Chile - Primera División",
-        "Uruguay - Primera División","Paraguay - División Profesional",
-        "Colombia - Primera A","Ecuador - LigaPro","México - Liga MX",
-        "España - LaLiga","Italia - Serie A","Inglaterra - Premier League",
+        "Argentina - LPF",
+        "Argentina - Primera Nacional",
+        "Argentina - Federal A",
+        "Brasil - Serie A (Brasileirão)",
+        "Brasil - Serie B",
+        "Chile - Primera División",
+        "Uruguay - Primera División",
+        "Uruguay - Segunda División Profesional",
+        "Paraguay - División Profesional",
+        "Colombia - Categoría Primera A",
+        "Ecuador - LigaPro Serie A",
+        "Perú - Liga 1",
+        "Venezuela - Liga FUTVE",
+        "México - Liga MX",
+        "España - LaLiga",
+        "España - LaLiga 2",
+        "Italia - Serie A",
+        "Italia - Serie B",
+        "Inglaterra - Premier League",
+        "Inglaterra - Championship",
+        "Francia - Ligue 1",
+        "Alemania - Bundesliga",
+        "Portugal - Primeira Liga",
+        "Países Bajos - Eredivisie",
+        "Suiza - Super League",
+        "Polonia - Liga Polaca",
+        "Bélgica - Pro League",
+        "Grecia - Super League",
+        "Turquía - Süper Lig",
+        "Arabia Saudita - Saudi Pro League",
+        "Estados Unidos - MLS",
         "Otro / Sin especificar"
     ]
 
     opciones_paises = [
-        "Argentina","Brasil","Chile","Uruguay","Paraguay",
-        "Colombia","México","España","Italia","Francia",
-        "Inglaterra","Otro"
+        "Argentina", "Brasil", "Chile", "Uruguay", "Paraguay", "Colombia",
+        "México", "Ecuador", "Perú", "Venezuela", "España", "Italia",
+        "Francia", "Inglaterra", "Alemania", "Portugal",
+        "Estados Unidos", "Canadá", "Bolivia", "Honduras",
+        "Costa Rica", "El Salvador", "Panamá", "República Dominicana",
+        "Guatemala", "Haití", "Jamaica", "Otro"
     ]
 
-    # -----------------------------------------------------
-    # UTILIDAD SAFE INDEX
-    # -----------------------------------------------------
-    def safe_index(lista, valor):
-        try:
-            return lista.index(valor)
-        except Exception:
-            return 0
+    opciones_segunda_nacionalidad = opciones_paises.copy()
 
-    # -----------------------------------------------------
-    # BUSCADOR
-    # -----------------------------------------------------
-    opciones = (
-        {f"{r['Nombre']} - {r['Club']}": r["ID_Jugador"] for _, r in df_players.iterrows()}
-        if not df_players.empty else {}
+    opciones_caracteristicas = [
+        "agresivo", "completo", "tiempista", "dinámico", "velocista",
+        "goleador", "juego de espalda", "líder defensivo", "versátil",
+        "posicional", "habilidoso", "táctico", "aguerrido", "resolutivo",
+        "creativo", "preciso", "criterioso", "aplomado", "temperamental",
+        "técnico", "conductor", "proyección"
+    ]
+
+    # ---------------------------------------------------------
+    # BUSCADOR DE JUGADORES
+    # ---------------------------------------------------------
+    if not df_players.empty:
+        opciones = {
+            f"{row['Nombre']} - {row['Club']}": row["ID_Jugador"]
+            for _, row in df_players.iterrows()
+        }
+    else:
+        opciones = {}
+
+    seleccion_jug = st.selectbox(
+        "🔍 Buscar jugador",
+        [""] + list(opciones.keys())
     )
 
-    seleccion_jug = st.selectbox("🔍 Buscar jugador", [""] + list(opciones.keys()))
+    # ---------------------------------------------------------
+    # CREAR NUEVO JUGADOR
+    # ---------------------------------------------------------
+    if not seleccion_jug:
 
-    # =====================================================
-    # JUGADOR SELECCIONADO
-    # =====================================================
+        st.markdown("#### ¿No encontrás al jugador?")
+
+        with st.expander("➕ Agregar nuevo jugador", expanded=False):
+            with st.form("nuevo_jugador_form", clear_on_submit=True):
+
+                nuevo_nombre = st.text_input("Nombre completo")
+                nueva_fecha = st.text_input("Fecha de nacimiento (dd/mm/aaaa)")
+                nueva_altura = st.number_input("Altura (cm)", min_value=140, max_value=210, value=175)
+                nuevo_pie = st.selectbox("Pie hábil", opciones_pies)
+                nueva_posicion = st.selectbox("Posición principal", opciones_posiciones)
+                nuevo_club = st.text_input("Club actual")
+                nueva_liga = st.selectbox("Liga o país de competencia", opciones_ligas)
+                nueva_nacionalidad = st.selectbox("Nacionalidad principal", opciones_paises)
+                nueva_seg_nac = st.selectbox(
+                    "Segunda nacionalidad (opcional)",
+                    [""] + opciones_segunda_nacionalidad
+                )
+                nueva_caracteristica = st.multiselect(
+                    "Características del jugador",
+                    opciones_caracteristicas
+                )
+
+                nueva_url_foto = st.text_input("URL de foto (opcional)")
+                nueva_url_perfil = st.text_input("URL de perfil externo (opcional)")
+                nueva_url_instagram = st.text_input("URL Instagram (opcional)")
+
+                guardar_nuevo = st.form_submit_button("💾 Guardar jugador")
+
+                if guardar_nuevo and nuevo_nombre:
+                    try:
+                        nuevo_id = generar_id_unico(df_players, "ID_Jugador")
+                        car_str = ", ".join(nueva_caracteristica) if nueva_caracteristica else ""
+
+                        fila = [
+                            nuevo_id,
+                            nuevo_nombre,
+                            nueva_fecha,
+                            nueva_nacionalidad,
+                            nueva_seg_nac,
+                            nueva_altura,
+                            nuevo_pie,
+                            nueva_posicion,
+                            car_str,
+                            nuevo_club,
+                            nueva_liga,
+                            "",
+                            nueva_url_foto,
+                            nueva_url_perfil,
+                            nueva_url_instagram
+                        ]
+
+                        ws = obtener_hoja("Jugadores")
+                        ws.append_row(fila, value_input_option="USER_ENTERED")
+
+                        st.cache_data.clear()
+                        df_players = cargar_datos_sheets("Jugadores")
+
+                        st.toast(f"✅ Jugador '{nuevo_nombre}' agregado correctamente.", icon="✅")
+                        st.experimental_rerun()
+
+                    except Exception as e:
+                        st.error(f"⚠️ Error al agregar el jugador: {e}")
+
+    # ---------------------------------------------------------
+    # MOSTRAR JUGADOR SELECCIONADO
+    # ---------------------------------------------------------
     if seleccion_jug:
 
         id_jugador = opciones[seleccion_jug]
         jugador = df_players[df_players["ID_Jugador"] == id_jugador].iloc[0]
 
-        # ===================== FICHA ======================
-        col_ficha, col_data = st.columns([1.4, 2.6])
+        col1, col2, col3 = st.columns([1.2, 1.2, 1.6])
 
-        with col_ficha:
+        # ------------------- FICHA -------------------
+        with col1:
+
             st.markdown(f"### {jugador['Nombre']}")
 
-            if jugador.get("URL_Foto"):
+            if pd.notna(jugador.get("URL_Foto")) and str(jugador["URL_Foto"]).startswith("http"):
                 st.image(jugador["URL_Foto"], width=160)
 
             edad = calcular_edad(jugador.get("Fecha_Nac"))
 
-            st.write(f"📅 {jugador.get('Fecha_Nac','')} ({edad} años)")
-            st.write(f"🌍 {jugador.get('Nacionalidad','-')}")
-            st.write(f"📏 {jugador.get('Altura','-')} cm")
-            st.write(f"👟 {jugador.get('Pie_Hábil','-')}")
-            st.write(f"🎯 {jugador.get('Posición','-')}")
-            st.write(f"🏟️ {jugador.get('Club','-')} ({jugador.get('Liga','-')})")
+            nac_principal = jugador.get("Nacionalidad", "-")
+            nac_sec = jugador.get("Segunda_Nacionalidad", "")
+            nacionalidades = nac_principal if not nac_sec else f"{nac_principal}, {nac_sec}"
 
-            b1, b2 = st.columns(2)
-            with b1:
-                if jugador.get("Instagram"):
-                    st.link_button("📸 Instagram", jugador["Instagram"])
-            with b2:
-                if jugador.get("URL_Perfil"):
-                    st.link_button("🌐 Perfil", jugador["URL_Perfil"])
+            st.write(f"📅 Fecha de nacimiento: {jugador.get('Fecha_Nac', '')} ({edad} años)")
+            st.write(f"🌍 Nacionalidad: {nacionalidades}")
+            st.write(f"📏 Altura: {jugador.get('Altura', '-') } cm")
+            st.write(f"👟 Pie hábil: {jugador.get('Pie_Hábil', '-')}")
+            st.write(f"🎯 Posición: {jugador.get('Posición', '-')}")
+            st.write(f"🏟️ Club actual: {jugador.get('Club', '-')} ({jugador.get('Liga', '-')})")
 
-            # ========== EDITAR JUGADOR ==========
-            with st.expander("✏️ Editar jugador"):
-                with st.form("editar_jugador"):
+            if pd.notna(jugador.get("URL_Perfil")) and str(jugador["URL_Perfil"]).startswith("http"):
+                st.markdown(f"[🌐 Perfil externo]({jugador['URL_Perfil']})")
 
-                    e_nombre = st.text_input("Nombre", jugador["Nombre"])
-                    e_fecha = st.text_input("Fecha nac", jugador["Fecha_Nac"])
-                    e_altura = st.number_input("Altura", 140, 210, int(jugador["Altura"]))
-                    e_pie = st.selectbox("Pie", opciones_pies, safe_index(opciones_pies, jugador["Pie_Hábil"]))
-                    e_pos = st.selectbox("Posición", opciones_posiciones, safe_index(opciones_posiciones, jugador["Posición"]))
-                    e_club = st.text_input("Club", jugador["Club"])
-                    e_liga = st.selectbox("Liga", opciones_ligas, safe_index(opciones_ligas, jugador["Liga"]))
-                    e_nac = st.selectbox("Nacionalidad", opciones_paises, safe_index(opciones_paises, jugador["Nacionalidad"]))
-                    e_foto = st.text_input("Foto", jugador["URL_Foto"])
-                    e_perfil = st.text_input("Perfil", jugador["URL_Perfil"])
-                    e_instagram = st.text_input("Instagram", jugador["Instagram"])
+            if pd.notna(jugador.get("URL_Instagram")) and str(jugador["URL_Instagram"]).startswith("http"):
+                st.markdown(f"[📸 Instagram]({jugador['URL_Instagram']})")
 
-                    guardar_edit = st.form_submit_button("💾 Guardar cambios")
+        # ---------------------------------------------------------
+        # AGREGAR A LISTA CORTA
+        # ---------------------------------------------------------
+        if CURRENT_ROLE in ["admin", "scout"]:
 
-                if guardar_edit:
-                    fila = df_players.index[df_players["ID_Jugador"] == id_jugador][0] + 2
-                    obtener_hoja("Jugadores").update(f"A{fila}:O{fila}", [[
-                        id_jugador, e_nombre, e_fecha, e_nac, "",
-                        e_altura, e_pie, e_pos, "",
-                        e_club, e_liga, "",
-                        e_foto, e_perfil, e_instagram
-                    ]])
-                    st.cache_data.clear()
-                    st.experimental_rerun()
+            if st.button("⭐ Agregar a Lista Corta"):
+                try:
+                    ws_short = obtener_hoja("Lista corta")
+                    data_short = ws_short.get_all_records()
+                    df_short_local = pd.DataFrame(data_short)
 
-        # ===================== DATA ======================
-        with col_data:
-            st.markdown("### 📊 Perfil de rendimiento")
+                    if (
+                        "ID_Jugador" in df_short_local.columns
+                        and str(jugador["ID_Jugador"]) in df_short_local["ID_Jugador"].astype(str).values
+                    ):
+                        st.warning("⚠️ Este jugador ya está en la lista corta.")
+                    else:
+                        nueva_fila = [
+                            jugador["ID_Jugador"],
+                            jugador["Nombre"],
+                            calcular_edad(jugador["Fecha_Nac"]),
+                            jugador.get("Altura", "-"),
+                            jugador.get("Club", "-"),
+                            jugador.get("Posición", "-"),
+                            jugador.get("URL_Foto", ""),
+                            jugador.get("URL_Perfil", ""),
+                            jugador.get("URL_Instagram", ""),
+                            CURRENT_USER,
+                            date.today().strftime("%d/%m/%Y")
+                        ]
 
-            prom_jugador = calcular_promedios_jugador(df_reports, id_jugador)
-            prom_posicion = calcular_promedios_posicion(df_reports, df_players, jugador["Posición"])
+                        ws_short.append_row(nueva_fila, value_input_option="USER_ENTERED")
+                        st.toast(f"⭐ {jugador['Nombre']} agregado a la lista corta", icon="⭐")
 
-            if prom_jugador:
-                radar_chart(prom_jugador, prom_posicion)
-            else:
-                st.info("ℹ️ Sin informes cargados")
+                        st.cache_data.clear()
+                        df_short = cargar_datos_sheets("Lista corta")
 
-            # ========== CREAR INFORME ==========
-            with st.expander("📝 Crear informe", expanded=False):
-                with st.form(f"informe_{id_jugador}"):
+                except Exception as e:
+                    st.error(f"⚠️ Error al agregar a lista corta: {e}")
 
-                    with st.expander("📌 Contexto", expanded=True):
-                        fecha_partido = st.text_input("Fecha partido")
-                        equipos = st.text_input("Equipos / Resultado")
-                        scout = st.text_input("Scout", value=CURRENT_USER)
-                        linea = st.selectbox("Línea", ["1ra","2da","3ra","4ta"])
-                        formacion = st.selectbox("Formación", opciones_formaciones)
+        # ---------------------------------------------------------
+        # EDITAR DATOS DEL JUGADOR
+        # ---------------------------------------------------------
+        with st.expander("✏️ Editar información del jugador", expanded=False):
 
-                    valores = {}
+            with st.form(f"editar_jugador_form_{jugador['ID_Jugador']}"):
 
-                    with st.expander("🧠 Técnicos"):
-                        for m in ["Controles","Perfiles","Pase_corto","Pase_largo","Pase_filtrado"]:
-                            valores[m] = st.slider(m, 0.0, 5.0, 0.5)
+                e_nombre = st.text_input("Nombre completo", value=jugador.get("Nombre", ""))
+                e_fecha = st.text_input("Fecha de nacimiento (dd/mm/aaaa)", value=jugador.get("Fecha_Nac", ""))
+                e_altura = st.number_input(
+                    "Altura (cm)",
+                    140,
+                    210,
+                    int(float(jugador.get("Altura", 175))) if str(jugador.get("Altura", "")).strip() else 175
+                )
 
-                    with st.expander("🛡️ Defensivos"):
-                        for m in ["1v1_defensivo","Recuperacion","Intercepciones","Duelos_aereos"]:
-                            valores[m] = st.slider(m, 0.0, 5.0, 0.5)
+                e_pie = st.selectbox(
+                    "Pie hábil",
+                    opciones_pies,
+                    index=opciones_pies.index(jugador["Pie_Hábil"]) if jugador["Pie_Hábil"] in opciones_pies else 0
+                )
 
-                    with st.expander("⚡ Ofensivos"):
-                        for m in ["Regate","Velocidad","Duelos_ofensivos"]:
-                            valores[m] = st.slider(m, 0.0, 5.0, 0.5)
+                e_pos = st.selectbox(
+                    "Posición",
+                    opciones_posiciones,
+                    index=opciones_posiciones.index(jugador["Posición"]) if jugador["Posición"] in opciones_posiciones else 0
+                )
 
-                    with st.expander("🧩 Mentales / tácticos"):
-                        for m in [
-                            "Resiliencia","Liderazgo","Inteligencia_tactica",
-                            "Inteligencia_emocional","Posicionamiento",
-                            "Vision_de_juego","Movimientos_sin_pelota"
-                        ]:
-                            valores[m] = st.slider(m, 0.0, 5.0, 0.5)
+                e_club = st.text_input("Club actual", value=jugador.get("Club", ""))
+                e_liga = st.selectbox(
+                    "Liga",
+                    opciones_ligas,
+                    index=opciones_ligas.index(jugador["Liga"]) if jugador["Liga"] in opciones_ligas else 0
+                )
 
-                    with st.expander("📝 Observaciones"):
-                        obs = st.text_area("Observaciones", height=140)
+                e_nac = st.selectbox(
+                    "Nacionalidad principal",
+                    opciones_paises,
+                    index=opciones_paises.index(jugador["Nacionalidad"]) if jugador["Nacionalidad"] in opciones_paises else 0
+                )
 
-                    guardar_inf = st.form_submit_button("💾 Guardar informe")
+                e_seg_opciones = [""] + opciones_segunda_nacionalidad
+                e_seg = st.selectbox(
+                    "Segunda nacionalidad (opcional)",
+                    e_seg_opciones,
+                    index=e_seg_opciones.index(jugador["Segunda_Nacionalidad"]) if jugador["Segunda_Nacionalidad"] in e_seg_opciones else 0
+                )
 
-                if guardar_inf:
-                    nuevo_id = generar_id_unico(df_reports, "ID_Informe")
-                    fila = {
-                        "ID_Informe": nuevo_id,
-                        "ID_Jugador": id_jugador,
-                        "Scout": scout,
-                        "Fecha_Partido": fecha_partido,
-                        "Fecha_Informe": datetime.now().strftime("%d/%m/%Y"),
-                        "Equipos_Resultados": equipos,
-                        "Formación": formacion,
-                        "Observaciones": obs,
-                        "Línea": linea
-                    }
-                    for k, v in valores.items():
-                        fila[k] = v
+                e_car = st.multiselect(
+                    "Características del jugador",
+                    opciones_caracteristicas,
+                    default=[
+                        c.strip().lower()
+                        for c in str(jugador.get("Caracteristica", "")).split(",")
+                        if c.strip().lower() in [o.lower() for o in opciones_caracteristicas]
+                    ]
+                )
 
-                    df_reports = pd.concat([df_reports, pd.DataFrame([fila])], ignore_index=True)
-                    obtener_hoja("Informes").update(
-                        [df_reports.columns.values.tolist()] +
-                        df_reports.fillna("").values.tolist()
-                    )
+                e_foto = st.text_input("URL de foto", value=str(jugador.get("URL_Foto", "")))
+                e_link = st.text_input("URL perfil externo", value=str(jugador.get("URL_Perfil", "")))
+                e_instagram = st.text_input("URL Instagram", value=str(jugador.get("URL_Instagram", "")))
 
-                    st.cache_data.clear()
-                    st.experimental_rerun()
+                guardar_ed = st.form_submit_button("💾 Guardar cambios")
+
+                if guardar_ed:
+                    try:
+                        ws = obtener_hoja("Jugadores")
+                        data = ws.get_all_records()
+                        df_actual = pd.DataFrame(data)
+
+                        index_row = df_actual.index[
+                            df_actual["ID_Jugador"].astype(str) == str(id_jugador)
+                        ]
+
+                        if not index_row.empty:
+                            row_number = index_row[0] + 2
+                            e_car_str = ", ".join(e_car) if e_car else ""
+
+                            valores = [
+                                id_jugador,
+                                e_nombre,
+                                e_fecha,
+                                e_nac,
+                                e_seg,
+                                e_altura,
+                                e_pie,
+                                e_pos,
+                                e_car_str,
+                                e_club,
+                                e_liga,
+                                "",
+                                e_foto,
+                                e_link,
+                                e_instagram
+                            ]
+
+                            ws.update(f"A{row_number}:O{row_number}", [valores])
+
+                            st.cache_data.clear()
+                            df_players = cargar_datos_sheets("Jugadores")
+
+                            st.toast("✅ Datos actualizados correctamente.", icon="✅")
+                            st.experimental_rerun()
+                        else:
+                            st.warning("⚠️ No se encontró el jugador en la hoja.")
+
+                    except Exception as e:
+                        st.error(f"⚠️ Error al guardar: {e}")
+
+        # ---------------------------------------------------------
+        # ELIMINAR JUGADOR
+        # ---------------------------------------------------------
+        with st.expander("🗑️ Eliminar jugador permanentemente", expanded=False):
+
+            eliminar_confirm = st.checkbox("Confirmar eliminación")
+
+            if st.button("Eliminar jugador", type="primary"):
+
+                if eliminar_confirm:
+                    try:
+                        ws_players = obtener_hoja("Jugadores")
+                        data_players = ws_players.get_all_records()
+                        df_players_local = pd.DataFrame(data_players)
+
+                        df_players_local = df_players_local[
+                            df_players_local["ID_Jugador"].astype(str) != str(id_jugador)
+                        ]
+
+                        ws_players.clear()
+                        ws_players.append_row(list(df_players_local.columns))
+
+                        if not df_players_local.empty:
+                            ws_players.update(
+                                [df_players_local.columns.values.tolist()]
+                                + df_players_local.values.tolist()
+                            )
+
+                        ws_short = obtener_hoja("Lista corta")
+                        data_short = ws_short.get_all_records()
+                        df_short_local = pd.DataFrame(data_short)
+
+                        if not df_short_local.empty:
+                            df_short_local = df_short_local[
+                                df_short_local["ID_Jugador"].astype(str) != str(id_jugador)
+                            ]
+
+                            ws_short.clear()
+                            ws_short.append_row(list(df_short_local.columns))
+
+                            if not df_short_local.empty:
+                                ws_short.update(
+                                    [df_short_local.columns.values.tolist()]
+                                    + df_short_local.values.tolist()
+                                )
+
+                        st.cache_data.clear()
+                        df_players = cargar_datos_sheets("Jugadores")
+                        df_short = cargar_datos_sheets("Lista corta")
+
+                        st.success(f"🗑️ Jugador '{jugador['Nombre']}' eliminado correctamente.")
+                        st.experimental_rerun()
+
+                    except Exception as e:
+                        st.error(f"⚠️ Error al eliminar: {e}")
+                else:
+                    st.warning("Debes confirmar la eliminación antes de continuar.")
+
+        # ---------------------------------------------------------
+        # CARGAR NUEVO INFORME
+        # ---------------------------------------------------------
+        if CURRENT_ROLE in ["admin", "scout"]:
+
+            st.markdown("---")
+            st.subheader(f"📝 Cargar nuevo informe para {jugador['Nombre']}")
+
+            with st.form(f"nuevo_informe_form_{jugador['ID_Jugador']}", clear_on_submit=True):
+
+                scout = CURRENT_USER
+                fecha_partido = st.date_input("Fecha del partido", format="DD/MM/YYYY")
+                equipos_resultados = st.text_input("Equipos y resultado")
+                formacion = st.selectbox(
+                    "Formación",
+                    ["4-2-3-1", "4-3-1-2", "4-4-2", "4-3-3", "3-5-2", "3-4-3", "5-3-2"]
+                )
+
+                observaciones = st.text_area("Observaciones generales", height=100)
+
+                linea = st.selectbox(
+                    "Línea de seguimiento",
+                    [
+                        "1ra (Fichar)",
+                        "2da (Seguir)",
+                        "3ra (Ver más adelante)",
+                        "4ta (Descartar)",
+                        "Joven Promesa"
+                    ]
+                )
+
+                st.markdown("### Evaluación técnica (0 a 5)")
+
+                with st.expander("🎯 Habilidades técnicas"):
+                    col1, col2, col3 = st.columns(3)
+
+                    with col1:
+                        controles = st.slider("Controles", 0.0, 5.0, 0.0, 0.5)
+                        perfiles = st.slider("Perfiles", 0.0, 5.0, 0.0, 0.5)
+
+                    with col2:
+                        pase_corto = st.slider("Pase corto", 0.0, 5.0, 0.0, 0.5)
+                        pase_largo = st.slider("Pase largo", 0.0, 5.0, 0.0, 0.5)
+
+                    with col3:
+                        pase_filtrado = st.slider("Pase filtrado", 0.0, 5.0, 0.0, 0.5)
+
+                with st.expander("Aspectos defensivos"):
+                    col1, col2 = st.columns(2)
+
+                    with col1:
+                        v1_def = st.slider("1v1 defensivo", 0.0, 5.0, 0.0, 0.5)
+                        recuperacion = st.slider("Recuperación", 0.0, 5.0, 0.0, 0.5)
+
+                    with col2:
+                        intercepciones = st.slider("Intercepciones", 0.0, 5.0, 0.0, 0.5)
+                        duelos_aereos = st.slider("Duelos aéreos", 0.0, 5.0, 0.0, 0.5)
+
+                with st.expander("Aspectos ofensivos"):
+                    col1, col2 = st.columns(2)
+
+                    with col1:
+                        regate = st.slider("Regate", 0.0, 5.0, 0.0, 0.5)
+                        velocidad = st.slider("Velocidad", 0.0, 5.0, 0.0, 0.5)
+
+                    with col2:
+                        duelos_of = st.slider("Duelos ofensivos", 0.0, 5.0, 0.0, 0.5)
+
+                with st.expander("Aspectos mentales / psicológicos"):
+                    col1, col2 = st.columns(2)
+
+                    with col1:
+                        resiliencia = st.slider("Resiliencia", 0.0, 5.0, 0.0, 0.5)
+                        liderazgo = st.slider("Liderazgo", 0.0, 5.0, 0.0, 0.5)
+
+                    with col2:
+                        int_tactica = st.slider("Inteligencia táctica", 0.0, 5.0, 0.0, 0.5)
+                        int_emocional = st.slider("Inteligencia emocional", 0.0, 5.0, 0.0, 0.5)
+
+                with st.expander("Aspectos tácticos"):
+                    col1, col2 = st.columns(2)
+
+                    with col1:
+                        posicionamiento = st.slider("Posicionamiento", 0.0, 5.0, 0.0, 0.5)
+                        vision = st.slider("Visión de juego", 0.0, 5.0, 0.0, 0.5)
+
+                    with col2:
+                        movimientos = st.slider("Movimientos sin pelota", 0.0, 5.0, 0.0, 0.5)
+
+                guardar_informe = st.form_submit_button("Guardar informe")
+
+                if guardar_informe:
+                    try:
+
+                        def to_float_safe(v):
+                            try:
+                                if isinstance(v, str):
+                                    v = v.replace(",", ".")
+                                return round(float(v), 2)
+                            except Exception:
+                                return 0.0
+
+                        nuevo = [
+                            len(df_reports) + 1,
+                            jugador["ID_Jugador"],
+                            CURRENT_USER,
+                            fecha_partido.strftime("%d/%m/%Y"),
+                            date.today().strftime("%d/%m/%Y"),
+                            equipos_resultados,
+                            formacion,
+                            observaciones,
+                            linea,
+                            to_float_safe(controles),
+                            to_float_safe(perfiles),
+                            to_float_safe(pase_corto),
+                            to_float_safe(pase_largo),
+                            to_float_safe(pase_filtrado),
+                            to_float_safe(v1_def),
+                            to_float_safe(recuperacion),
+                            to_float_safe(intercepciones),
+                            to_float_safe(duelos_aereos),
+                            to_float_safe(regate),
+                            to_float_safe(velocidad),
+                            to_float_safe(duelos_of),
+                            to_float_safe(resiliencia),
+                            to_float_safe(liderazgo),
+                            to_float_safe(int_tactica),
+                            to_float_safe(int_emocional),
+                            to_float_safe(posicionamiento),
+                            to_float_safe(vision),
+                            to_float_safe(movimientos)
+                        ]
+
+                        ws_inf = obtener_hoja("Informes")
+                        ws_inf.append_row(nuevo, value_input_option="USER_ENTERED")
+
+                        st.cache_data.clear()
+                        df_reports = cargar_datos_sheets("Informes")
+
+                        st.toast(
+                            f"✅ Informe guardado correctamente para {jugador['Nombre']}",
+                            icon="✅"
+                        )
+                        st.experimental_rerun()
+
+                    except Exception as e:
+                        st.error(f"⚠️ Error al guardar el informe: {e}")
 
 # =========================================================
 # BLOQUE 4 / 5 — Ver Informes (optimizado y con ficha completa)
@@ -1634,6 +1993,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
