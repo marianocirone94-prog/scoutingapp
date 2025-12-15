@@ -1146,76 +1146,6 @@ if CURRENT_ROLE in ["admin", "scout"]:
                 st.error(f"⚠️ Error al guardar el informe: {e}")
 
 
-# ---------------------------------------------------------
-# PROMEDIOS Y RADAR DEL JUGADOR
-# ---------------------------------------------------------
-if seleccion_jug and not df_reports.empty:
-
-    df_jug_reports = df_reports[
-        df_reports["ID_Jugador"].astype(str) == str(id_jugador)
-    ]
-
-    if not df_jug_reports.empty:
-
-        st.markdown("---")
-        st.subheader("📊 Promedios y radar de rendimiento")
-
-        metricas = [
-            "Controles", "Perfiles", "Pase corto", "Pase largo", "Pase filtrado",
-            "1v1 defensivo", "Recuperación", "Intercepciones", "Duelos aéreos",
-            "Regate", "Velocidad", "Duelos ofensivos",
-            "Resiliencia", "Liderazgo",
-            "Inteligencia táctica", "Inteligencia emocional",
-            "Posicionamiento", "Visión de juego", "Movimientos sin pelota"
-        ]
-
-        # 🔒 evitar KeyError si falta alguna columna
-        metricas_validas = [m for m in metricas if m in df_jug_reports.columns]
-
-        if not metricas_validas:
-            st.info("No hay métricas disponibles para calcular promedios.")
-        else:
-            df_metrics = df_jug_reports[metricas_validas].apply(
-                pd.to_numeric, errors="coerce"
-            )
-
-            promedios = df_metrics.mean().round(2)
-
-            st.dataframe(
-                promedios.reset_index().rename(
-                    columns={"index": "Aspecto", 0: "Promedio"}
-                ),
-                use_container_width=True,
-                hide_index=True
-            )
-
-            import plotly.graph_objects as go
-
-            categorias = list(promedios.index)
-            valores = list(promedios.values)
-            categorias.append(categorias[0])
-            valores.append(valores[0])
-
-            fig = go.Figure()
-            fig.add_trace(
-                go.Scatterpolar(
-                    r=valores,
-                    theta=categorias,
-                    fill="toself",
-                    line=dict(color="#00c6ff"),
-                    fillcolor="rgba(0,198,255,0.25)"
-                )
-            )
-
-            fig.update_layout(
-                polar=dict(radialaxis=dict(visible=True, range=[0, 5])),
-                showlegend=False,
-                height=500,
-                margin=dict(l=40, r=40, t=40, b=40)
-            )
-
-            st.plotly_chart(fig, use_container_width=True)
-
 
 # ---------------------------------------------------------
 # PROMEDIOS Y RADAR DEL JUGADOR
@@ -2149,6 +2079,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
