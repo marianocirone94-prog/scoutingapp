@@ -1125,6 +1125,80 @@ if menu == "Jugadores":
                     except Exception as e:
                         st.error(f"⚠️ Error al guardar el informe: {e}")
 
+# ---------------------------------------------------------
+# PROMEDIOS Y RADAR DEL JUGADOR
+# ---------------------------------------------------------
+if seleccion_jug and not df_reports.empty:
+
+    df_jug_reports = df_reports[
+        df_reports["ID_Jugador"].astype(str) == str(id_jugador)
+    ]
+
+    if not df_jug_reports.empty:
+
+        st.markdown("---")
+        st.subheader("📊 Promedios y radar de rendimiento")
+
+        metricas = [
+            "Controles", "Perfiles", "Pase corto", "Pase largo", "Pase filtrado",
+            "1v1 defensivo", "Recuperación", "Intercepciones", "Duelos aéreos",
+            "Regate", "Velocidad", "Duelos ofensivos",
+            "Resiliencia", "Liderazgo",
+            "Inteligencia táctica", "Inteligencia emocional",
+            "Posicionamiento", "Visión de juego", "Movimientos sin pelota"
+        ]
+
+        df_metrics = df_jug_reports[metricas].apply(
+            pd.to_numeric, errors="coerce"
+        )
+
+        promedios = df_metrics.mean().round(2)
+
+        # -------- TABLA DE PROMEDIOS --------
+        df_prom = (
+            promedios
+            .reset_index()
+            .rename(columns={"index": "Aspecto", 0: "Promedio"})
+        )
+
+        st.dataframe(df_prom, use_container_width=True, hide_index=True)
+
+        # -------- RADAR --------
+        import plotly.graph_objects as go
+
+        categorias = list(promedios.index)
+        valores = list(promedios.values)
+
+        categorias.append(categorias[0])
+        valores.append(valores[0])
+
+        fig = go.Figure()
+
+        fig.add_trace(
+            go.Scatterpolar(
+                r=valores,
+                theta=categorias,
+                fill="toself",
+                line=dict(color="#00c6ff"),
+                fillcolor="rgba(0,198,255,0.25)"
+            )
+        )
+
+        fig.update_layout(
+            polar=dict(
+                radialaxis=dict(
+                    visible=True,
+                    range=[0, 5]
+                )
+            ),
+            showlegend=False,
+            height=500,
+            margin=dict(l=40, r=40, t=40, b=40)
+        )
+
+        st.plotly_chart(fig, use_container_width=True)
+
+
 # =========================================================
 # BLOQUE 4 / 5 — Ver Informes (optimizado y con ficha completa)
 # =========================================================
@@ -1993,6 +2067,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
