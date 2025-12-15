@@ -562,11 +562,21 @@ if menu == "Jugadores":
                 if guardar_nuevo and nuevo_nombre:
                     nuevo_id = generar_id_unico(df_players, "ID_Jugador")
                     fila = [
-                        nuevo_id, nuevo_nombre, nueva_fecha,
-                        nueva_nacionalidad, nueva_seg_nac,
-                        nueva_altura, nuevo_pie, nueva_posicion,
-                        nueva_caracteristica, nuevo_club, nueva_liga,
-                        "", nueva_url_foto, nueva_url_perfil, instagram
+                        nuevo_id,
+                        nuevo_nombre,
+                        nueva_fecha,
+                        nueva_nacionalidad,
+                        nueva_seg_nac,
+                        nueva_altura,
+                        nuevo_pie,
+                        nueva_posicion,
+                        nueva_caracteristica,
+                        nuevo_club,
+                        nueva_liga,
+                        "",
+                        nueva_url_foto,
+                        nueva_url_perfil,
+                        instagram
                     ]
                     obtener_hoja("Jugadores").append_row(
                         fila, value_input_option="USER_ENTERED"
@@ -600,10 +610,13 @@ if menu == "Jugadores":
             st.write(f"🎯 Posición: {jugador.get('Posición','-')}")
             st.write(f"🏟️ Club: {jugador.get('Club','-')} ({jugador.get('Liga','-')})")
 
-            if jugador.get("Instagram"):
-                st.markdown(f"[📸 Instagram]({jugador['Instagram']})")
-            if jugador.get("URL_Perfil"):
-                st.markdown(f"[🌐 Perfil externo]({jugador['URL_Perfil']})")
+            col_btn1, col_btn2 = st.columns(2)
+            with col_btn1:
+                if jugador.get("Instagram") and str(jugador["Instagram"]).startswith("http"):
+                    st.link_button("📸 Instagram", jugador["Instagram"])
+            with col_btn2:
+                if jugador.get("URL_Perfil") and str(jugador["URL_Perfil"]).startswith("http"):
+                    st.link_button("🌐 Perfil externo", jugador["URL_Perfil"])
 
         # ---------------- COMPARATIVA ----------------
         with col2:
@@ -727,7 +740,11 @@ if menu == "Jugadores":
                 for k, v in valores.items():
                     fila[k] = v
 
-                df_reports = pd.concat([df_reports, pd.DataFrame([fila])], ignore_index=True)
+                df_reports = pd.concat(
+                    [df_reports, pd.DataFrame([fila])],
+                    ignore_index=True
+                )
+
                 obtener_hoja("Informes").update(
                     [df_reports.columns.values.tolist()] +
                     df_reports.fillna("").values.tolist()
@@ -735,6 +752,7 @@ if menu == "Jugadores":
 
                 st.cache_data.clear()
                 st.experimental_rerun()
+
 
 # =========================================================
 # BLOQUE 4 / 5 — Ver Informes (optimizado y con ficha completa)
@@ -1604,6 +1622,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
