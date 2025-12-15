@@ -1481,60 +1481,47 @@ if menu == "Agenda":
             guardar_nuevo(id_jugador, jugador_sel, scout, fecha_rev, motivo)
 
 # =========================================================
-# 🏠 PANEL GENERAL — ScoutingApp PRO (FINAL ESTABLE)
+# 🏠 PANEL GENERAL — ScoutingApp PRO (VERSIÓN ESTABLE)
 # =========================================================
 
 if menu == "Panel General":
 
-    import pandas as pd
-    from datetime import datetime, timedelta
-
-    # =====================================================
-    # TÍTULO
-    # =====================================================
     st.markdown("<h2 style='text-align:center;color:#00c6ff;'>📊 Panel General — ScoutingApp PRO</h2>", unsafe_allow_html=True)
-    st.markdown("---")
 
-    # =====================================================
-    # DATA BASE (DESDE SESSION_STATE — NO CSV)
-    # =====================================================
+    # =========================
+    # DATA (DESDE SESSION)
+    # =========================
     df_players = st.session_state["df_players"].copy()
     df_reports = st.session_state["df_reports"].copy()
-
-    if df_players.empty or df_reports.empty:
-        st.warning("No hay datos suficientes para mostrar el panel.")
-        st.stop()
 
     df_players["ID_Jugador"] = df_players["ID_Jugador"].astype(str)
     df_reports["ID_Jugador"] = df_reports["ID_Jugador"].astype(str)
 
-    # =====================================================
+    # =========================
     # FECHAS
-    # =====================================================
+    # =========================
     df_reports["Fecha_Informe_dt"] = pd.to_datetime(
-        df_reports["Fecha_Informe"],
-        errors="coerce",
-        dayfirst=True
+        df_reports["Fecha_Informe"], errors="coerce", dayfirst=True
     )
 
-    hoy = pd.Timestamp.today()
-    hace_30 = hoy - pd.Timedelta(days=30)
+    hoy = datetime.today()
+    hace_30_dias = hoy - timedelta(days=30)
 
-    # =====================================================
-    # EDAD (NUMÉRICA, SEGURA)
-    # =====================================================
-    def calcular_edad(fecha):
+    # =========================
+    # EDAD (NUMÉRICA REAL)
+    # =========================
+    def calcular_edad_segura(fecha):
         try:
             f = datetime.strptime(str(fecha), "%d/%m/%Y")
             return int((hoy - f).days / 365.25)
         except:
             return None
 
-    df_players["Edad"] = df_players["Fecha_Nac"].apply(calcular_edad)
+    df_players["Edad"] = df_players["Fecha_Nac"].apply(calcular_edad_segura)
 
-    # =====================================================
-    # MÉTRICAS (LISTA ÚNICA)
-    # =====================================================
+    # =========================
+    # MÉTRICAS (LIMPIAS)
+    # =========================
     metricas = [
         "Controles","Perfiles","Pase_corto","Pase_largo","Pase_filtrado",
         "1v1_defensivo","Recuperacion","Intercepciones","Duelos_aereos",
@@ -1544,26 +1531,22 @@ if menu == "Panel General":
         "Movimientos_sin_pelota"
     ]
 
-    # =====================================================
-    # LIMPIEZA TOTAL DE MÉTRICAS (CLAVE PARA NO ROMPER)
-    # =====================================================
     for m in metricas:
         if m in df_reports.columns:
             df_reports[m] = (
                 df_reports[m]
                 .astype(str)
                 .str.replace(",", ".", regex=False)
-                .str.strip()
                 .replace(["", "nan", "None", "-", "—"], 0)
                 .astype(float)
             )
         else:
             df_reports[m] = 0.0
 
-    # =====================================================
-    # SCORE TOTAL POR JUGADOR
-    # =====================================================
-    score_jugador = (
+    # =========================
+    # SCORE TOTAL (PROMEDIO SIMPLE)
+    # =========================
+    df_scores = (
         df_reports
         .groupby("ID_Jugador")[metricas]
         .mean()
@@ -1577,9 +1560,9 @@ if menu == "Panel General":
         .sort_values("Score_Total", ascending=False)
     )
 
-    # =====================================================
+    # =========================
     # KPIs
-    # =====================================================
+    # =========================
     mes = hoy.month
     inicio_semestre = datetime(hoy.year, 1, 1) if mes <= 6 else datetime(hoy.year, 7, 1)
 
@@ -1587,55 +1570,43 @@ if menu == "Panel General":
         df_reports["Fecha_Informe_dt"] >= inicio_semestre
     ]["ID_Jugador"].nunique()
 
-    informes_30 = df_reports[df_reports["Fecha_Informe_dt"] >= hace_30].shape[0]
+    informes_30_dias = df_reports[
+        df_reports["Fecha_Informe_dt"] >= hace_30_dias
+    ].shape[0]
 
     st.markdown(f"""
     <div class="kpi-container">
-        <div class="kpi-card">
-            <div class="kpi-title">Jugadores evaluados</div>
-            <div class="kpi-value">{df_players["ID_Jugador"].nunique()}</div>
-        </div>
-        <div class="kpi-card">
-            <div class="kpi-title">Informes cargados</div>
-            <div class="kpi-value">{len(df_reports)}</div>
-        </div>
-        <div class="kpi-card">
-            <div class="kpi-title">Scouts activos</div>
-            <div class="kpi-value">{df_reports["Scout"].nunique()}</div>
-        </div>
-        <div class="kpi-card">
-            <div class="kpi-title">Jugadores este semestre</div>
-            <div class="kpi-value">{jugadores_semestre}</div>
-        </div>
-        <div class="kpi-card">
-            <div class="kpi-title">Informes últimos 30 días</div>
-            <div class="kpi-value">{informes_30}</div>
-        </div>
+        <div class="kpi-card"><div class="kpi-title">Jugadores evaluados</div><div class="kpi-value">{df_players["ID_Jugador"].nunique()}</div></div>
+        <div class="kpi-card"><div class="kpi-title">Informes cargados</div><div class="kpi-value">{len(df_reports)}</div></div>
+        <div class="kpi-card"><div class="kpi-title">Scouts activos</div><div class="kpi-value">{df_reports["Scout"].nunique()}</div></div>
+        <div class="kpi-card"><div class="kpi-title">Jugadores este semestre</div><div class="kpi-value">{jugadores_semestre}</div></div>
+        <div class="kpi-card"><div class="kpi-title">Informes últimos 30 días</div><div class="kpi-value">{informes_30_dias}</div></div>
     </div>
     """, unsafe_allow_html=True)
 
-    # =====================================================
-    # FUNCIÓN RENDER TOP (MISMO LOOK QUE TU PRUEBA)
-    # =====================================================
+    # =========================
+    # FUNCIÓN RENDER (MISMA QUE TU EJEMPLO)
+    # =========================
     def render_top(df, titulo, campo):
         st.markdown(f"<div class='panel-title'>{titulo}</div>", unsafe_allow_html=True)
         if df.empty:
             st.info("Sin datos")
             return
-        for i, r in enumerate(df.head(10).itertuples(), 1):
+        for i, row in enumerate(df.head(10).itertuples(), 1):
+            valor = round(getattr(row, campo), 2)
             st.markdown(f"""
             <div class='rank-card'>
                 <div class='rank-left'>
                     <div class='rank-num'>#{i}</div>
-                    <div class='rank-name'>{r.Nombre}</div>
+                    <div class='rank-name'>{row.Nombre}</div>
                 </div>
-                <div class='rank-score'>{round(getattr(r, campo),2)}</div>
+                <div class='rank-score'>{valor}</div>
             </div>
             """, unsafe_allow_html=True)
 
-    # =====================================================
+    # =========================
     # TOP POR POSICIÓN (4 COLUMNAS)
-    # =====================================================
+    # =========================
     posiciones = [
         ("Arquero","🧤 Arqueros"),
         ("Lateral derecho","➡️ Laterales derechos"),
@@ -1653,23 +1624,18 @@ if menu == "Panel General":
     cols = st.columns(4)
     for i, (pos, titulo) in enumerate(posiciones):
         with cols[i % 4]:
-            render_top(score_jugador[score_jugador["Posición"] == pos], titulo, "Score_Total")
+            render_top(df_scores[df_scores["Posición"] == pos], titulo, "Score_Total")
 
     st.markdown("---")
 
-    # =====================================================
-    # TOP POR EDAD + CONSENSO
-    # =====================================================
-    cols2 = st.columns(4)
-
-    with cols2[0]:
-        render_top(score_jugador[score_jugador["Edad"] < 20], "🟢 Sub 20", "Score_Total")
-
-    with cols2[1]:
-        render_top(score_jugador[(score_jugador["Edad"] >= 20) & (score_jugador["Edad"] <= 28)], "🔵 20–28", "Score_Total")
-
-    with cols2[2]:
-        render_top(score_jugador[score_jugador["Edad"] > 28], "🟣 +28", "Score_Total")
+    # =========================
+    # CONSENSO ENTRE SCOUTS (≥ 3 SCOUTS)
+    # =========================
+    scouts_por_jugador = (
+        df_reports.groupby("ID_Jugador")["Scout"]
+        .nunique()
+        .reset_index(name="Scouts")
+    )
 
     consenso = (
         df_reports
@@ -1680,9 +1646,15 @@ if menu == "Panel General":
             df_reports.groupby("ID_Jugador").size().reset_index(name="Total"),
             on="ID_Jugador"
         )
+        .merge(
+            scouts_por_jugador,
+            on="ID_Jugador"
+        )
     )
 
-    consenso["Consenso_Pct"] = round(consenso["Cantidad"] / consenso["Total"] * 100, 1)
+    consenso = consenso[consenso["Scouts"] >= 3]  # 🔥 FILTRO CLAVE
+
+    consenso["Consenso_Pct"] = consenso["Cantidad"] / consenso["Total"] * 100
 
     df_consenso = (
         consenso
@@ -1691,8 +1663,19 @@ if menu == "Panel General":
         .merge(df_players[["ID_Jugador","Nombre"]], on="ID_Jugador")
     )
 
+    cols2 = st.columns(4)
+
+    with cols2[0]:
+        render_top(df_scores[df_scores["Edad"] < 20], "🟢 Top Sub 20", "Score_Total")
+
+    with cols2[1]:
+        render_top(df_scores[(df_scores["Edad"] >= 20) & (df_scores["Edad"] <= 28)], "🔵 Top 20–28", "Score_Total")
+
+    with cols2[2]:
+        render_top(df_scores[df_scores["Edad"] > 28], "🟣 Top +28", "Score_Total")
+
     with cols2[3]:
-        render_top(df_consenso, "🤝 Consenso scouts (%)", "Consenso_Pct")
+        render_top(df_consenso, "🤝 Consenso scouts (≥ 3)", "Consenso_Pct")
 
 # =========================================================
 # CIERRE PROFESIONAL (footer)
@@ -1712,6 +1695,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
