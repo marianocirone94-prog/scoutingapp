@@ -547,8 +547,8 @@ def cargar_datos():
         "URL_Foto","URL_Perfil","Agregado_Por","Fecha_Agregado"
     ]
 
-    df_players = cargar_datos_sheets("Jugadores", columnas_jug)
-    df_reports = cargar_datos_sheets("Informes", columnas_inf)
+    df_players = df_players_user.copy() cargar_datos_sheets("Jugadores", columnas_jug)
+    df_reports = df_reports_user.copy() cargar_datos_sheets("Informes", columnas_inf)
     df_short   = cargar_datos_sheets("Lista corta", columnas_short)
 
     # Normalización de IDs
@@ -564,25 +564,59 @@ def cargar_datos():
 # ---------------------------------------------------------
 
 # Carga base desde Sheets
-df_players, df_reports, df_short = cargar_datos()
+df_players, df_reports, df_short = df_short_user.copy() cargar_datos()
 
 # -----------------------------
 # Session State (fuente única)
 # -----------------------------
 if "df_players" not in st.session_state:
-    st.session_state["df_players"] = df_players.copy()
+    df_players_user = df_players.copy()
 else:
-    st.session_state["df_players"] = df_players.copy()
+    df_players_user = df_players.copy()
 
 if "df_reports" not in st.session_state:
-    st.session_state["df_reports"] = df_reports.copy()
+    df_reports_user = df_reports.copy()
 else:
-    st.session_state["df_reports"] = df_reports.copy()
+    df_reports_user = df_reports.copy()
 
 if "df_short" not in st.session_state:
-    st.session_state["df_short"] = df_short.copy()
+    df_short_user = df_short.copy()
 else:
-    st.session_state["df_short"] = df_short.copy()
+    df_short_user = df_short.copy()
+
+# =========================================================
+# 🔐 FILTRADO GLOBAL DE DATOS POR USUARIO (ÚNICO)
+# =========================================================
+
+df_players_all = df_players_user.copy()
+df_reports_all = df_reports_user.copy()
+df_short_all   = df_short_user.copy()
+
+if CURRENT_ROLE != "admin":
+    # Informes: solo los del scout
+    df_reports_user = df_reports_all[
+        df_reports_all["Scout"] == CURRENT_USER
+    ].copy()
+
+    # Lista corta: solo lo agregado por el scout
+    df_short_user = df_short_all[
+        df_short_all["Agregado_Por"] == CURRENT_USER
+    ].copy()
+
+    # Jugadores relacionados (informes + lista corta)
+    ids = set(df_reports_user["ID_Jugador"].astype(str)) | \
+          set(df_short_user["ID_Jugador"].astype(str))
+
+    df_players_user = df_players_all[
+        df_players_all["ID_Jugador"].astype(str).isin(ids)
+    ].copy()
+
+else:
+    # Admin ve todo
+    df_reports_user = df_reports_all.copy()
+    df_short_user   = df_short_all.copy()
+    df_players_user = df_players_all.copy()
+
 
 # -----------------------------
 # Menú principal
@@ -750,7 +784,7 @@ if menu == "Jugadores":
                         ws.append_row(fila, value_input_option="USER_ENTERED")
 
                         st.cache_data.clear()
-                        df_players = cargar_datos_sheets("Jugadores")
+                        df_players = df_players_user.copy() cargar_datos_sheets("Jugadores")
 
                         st.toast(f"✅ Jugador '{nuevo_nombre}' agregado correctamente.", icon="✅")
                         st.experimental_rerun()
@@ -830,7 +864,7 @@ if menu == "Jugadores":
                         st.toast(f"⭐ {jugador['Nombre']} agregado a la lista corta", icon="⭐")
 
                         st.cache_data.clear()
-                        df_short = cargar_datos_sheets("Lista corta")
+                        df_short = df_short_user.copy() cargar_datos_sheets("Lista corta")
 
                 except Exception as e:
                     st.error(f"⚠️ Error al agregar a lista corta: {e}")
@@ -934,7 +968,7 @@ if menu == "Jugadores":
                             ws.update(f"A{row_number}:O{row_number}", [valores])
 
                             st.cache_data.clear()
-                            df_players = cargar_datos_sheets("Jugadores")
+                            df_players = df_players_user.copy() cargar_datos_sheets("Jugadores")
 
                             st.toast("✅ Datos actualizados correctamente.", icon="✅")
                             st.experimental_rerun()
@@ -991,8 +1025,8 @@ if menu == "Jugadores":
                                 )
 
                         st.cache_data.clear()
-                        df_players = cargar_datos_sheets("Jugadores")
-                        df_short = cargar_datos_sheets("Lista corta")
+                        df_players = df_players_user.copy() cargar_datos_sheets("Jugadores")
+                        df_short = df_short_user.copy() cargar_datos_sheets("Lista corta")
 
                         st.success(f"🗑️ Jugador '{jugador['Nombre']}' eliminado correctamente.")
                         st.experimental_rerun()
@@ -1139,7 +1173,7 @@ if menu == "Jugadores":
                         ws_inf.append_row(nuevo, value_input_option="USER_ENTERED")
 
                         st.cache_data.clear()
-                        df_reports = cargar_datos_sheets("Informes")
+                        df_reports = df_reports_user.copy() cargar_datos_sheets("Informes")
 
                         st.toast(
                             f"✅ Informe guardado correctamente para {jugador['Nombre']}",
@@ -1421,8 +1455,8 @@ if menu == "Ver informes":
 if menu == "Lista corta":
     st.subheader("Lista corta de jugadores")
 
-    df_short = st.session_state.get("df_short", pd.DataFrame())
-    df_players = st.session_state.get("df_players", pd.DataFrame())
+    df_short = df_short_user.copy() st.session_state.get("df_short", pd.DataFrame())
+    df_players = df_players_user.copy() st.session_state.get("df_players", pd.DataFrame())
 
     if df_short.empty:
         st.info("No hay jugadores cargados en la lista corta actualmente.")
@@ -1432,7 +1466,7 @@ if menu == "Lista corta":
     # FILTRO DE PRIVACIDAD POR USUARIO
     # =========================================================
     if CURRENT_ROLE not in ["admin"]:
-        df_short = df_short[df_short["Agregado_Por"] == CURRENT_USER]
+        df_short = df_short_user.copy() df_short[df_short["Agregado_Por"] == CURRENT_USER]
 
     # Aseguramos columnas necesarias
     for col in ["Año", "Semestre"]:
@@ -1871,8 +1905,8 @@ if menu == "Panel General":
     # =========================
     # DATA DESDE SESSION
     # =========================
-    df_players = st.session_state["df_players"].copy()
-    df_reports = st.session_state["df_reports"].copy()
+    df_players = df_players_user.copy() df_players_user.copy()
+    df_reports = df_reports_user.copy() df_reports_user.copy()
 
     df_players["ID_Jugador"] = df_players["ID_Jugador"].astype(str)
     df_reports["ID_Jugador"] = df_reports["ID_Jugador"].astype(str)
@@ -2020,20 +2054,20 @@ if menu == "Panel Scouts":
     # -----------------------------------------------------
     # 📦 DATOS DESDE SESSION STATE
     # -----------------------------------------------------
-    df_players = st.session_state["df_players"].copy()
-    df_reports = st.session_state["df_reports"].copy()
+    df_players = df_players_user.copy() df_players_user.copy()
+    df_reports = df_reports_user.copy() df_reports_user.copy()
 
     df_players["ID_Jugador"] = df_players["ID_Jugador"].astype(str)
     df_reports["ID_Jugador"] = df_reports["ID_Jugador"].astype(str)
 
     df_reports["Scout"] = df_reports["Scout"].astype(str).str.strip()
-    df_reports = df_reports[df_reports["Scout"] != ""]
+    df_reports = df_reports_user.copy() df_reports[df_reports["Scout"] != ""]
 
     # -----------------------------------------------------
     # 🔐 PRIVACIDAD POR ROL
     # -----------------------------------------------------
     if CURRENT_ROLE != "admin":
-        df_reports = df_reports[df_reports["Scout"] == CURRENT_USER]
+        df_reports = df_reports_user.copy() df_reports[df_reports["Scout"] == CURRENT_USER]
 
     # -----------------------------------------------------
     # 🕒 FECHAS Y DERIVADOS (HISTÓRICO COMPLETO)
@@ -2296,6 +2330,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
