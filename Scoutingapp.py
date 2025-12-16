@@ -548,10 +548,11 @@ def cargar_datos():
 
     df_players = cargar_datos_sheets("Jugadores", columnas_jug)
     df_reports = cargar_datos_sheets("Informes", columnas_inf)
-    df_short = cargar_datos_sheets("Lista corta", columnas_short)
+    df_short   = cargar_datos_sheets("Lista corta", columnas_short)
 
-    for df in [df_players, df_reports, df_short]:
-        if "ID_Jugador" in df.columns:
+    # Normalización de IDs
+    for df in (df_players, df_reports, df_short):
+        if not df.empty and "ID_Jugador" in df.columns:
             df["ID_Jugador"] = df["ID_Jugador"].astype(str)
 
     return df_players, df_reports, df_short
@@ -561,12 +562,35 @@ def cargar_datos():
 # INICIALIZACIÓN
 # ---------------------------------------------------------
 
+# Carga base desde Sheets
 df_players, df_reports, df_short = cargar_datos()
 
+# -----------------------------
+# Session State (fuente única)
+# -----------------------------
+if "df_players" not in st.session_state:
+    st.session_state["df_players"] = df_players.copy()
+else:
+    st.session_state["df_players"] = df_players.copy()
+
+if "df_reports" not in st.session_state:
+    st.session_state["df_reports"] = df_reports.copy()
+else:
+    st.session_state["df_reports"] = df_reports.copy()
+
+if "df_short" not in st.session_state:
+    st.session_state["df_short"] = df_short.copy()
+else:
+    st.session_state["df_short"] = df_short.copy()
+
+# -----------------------------
+# Menú principal
+# -----------------------------
 menu = st.sidebar.radio(
     "📋 Menú principal",
     ["Panel General", "Agenda", "Jugadores", "Ver informes", "Lista corta"]
 )
+
 
 # =========================================================
 # BLOQUE 3 / 5 — Sección Jugadores
@@ -1993,6 +2017,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
