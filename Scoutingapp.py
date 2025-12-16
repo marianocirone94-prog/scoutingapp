@@ -2039,12 +2039,20 @@ if menu == "Panel Scouts":
     # 🕒 FECHAS Y DERIVADOS (HISTÓRICO COMPLETO)
     # -----------------------------------------------------
     df_reports["Fecha_Informe_dt"] = pd.to_datetime(
-        df_reports["Fecha_Informe"], errors="coerce", dayfirst=True
+        df_reports["Fecha_Informe"],
+        errors="coerce",
+        dayfirst=True
     )
 
     hoy = pd.Timestamp.today().normalize()
 
-    df_reports["Año"] = df_reports["Fecha_Informe_dt"].dt.year
+    # ⚠️ AÑO COMO ENTERO REAL (NO FLOAT)
+    df_reports["Año"] = (
+        df_reports["Fecha_Informe_dt"]
+        .dt.year
+        .astype("Int64")          # ← CLAVE
+    )
+
     df_reports["Mes"] = df_reports["Fecha_Informe_dt"].dt.strftime("%Y-%m")
     df_reports["Semana"] = df_reports["Fecha_Informe_dt"].dt.strftime("%Y-%U")
     df_reports["Semestre"] = df_reports["Fecha_Informe_dt"].dt.month.apply(
@@ -2068,9 +2076,17 @@ if menu == "Panel Scouts":
     f1, f2, f3 = st.columns(3)
 
     with f1:
+        opciones_anio = (
+            df["Año"]
+            .dropna()
+            .astype(int)      # ← fuerza entero
+            .unique()
+            .tolist()
+        )
+
         filtro_anio = st.multiselect(
             "Año",
-            sorted(df["Año"].dropna().unique(), reverse=True)
+            sorted(opciones_anio, reverse=True)
         )
 
     with f2:
@@ -2080,7 +2096,6 @@ if menu == "Panel Scouts":
         )
 
     with f3:
-        # Admin puede filtrar scouts, scout no (ya está limitado)
         if CURRENT_ROLE == "admin":
             filtro_scout = st.multiselect(
                 "Scout",
@@ -2136,7 +2151,7 @@ if menu == "Panel Scouts":
         st.error("❌ Fuera del radar (+60 días): " + ", ".join(fuera["Scout"]))
 
     # -----------------------------------------------------
-    # 🏆 RANKING DE SCOUTS (PERÍODO)
+    # 🏆 RANKING DE SCOUTS
     # -----------------------------------------------------
     pesos = {
         "1ra (Fichar)": 3,
@@ -2281,6 +2296,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
