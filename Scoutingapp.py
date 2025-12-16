@@ -633,8 +633,9 @@ if menu == "Jugadores":
     # ---------------------------------------------------------
     # DATASETS FILTRADOS POR USUARIO
     # ---------------------------------------------------------
-    df_players = df_players_user.copy()
-    df_reports = df_reports_user.copy()
+    df_players = df_players_all.copy()      # 🔓 todos los jugadores
+    df_reports = df_reports_user.copy()     # 🔐 solo informes del scout
+
 
     # ---------------------------------------------------------
     # OPCIONES PREDEFINIDAS
@@ -1138,6 +1139,16 @@ if menu == "Jugadores":
 if menu == "Ver informes":
     st.subheader("📝 Informes cargados")
 
+    # ---------------------------------------------------------
+    # DATASETS SEGÚN ROL
+    # ---------------------------------------------------------
+    df_players = df_players_all.copy()     # 🔓 todos los jugadores
+
+    if CURRENT_ROLE == "admin":
+        df_reports = df_reports_all.copy()     # admin ve todo
+    else:
+        df_reports = df_reports_user.copy()    # scout ve solo sus informes
+
     # --- Unificación segura ---
     try:
         df_reports["ID_Jugador"] = df_reports["ID_Jugador"].astype(str)
@@ -1146,6 +1157,7 @@ if menu == "Ver informes":
     except Exception as e:
         st.error(f"❌ Error al unir datos: {e}")
         st.stop()
+
 
     # =========================================================
     # FILTROS LATERALES
@@ -2280,6 +2292,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
