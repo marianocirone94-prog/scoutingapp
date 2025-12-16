@@ -2002,56 +2002,57 @@ if menu == "Panel Scouts":
         unsafe_allow_html=True
     )
 
-    # -----------------------------------------------------
-    # 📦 DATOS DESDE SESSION STATE
-    # -----------------------------------------------------
-    df_players = df_players_user.copy() df_players_user.copy()
-    df_reports = df_reports_user.copy() df_reports_user.copy()
+   # -----------------------------------------------------
+# 📦 DATOS DESDE SESSION STATE
+# -----------------------------------------------------
+df_players = df_players_user.copy()
+df_reports = df_reports_user.copy()
 
-    df_players["ID_Jugador"] = df_players["ID_Jugador"].astype(str)
-    df_reports["ID_Jugador"] = df_reports["ID_Jugador"].astype(str)
+df_players["ID_Jugador"] = df_players["ID_Jugador"].astype(str)
+df_reports["ID_Jugador"] = df_reports["ID_Jugador"].astype(str)
 
-    df_reports["Scout"] = df_reports["Scout"].astype(str).str.strip()
-    df_reports = df_reports_user.copy() df_reports[df_reports["Scout"] != ""]
+df_reports["Scout"] = df_reports["Scout"].astype(str).str.strip()
+df_reports = df_reports[df_reports["Scout"] != ""]
 
-    # -----------------------------------------------------
-    # 🔐 PRIVACIDAD POR ROL
-    # -----------------------------------------------------
-    if CURRENT_ROLE != "admin":
-        df_reports = df_reports_user.copy() df_reports[df_reports["Scout"] == CURRENT_USER]
+# -----------------------------------------------------
+# 🔐 PRIVACIDAD POR ROL
+# -----------------------------------------------------
+if CURRENT_ROLE != "admin":
+    df_reports = df_reports[df_reports["Scout"] == CURRENT_USER]
 
-    # -----------------------------------------------------
-    # 🕒 FECHAS Y DERIVADOS (HISTÓRICO COMPLETO)
-    # -----------------------------------------------------
-    df_reports["Fecha_Informe_dt"] = pd.to_datetime(
-        df_reports["Fecha_Informe"],
-        errors="coerce",
-        dayfirst=True
-    )
+# -----------------------------------------------------
+# 🕒 FECHAS Y DERIVADOS (HISTÓRICO COMPLETO)
+# -----------------------------------------------------
+df_reports["Fecha_Informe_dt"] = pd.to_datetime(
+    df_reports["Fecha_Informe"],
+    errors="coerce",
+    dayfirst=True
+)
 
-    hoy = pd.Timestamp.today().normalize()
+hoy = pd.Timestamp.today().normalize()
 
-    # ⚠️ AÑO COMO ENTERO REAL (NO FLOAT)
-    df_reports["Año"] = (
-        df_reports["Fecha_Informe_dt"]
-        .dt.year
-        .astype("Int64")          # ← CLAVE
-    )
+# ⚠️ AÑO COMO ENTERO REAL (NO FLOAT)
+df_reports["Año"] = (
+    df_reports["Fecha_Informe_dt"]
+    .dt.year
+    .astype("Int64")
+)
 
-    df_reports["Mes"] = df_reports["Fecha_Informe_dt"].dt.strftime("%Y-%m")
-    df_reports["Semana"] = df_reports["Fecha_Informe_dt"].dt.strftime("%Y-%U")
-    df_reports["Semestre"] = df_reports["Fecha_Informe_dt"].dt.month.apply(
-        lambda m: "1º" if m <= 6 else "2º"
-    )
+df_reports["Mes"] = df_reports["Fecha_Informe_dt"].dt.strftime("%Y-%m")
+df_reports["Semana"] = df_reports["Fecha_Informe_dt"].dt.strftime("%Y-%U")
+df_reports["Semestre"] = df_reports["Fecha_Informe_dt"].dt.month.apply(
+    lambda m: "1º" if m <= 6 else "2º"
+)
 
-    # -----------------------------------------------------
-    # 🔗 UNIFICACIÓN
-    # -----------------------------------------------------
-    df = df_reports.merge(
-        df_players[["ID_Jugador", "Posición", "Liga"]],
-        on="ID_Jugador",
-        how="left"
-    )
+# -----------------------------------------------------
+# 🔗 UNIFICACIÓN
+# -----------------------------------------------------
+df = df_reports.merge(
+    df_players[["ID_Jugador", "Posición", "Liga"]],
+    on="ID_Jugador",
+    how="left"
+)
+
 
     # -----------------------------------------------------
     # 🔎 FILTROS (AÑO / SEMESTRE / SCOUT)
@@ -2281,6 +2282,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
