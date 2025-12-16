@@ -1848,13 +1848,16 @@ if menu == "Agenda":
 # =========================================================
 if menu == "Panel General":
 
-    st.markdown("<h2 style='text-align:center;color:#00c6ff;'>📊 Panel General — ScoutingApp PRO</h2>", unsafe_allow_html=True)
+    st.markdown(
+        "<h2 style='text-align:center;color:#00c6ff;'>📊 Panel General — ScoutingApp PRO</h2>",
+        unsafe_allow_html=True
+    )
 
     # =========================
     # DATA DESDE SESSION
     # =========================
-    df_players = df_players_user.copy() df_players_user.copy()
-    df_reports = df_reports_user.copy() df_reports_user.copy()
+    df_players = df_players_user.copy()
+    df_reports = df_reports_user.copy()
 
     df_players["ID_Jugador"] = df_players["ID_Jugador"].astype(str)
     df_reports["ID_Jugador"] = df_reports["ID_Jugador"].astype(str)
@@ -2278,6 +2281,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
