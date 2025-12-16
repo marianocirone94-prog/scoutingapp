@@ -1402,8 +1402,8 @@ if menu == "Ver informes":
 if menu == "Lista corta":
     st.subheader("Lista corta de jugadores")
 
-    df_short = df_short_user.copy() st.session_state.get("df_short", pd.DataFrame())
-    df_players = df_players_user.copy() st.session_state.get("df_players", pd.DataFrame())
+    df_short = df_short_user.copy()
+    df_players = df_players_user.copy()
 
     if df_short.empty:
         st.info("No hay jugadores cargados en la lista corta actualmente.")
@@ -2277,6 +2277,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
