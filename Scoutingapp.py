@@ -1998,269 +1998,269 @@ if menu == "Panel Scouts":
         st.stop()
 
     st.markdown(
-        "<h2 style='text-align:center;color:#00c6ff;'> Panel de Control de Scouts</h2>",
+        "<h2 style='text-align:center;color:#00c6ff;'>Panel de Control de Scouts</h2>",
         unsafe_allow_html=True
     )
 
-   # -----------------------------------------------------
-# 📦 DATOS DESDE SESSION STATE
-# -----------------------------------------------------
-df_players = df_players_user.copy()
-df_reports = df_reports_user.copy()
+    # -----------------------------------------------------
+    # 📦 DATOS DESDE SESSION STATE
+    # -----------------------------------------------------
+    df_players = df_players_user.copy()
+    df_reports = df_reports_user.copy()
 
-df_players["ID_Jugador"] = df_players["ID_Jugador"].astype(str)
-df_reports["ID_Jugador"] = df_reports["ID_Jugador"].astype(str)
+    df_players["ID_Jugador"] = df_players["ID_Jugador"].astype(str)
+    df_reports["ID_Jugador"] = df_reports["ID_Jugador"].astype(str)
 
-df_reports["Scout"] = df_reports["Scout"].astype(str).str.strip()
-df_reports = df_reports[df_reports["Scout"] != ""]
+    df_reports["Scout"] = df_reports["Scout"].astype(str).str.strip()
+    df_reports = df_reports[df_reports["Scout"] != ""]
 
-# -----------------------------------------------------
-# 🔐 PRIVACIDAD POR ROL
-# -----------------------------------------------------
-if CURRENT_ROLE != "admin":
-    df_reports = df_reports[df_reports["Scout"] == CURRENT_USER]
+    # -----------------------------------------------------
+    # 🔐 PRIVACIDAD POR ROL
+    # -----------------------------------------------------
+    if CURRENT_ROLE != "admin":
+        df_reports = df_reports[df_reports["Scout"] == CURRENT_USER]
 
-# -----------------------------------------------------
-# 🕒 FECHAS Y DERIVADOS (HISTÓRICO COMPLETO)
-# -----------------------------------------------------
-df_reports["Fecha_Informe_dt"] = pd.to_datetime(
-    df_reports["Fecha_Informe"],
-    errors="coerce",
-    dayfirst=True
-)
-
-hoy = pd.Timestamp.today().normalize()
-
-# ⚠️ AÑO COMO ENTERO REAL (NO FLOAT)
-df_reports["Año"] = (
-    df_reports["Fecha_Informe_dt"]
-    .dt.year
-    .astype("Int64")
-)
-
-df_reports["Mes"] = df_reports["Fecha_Informe_dt"].dt.strftime("%Y-%m")
-df_reports["Semana"] = df_reports["Fecha_Informe_dt"].dt.strftime("%Y-%U")
-df_reports["Semestre"] = df_reports["Fecha_Informe_dt"].dt.month.apply(
-    lambda m: "1º" if m <= 6 else "2º"
-)
-
-# -----------------------------------------------------
-# 🔗 UNIFICACIÓN
-# -----------------------------------------------------
-df = df_reports.merge(
-    df_players[["ID_Jugador", "Posición", "Liga"]],
-    on="ID_Jugador",
-    how="left"
-)
-
-# -----------------------------------------------------
-# 🔎 FILTROS (AÑO / SEMESTRE / SCOUT)
-# -----------------------------------------------------
-st.markdown("### 🔎 Filtros")
-
-f1, f2, f3 = st.columns(3)
-
-with f1:
-    opciones_anio = (
-        df["Año"]
-        .dropna()
-        .astype(int)
-        .unique()
-        .tolist()
+    # -----------------------------------------------------
+    # 🕒 FECHAS Y DERIVADOS
+    # -----------------------------------------------------
+    df_reports["Fecha_Informe_dt"] = pd.to_datetime(
+        df_reports["Fecha_Informe"],
+        errors="coerce",
+        dayfirst=True
     )
 
-    filtro_anio = st.multiselect(
-        "Año",
-        sorted(opciones_anio, reverse=True)
+    hoy = pd.Timestamp.today().normalize()
+
+    df_reports["Año"] = (
+        df_reports["Fecha_Informe_dt"]
+        .dt.year
+        .astype("Int64")
     )
 
-with f2:
-    filtro_sem = st.multiselect(
-        "Semestre",
-        ["1º", "2º"]
+    df_reports["Mes"] = df_reports["Fecha_Informe_dt"].dt.strftime("%Y-%m")
+    df_reports["Semana"] = df_reports["Fecha_Informe_dt"].dt.strftime("%Y-%U")
+    df_reports["Semestre"] = df_reports["Fecha_Informe_dt"].dt.month.apply(
+        lambda m: "1º" if m <= 6 else "2º"
     )
 
-with f3:
-    if CURRENT_ROLE == "admin":
-        filtro_scout = st.multiselect(
-            "Scout",
-            sorted(df["Scout"].dropna().unique())
+    # -----------------------------------------------------
+    # 🔗 UNIFICACIÓN
+    # -----------------------------------------------------
+    df = df_reports.merge(
+        df_players[["ID_Jugador", "Posición", "Liga"]],
+        on="ID_Jugador",
+        how="left"
+    )
+
+    # -----------------------------------------------------
+    # 🔎 FILTROS
+    # -----------------------------------------------------
+    st.markdown("### 🔎 Filtros")
+
+    f1, f2, f3 = st.columns(3)
+
+    with f1:
+        opciones_anio = (
+            df["Año"]
+            .dropna()
+            .astype(int)
+            .unique()
+            .tolist()
         )
-    else:
-        filtro_scout = []
 
-# -----------------------------------------------------
-# APLICAR FILTROS
-# -----------------------------------------------------
-df_f = df.copy()
+        filtro_anio = st.multiselect(
+            "Año",
+            sorted(opciones_anio, reverse=True)
+        )
 
-if filtro_anio:
-    df_f = df_f[df_f["Año"].isin(filtro_anio)]
+    with f2:
+        filtro_sem = st.multiselect(
+            "Semestre",
+            ["1º", "2º"]
+        )
 
-if filtro_sem:
-    df_f = df_f[df_f["Semestre"].isin(filtro_sem)]
+    with f3:
+        if CURRENT_ROLE == "admin":
+            filtro_scout = st.multiselect(
+                "Scout",
+                sorted(df["Scout"].dropna().unique())
+            )
+        else:
+            filtro_scout = []
 
-if filtro_scout:
-    df_f = df_f[df_f["Scout"].isin(filtro_scout)]
+    # -----------------------------------------------------
+    # APLICAR FILTROS
+    # -----------------------------------------------------
+    df_f = df.copy()
 
-# -----------------------------------------------------
-# 📊 KPIs (PERÍODO SELECCIONADO)
-# -----------------------------------------------------
-st.markdown("### 📌 Actividad del período")
+    if filtro_anio:
+        df_f = df_f[df_f["Año"].isin(filtro_anio)]
 
-k1, k2, k3, k4 = st.columns(4)
+    if filtro_sem:
+        df_f = df_f[df_f["Semestre"].isin(filtro_sem)]
 
-k1.metric("📝 Informes", len(df_f))
-k2.metric("👤 Scouts activos", df_f["Scout"].nunique())
-k3.metric("🎯 Jugadores", df_f["ID_Jugador"].nunique())
-k4.metric("🏟️ Ligas", df_f["Liga"].nunique())
+    if filtro_scout:
+        df_f = df_f[df_f["Scout"].isin(filtro_scout)]
 
-# -----------------------------------------------------
-# 🚨 ALERTA DE INACTIVIDAD (TIEMPO REAL)
-# -----------------------------------------------------
-ultima = (
-    df_reports.groupby("Scout")["Fecha_Informe_dt"]
-    .max()
-    .reset_index()
-)
+    # -----------------------------------------------------
+    # 📊 KPIs
+    # -----------------------------------------------------
+    st.markdown("### 📌 Actividad del período")
 
-ultima["Dias"] = (hoy - ultima["Fecha_Informe_dt"]).dt.days
+    k1, k2, k3, k4 = st.columns(4)
 
-alerta = ultima[(ultima["Dias"] > 30) & (ultima["Dias"] <= 60)]
-fuera = ultima[ultima["Dias"] > 60]
+    k1.metric("📝 Informes", len(df_f))
+    k2.metric("👤 Scouts activos", df_f["Scout"].nunique())
+    k3.metric("🎯 Jugadores", df_f["ID_Jugador"].nunique())
+    k4.metric("🏟️ Ligas", df_f["Liga"].nunique())
 
-if not alerta.empty:
-    st.warning("⚠ Inactivos +30 días: " + ", ".join(alerta["Scout"].astype(str)))
-
-if not fuera.empty and CURRENT_ROLE == "admin":
-    st.error("❌ Fuera del radar (+60 días): " + ", ".join(fuera["Scout"].astype(str)))
-
-# -----------------------------------------------------
-# 🏆 RANKING DE SCOUTS
-# -----------------------------------------------------
-pesos = {
-    "1ra (Fichar)": 3,
-    "2da (Seguir)": 2,
-    "3ra (Ver más adelante)": 1
-}
-
-df_rank = df_f.copy()
-df_rank["Peso"] = df_rank["Línea"].map(pesos).fillna(0.5)
-
-ranking = (
-    df_rank.groupby("Scout")
-    .agg(
-        Informes=("ID_Jugador", "count"),
-        Jugadores=("ID_Jugador", "nunique"),
-        Calidad=("Peso", "sum")
-    )
-    .reset_index()
-)
-
-ranking["Score"] = (ranking["Calidad"] / ranking["Informes"]).round(2)
-ranking = ranking.sort_values(["Score", "Informes"], ascending=False)
-
-st.markdown("### 🏆 Ranking de scouts")
-st.dataframe(ranking, use_container_width=True)
-
-# -----------------------------------------------------
-# 🎯 META (300 INFORMES)
-# -----------------------------------------------------
-META = 300
-
-ranking["Estado"] = ranking["Informes"].apply(
-    lambda x: "🟢 OK" if x >= META else "🟡 En progreso"
-)
-
-st.markdown("### 🎯 Meta mínima (300 informes)")
-st.dataframe(
-    ranking[["Scout", "Informes", "Estado"]],
-    use_container_width=True
-)
-
-# -----------------------------------------------------
-# 📈 GRÁFICOS (2 COLUMNAS)
-# -----------------------------------------------------
-col1, col2 = st.columns(2)
-
-with col1:
-    st.markdown("### 📈 Evolución mensual total")
-
-    total_mes = (
-        df_f.groupby("Mes")
-        .size()
-        .reset_index(name="Informes")
-        .sort_values("Mes")
+    # -----------------------------------------------------
+    # 🚨 ALERTA DE INACTIVIDAD
+    # -----------------------------------------------------
+    ultima = (
+        df_reports.groupby("Scout")["Fecha_Informe_dt"]
+        .max()
+        .reset_index()
     )
 
-    st.plotly_chart(
-        px.line(total_mes, x="Mes", y="Informes", markers=True),
+    ultima["Dias"] = (hoy - ultima["Fecha_Informe_dt"]).dt.days
+
+    alerta = ultima[(ultima["Dias"] > 30) & (ultima["Dias"] <= 60)]
+    fuera = ultima[ultima["Dias"] > 60]
+
+    if not alerta.empty:
+        st.warning("⚠ Inactivos +30 días: " + ", ".join(alerta["Scout"].astype(str)))
+
+    if not fuera.empty and CURRENT_ROLE == "admin":
+        st.error("❌ Fuera del radar (+60 días): " + ", ".join(fuera["Scout"].astype(str)))
+
+    # -----------------------------------------------------
+    # 🏆 RANKING DE SCOUTS
+    # -----------------------------------------------------
+    pesos = {
+        "1ra (Fichar)": 3,
+        "2da (Seguir)": 2,
+        "3ra (Ver más adelante)": 1
+    }
+
+    df_rank = df_f.copy()
+    df_rank["Peso"] = df_rank["Línea"].map(pesos).fillna(0.5)
+
+    ranking = (
+        df_rank.groupby("Scout")
+        .agg(
+            Informes=("ID_Jugador", "count"),
+            Jugadores=("ID_Jugador", "nunique"),
+            Calidad=("Peso", "sum")
+        )
+        .reset_index()
+    )
+
+    ranking["Score"] = (ranking["Calidad"] / ranking["Informes"]).round(2)
+    ranking = ranking.sort_values(["Score", "Informes"], ascending=False)
+
+    st.markdown("### 🏆 Ranking de scouts")
+    st.dataframe(ranking, use_container_width=True)
+
+    # -----------------------------------------------------
+    # 🎯 META
+    # -----------------------------------------------------
+    META = 300
+
+    ranking["Estado"] = ranking["Informes"].apply(
+        lambda x: "🟢 OK" if x >= META else "🟡 En progreso"
+    )
+
+    st.markdown("### 🎯 Meta mínima (300 informes)")
+    st.dataframe(
+        ranking[["Scout", "Informes", "Estado"]],
         use_container_width=True
     )
 
-    st.markdown("### 🧭 Observaciones por posición")
+    # -----------------------------------------------------
+    # 📈 GRÁFICOS
+    # -----------------------------------------------------
+    col1, col2 = st.columns(2)
 
-    pos_df = df_f["Posición"].value_counts().reset_index()
-    pos_df.columns = ["Posición", "Cantidad"]
+    with col1:
+        st.markdown("### 📈 Evolución mensual total")
 
-    st.plotly_chart(
-        px.pie(pos_df, names="Posición", values="Cantidad", hole=0.45),
+        total_mes = (
+            df_f.groupby("Mes")
+            .size()
+            .reset_index(name="Informes")
+            .sort_values("Mes")
+        )
+
+        st.plotly_chart(
+            px.line(total_mes, x="Mes", y="Informes", markers=True),
+            use_container_width=True
+        )
+
+        st.markdown("### 🧭 Observaciones por posición")
+
+        pos_df = df_f["Posición"].value_counts().reset_index()
+        pos_df.columns = ["Posición", "Cantidad"]
+
+        st.plotly_chart(
+            px.pie(pos_df, names="Posición", values="Cantidad", hole=0.45),
+            use_container_width=True
+        )
+
+    with col2:
+        st.markdown("### 📊 Evolución mensual por scout")
+
+        scout_mes = (
+            df_f.groupby(["Mes", "Scout"])
+            .size()
+            .reset_index(name="Informes")
+            .sort_values("Mes")
+        )
+
+        st.plotly_chart(
+            px.line(scout_mes, x="Mes", y="Informes", color="Scout", markers=True),
+            use_container_width=True
+        )
+
+        st.markdown("### 📊 Informes por scout")
+
+        bar_df = (
+            df_f.groupby("Scout")
+            .size()
+            .reset_index(name="Informes")
+        )
+
+        fig_bar = px.bar(
+            bar_df,
+            x="Scout",
+            y="Informes",
+            text="Informes"
+        )
+
+        fig_bar.update_traces(textposition="outside")
+        st.plotly_chart(fig_bar, use_container_width=True)
+
+    # -----------------------------------------------------
+    # 🎯 DISTRIBUCIÓN DE DECISIONES
+    # -----------------------------------------------------
+    st.markdown("### 🎯 Distribución de decisiones por scout")
+
+    tabla_lineas = (
+        df_f.groupby(["Scout", "Línea"])
+        .size()
+        .reset_index(name="Cantidad")
+        .pivot(index="Scout", columns="Línea", values="Cantidad")
+        .fillna(0)
+        .astype(int)
+    )
+
+    st.dataframe(
+        tabla_lineas.style
+            .format("{:.0f}")
+            .background_gradient(cmap="Greens"),
         use_container_width=True
     )
 
-with col2:
-    st.markdown("### 📊 Evolución mensual por scout")
-
-    scout_mes = (
-        df_f.groupby(["Mes", "Scout"])
-        .size()
-        .reset_index(name="Informes")
-        .sort_values("Mes")
-    )
-
-    st.plotly_chart(
-        px.line(scout_mes, x="Mes", y="Informes", color="Scout", markers=True),
-        use_container_width=True
-    )
-
-    st.markdown("### 📊 Informes por scout")
-
-    bar_df = (
-        df_f.groupby("Scout")
-        .size()
-        .reset_index(name="Informes")
-    )
-
-    fig_bar = px.bar(
-        bar_df,
-        x="Scout",
-        y="Informes",
-        text="Informes"
-    )
-
-    fig_bar.update_traces(textposition="outside")
-    st.plotly_chart(fig_bar, use_container_width=True)
-
-# -----------------------------------------------------
-# 🎯 DISTRIBUCIÓN DE DECISIONES
-# -----------------------------------------------------
-st.markdown("### 🎯 Distribución de decisiones por scout")
-
-tabla_lineas = (
-    df_f.groupby(["Scout", "Línea"])
-    .size()
-    .reset_index(name="Cantidad")
-    .pivot(index="Scout", columns="Línea", values="Cantidad")
-    .fillna(0)
-    .astype(int)
-)
-
-st.dataframe(
-    tabla_lineas.style
-        .format("{:.0f}")
-        .background_gradient(cmap="Greens"),
-    use_container_width=True
-)
 
 # =========================================================
 # CIERRE PROFESIONAL (footer)
@@ -2280,6 +2280,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
