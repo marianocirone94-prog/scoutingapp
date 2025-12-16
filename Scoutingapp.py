@@ -558,39 +558,26 @@ def cargar_datos():
 
     return df_players, df_reports, df_short
 
-
 # ---------------------------------------------------------
 # INICIALIZACIÓN
 # ---------------------------------------------------------
 
-# Carga base desde Sheets
-df_players, df_reports, df_short = df_short_user.copy() cargar_datos()
+# 1️⃣ Carga base desde Sheets (SIN filtros)
+df_players, df_reports, df_short = cargar_datos()
 
-# -----------------------------
-# Session State (fuente única)
-# -----------------------------
-if "df_players" not in st.session_state:
-    df_players_user = df_players.copy()
-else:
-    df_players_user = df_players.copy()
-
-if "df_reports" not in st.session_state:
-    df_reports_user = df_reports.copy()
-else:
-    df_reports_user = df_reports.copy()
-
-if "df_short" not in st.session_state:
-    df_short_user = df_short.copy()
-else:
-    df_short_user = df_short.copy()
+# 2️⃣ Guardar como fuente única en session_state
+st.session_state["df_players"] = df_players.copy()
+st.session_state["df_reports"] = df_reports.copy()
+st.session_state["df_short"]   = df_short.copy()
 
 # =========================================================
 # 🔐 FILTRADO GLOBAL DE DATOS POR USUARIO (ÚNICO)
 # =========================================================
 
-df_players_all = df_players_user.copy()
-df_reports_all = df_reports_user.copy()
-df_short_all   = df_short_user.copy()
+# Fuente completa (ALL)
+df_players_all = st.session_state["df_players"].copy()
+df_reports_all = st.session_state["df_reports"].copy()
+df_short_all   = st.session_state["df_short"].copy()
 
 if CURRENT_ROLE != "admin":
     # Informes: solo los del scout
@@ -604,8 +591,10 @@ if CURRENT_ROLE != "admin":
     ].copy()
 
     # Jugadores relacionados (informes + lista corta)
-    ids = set(df_reports_user["ID_Jugador"].astype(str)) | \
-          set(df_short_user["ID_Jugador"].astype(str))
+    ids = (
+        set(df_reports_user["ID_Jugador"].astype(str)) |
+        set(df_short_user["ID_Jugador"].astype(str))
+    )
 
     df_players_user = df_players_all[
         df_players_all["ID_Jugador"].astype(str).isin(ids)
@@ -617,13 +606,19 @@ else:
     df_short_user   = df_short_all.copy()
     df_players_user = df_players_all.copy()
 
-
 # -----------------------------
 # Menú principal
 # -----------------------------
 menu = st.sidebar.radio(
     "📋 Menú principal",
-    ["Panel General", "Agenda", "Jugadores", "Ver informes", "Lista corta", "Panel Scouts"]
+    [
+        "Panel General",
+        "Agenda",
+        "Jugadores",
+        "Ver informes",
+        "Lista corta",
+        "Panel Scouts"
+    ]
 )
 
 
@@ -2282,6 +2277,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
