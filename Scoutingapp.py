@@ -2036,16 +2036,13 @@ if menu == "Panel Scouts":
         df_reports = df_reports[df_reports["Scout"] == CURRENT_USER]
 
     # -----------------------------------------------------
-    # 🕒 FECHAS Y DERIVADOS
+    # 🕒 FECHAS Y DERIVADOS (HISTÓRICO COMPLETO)
     # -----------------------------------------------------
     df_reports["Fecha_Informe_dt"] = pd.to_datetime(
         df_reports["Fecha_Informe"], errors="coerce", dayfirst=True
     )
 
     hoy = pd.Timestamp.today().normalize()
-    inicio_6m = hoy - pd.DateOffset(months=6)
-
-    df_reports = df_reports[df_reports["Fecha_Informe_dt"] >= inicio_6m]
 
     df_reports["Año"] = df_reports["Fecha_Informe_dt"].dt.year
     df_reports["Mes"] = df_reports["Fecha_Informe_dt"].dt.strftime("%Y-%m")
@@ -2064,7 +2061,7 @@ if menu == "Panel Scouts":
     )
 
     # -----------------------------------------------------
-    # 🔎 FILTROS (VISIBLES)
+    # 🔎 FILTROS (AÑO / SEMESTRE / SCOUT)
     # -----------------------------------------------------
     st.markdown("### 🔎 Filtros")
 
@@ -2077,21 +2074,25 @@ if menu == "Panel Scouts":
         )
 
     with f2:
-        filtro_sem = st.multiselect("Semestre", ["1º", "2º"])
+        filtro_sem = st.multiselect(
+            "Semestre",
+            ["1º", "2º"]
+        )
 
     with f3:
-        fecha_desde, fecha_hasta = st.date_input(
-            "Rango fechas",
-            value=[inicio_6m.date(), hoy.date()]
-        )
+        # Admin puede filtrar scouts, scout no (ya está limitado)
+        if CURRENT_ROLE == "admin":
+            filtro_scout = st.multiselect(
+                "Scout",
+                sorted(df["Scout"].unique())
+            )
+        else:
+            filtro_scout = []
 
     # -----------------------------------------------------
     # APLICAR FILTROS
     # -----------------------------------------------------
-    df_f = df[
-        (df["Fecha_Informe_dt"] >= pd.to_datetime(fecha_desde)) &
-        (df["Fecha_Informe_dt"] <= pd.to_datetime(fecha_hasta))
-    ]
+    df_f = df.copy()
 
     if filtro_anio:
         df_f = df_f[df_f["Año"].isin(filtro_anio)]
@@ -2099,10 +2100,13 @@ if menu == "Panel Scouts":
     if filtro_sem:
         df_f = df_f[df_f["Semestre"].isin(filtro_sem)]
 
+    if filtro_scout:
+        df_f = df_f[df_f["Scout"].isin(filtro_scout)]
+
     # -----------------------------------------------------
-    # 📊 KPIs
+    # 📊 KPIs (PERÍODO SELECCIONADO)
     # -----------------------------------------------------
-    st.markdown("### 📌 Actividad últimos 6 meses")
+    st.markdown("### 📌 Actividad del período")
 
     k1, k2, k3, k4 = st.columns(4)
 
@@ -2112,7 +2116,7 @@ if menu == "Panel Scouts":
     k4.metric("🏟️ Ligas", df_f["Liga"].nunique())
 
     # -----------------------------------------------------
-    # 🚨 ALERTA DE INACTIVIDAD
+    # 🚨 ALERTA DE INACTIVIDAD (TIEMPO REAL)
     # -----------------------------------------------------
     ultima = (
         df_reports.groupby("Scout")["Fecha_Informe_dt"]
@@ -2132,7 +2136,7 @@ if menu == "Panel Scouts":
         st.error("❌ Fuera del radar (+60 días): " + ", ".join(fuera["Scout"]))
 
     # -----------------------------------------------------
-    # 🏆 RANKING DE SCOUTS
+    # 🏆 RANKING DE SCOUTS (PERÍODO)
     # -----------------------------------------------------
     pesos = {
         "1ra (Fichar)": 3,
@@ -2163,6 +2167,7 @@ if menu == "Panel Scouts":
     # 🎯 META (60 INFORMES)
     # -----------------------------------------------------
     META = 60
+
     ranking["Estado"] = ranking["Informes"].apply(
         lambda x: "🟢 OK" if x >= META else "🟡 En progreso"
     )
@@ -2185,6 +2190,7 @@ if menu == "Panel Scouts":
             df_f.groupby("Mes")
             .size()
             .reset_index(name="Informes")
+            .sort_values("Mes")
         )
 
         st.plotly_chart(
@@ -2209,6 +2215,7 @@ if menu == "Panel Scouts":
             df_f.groupby(["Mes", "Scout"])
             .size()
             .reset_index(name="Informes")
+            .sort_values("Mes")
         )
 
         st.plotly_chart(
@@ -2256,7 +2263,6 @@ if menu == "Panel Scouts":
     )
 
 
-
 # =========================================================
 # CIERRE PROFESIONAL (footer)
 # =========================================================
@@ -2275,6 +2281,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
