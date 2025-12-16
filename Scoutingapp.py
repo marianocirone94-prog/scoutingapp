@@ -2013,7 +2013,7 @@ if menu == "Panel Scouts":
         st.stop()
 
     st.markdown(
-        "<h2 style='text-align:center;color:#00c6ff;'>🧭 Panel de Control de Scouts</h2>",
+        "<h2 style='text-align:center;color:#00c6ff;'> Panel de Control de Scouts</h2>",
         unsafe_allow_html=True
     )
 
@@ -2181,13 +2181,13 @@ if menu == "Panel Scouts":
     # -----------------------------------------------------
     # 🎯 META (60 INFORMES)
     # -----------------------------------------------------
-    META = 60
+    META = 300
 
     ranking["Estado"] = ranking["Informes"].apply(
         lambda x: "🟢 OK" if x >= META else "🟡 En progreso"
     )
 
-    st.markdown("### 🎯 Meta mínima (60 informes)")
+    st.markdown("### 🎯 Meta mínima (300 informes)")
     st.dataframe(
         ranking[["Scout", "Informes", "Estado"]],
         use_container_width=True
@@ -2296,6 +2296,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
