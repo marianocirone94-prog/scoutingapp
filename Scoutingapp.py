@@ -1149,7 +1149,9 @@ if menu == "Ver informes":
     else:
         df_reports = df_reports_user.copy()    # scout ve solo sus informes
 
-    # --- Unificación segura ---
+    # ---------------------------------------------------------
+    # UNIFICACIÓN SEGURA
+    # ---------------------------------------------------------
     try:
         df_reports["ID_Jugador"] = df_reports["ID_Jugador"].astype(str)
         df_players["ID_Jugador"] = df_players["ID_Jugador"].astype(str)
@@ -1158,28 +1160,72 @@ if menu == "Ver informes":
         st.error(f"❌ Error al unir datos: {e}")
         st.stop()
 
-
     # =========================================================
-    # FILTROS LATERALES
+    # FILTROS SUPERIORES
     # =========================================================
-    st.sidebar.markdown("<h4 style='color:#00c6ff'>🔎 Filtros</h4>", unsafe_allow_html=True)
-    filtro_scout = st.sidebar.multiselect("Scout", sorted(df_merged["Scout"].dropna().unique()), key="fil_scout")
-    filtro_jugador = st.sidebar.multiselect("Jugador", sorted(df_merged["Nombre"].dropna().unique()), key="fil_jug")
-    filtro_club = st.sidebar.multiselect("Club", sorted(df_merged["Club"].dropna().unique()), key="fil_club")
-    filtro_linea = st.sidebar.multiselect("Línea", sorted(df_merged["Línea"].dropna().unique()), key="fil_lin")
-    filtro_nac = st.sidebar.multiselect("Nacionalidad", sorted(df_merged["Nacionalidad"].dropna().unique()), key="fil_nac")
+    st.markdown("### 🔎 Filtros")
 
+    f1, f2, f3, f4, f5, f6 = st.columns(6)
+
+    with f1:
+        filtro_scout = st.multiselect(
+            "Scout",
+            sorted(df_merged["Scout"].dropna().unique())
+        )
+
+    with f2:
+        filtro_jugador = st.multiselect(
+            "Jugador",
+            sorted(df_merged["Nombre"].dropna().unique())
+        )
+
+    with f3:
+        filtro_club = st.multiselect(
+            "Club",
+            sorted(df_merged["Club"].dropna().unique())
+        )
+
+    with f4:
+        filtro_pos = st.multiselect(
+            "Posición",
+            sorted(df_merged["Posición"].dropna().unique())
+        )
+
+    with f5:
+        filtro_linea = st.multiselect(
+            "Línea",
+            sorted(df_merged["Línea"].dropna().unique())
+        )
+
+    with f6:
+        filtro_nac = st.multiselect(
+            "Nacionalidad",
+            sorted(df_merged["Nacionalidad"].dropna().unique())
+        )
+
+    # ---------------------------------------------------------
+    # APLICAR FILTROS
+    # ---------------------------------------------------------
     df_filtrado = df_merged.copy()
+
     if filtro_scout:
         df_filtrado = df_filtrado[df_filtrado["Scout"].isin(filtro_scout)]
+
     if filtro_jugador:
         df_filtrado = df_filtrado[df_filtrado["Nombre"].isin(filtro_jugador)]
+
     if filtro_club:
         df_filtrado = df_filtrado[df_filtrado["Club"].isin(filtro_club)]
+
+    if filtro_pos:
+        df_filtrado = df_filtrado[df_filtrado["Posición"].isin(filtro_pos)]
+
     if filtro_linea:
         df_filtrado = df_filtrado[df_filtrado["Línea"].isin(filtro_linea)]
+
     if filtro_nac:
         df_filtrado = df_filtrado[df_filtrado["Nacionalidad"].isin(filtro_nac)]
+        
 
     # =========================================================
     # TABLA PRINCIPAL (AgGrid)
@@ -2415,6 +2461,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
