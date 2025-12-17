@@ -856,12 +856,15 @@ if menu == "Jugadores":
                     index=opciones_paises.index(jugador["Nacionalidad"]) if jugador["Nacionalidad"] in opciones_paises else 0
                 )
 
-                e_seg_opciones = [""] + opciones_segunda_nacionalidad
+                e_seg_opciones = [""] + opciones_paises
+
                 e_seg = st.selectbox(
                     "Segunda nacionalidad (opcional)",
-                    e_seg_opciones,
-                    index=e_seg_opciones.index(jugador["Segunda_Nacionalidad"]) if jugador["Segunda_Nacionalidad"] in e_seg_opciones else 0
-                )
+                e_seg_opciones,
+                    index=e_seg_opciones.index(jugador.get("Segunda_Nacionalidad", "")) 
+                    if jugador.get("Segunda_Nacionalidad", "") in e_seg_opciones else 0
+                 )
+
 
                 e_car = st.multiselect(
                     "Características del jugador",
@@ -2459,6 +2462,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
