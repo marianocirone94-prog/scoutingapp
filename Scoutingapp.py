@@ -1430,13 +1430,12 @@ if menu == "Lista corta":
     if CURRENT_ROLE not in ["admin"]:
         df_short = df_short[df_short["Agregado_Por"] == CURRENT_USER]
 
-    # cortar referencia (evita SettingWithCopyWarning)
+    # Cortar referencia (evita SettingWithCopyWarning)
     df_short = df_short.copy()
 
     # =========================================================
     # NORMALIZAR FECHA / AÑO / SEMESTRE (LISTA CORTA)
     # =========================================================
-    # Usamos Fecha_Agregado (columna real de la hoja)
     if "Fecha_Agregado" not in df_short.columns:
         df_short["Fecha_Agregado"] = None
 
@@ -1509,13 +1508,19 @@ if menu == "Lista corta":
         df_filtrado = df_filtrado[df_filtrado["Agregado_Por"] == filtro_scout]
 
     if filtro_liga:
-        ids_liga = df_players[df_players["Liga"] == filtro_liga]["ID_Jugador"].astype(str)
+        ids_liga = (
+            df_players[df_players["Liga"] == filtro_liga]["ID_Jugador"]
+            .astype(str)
+        )
         df_filtrado = df_filtrado[
             df_filtrado["ID_Jugador"].astype(str).isin(ids_liga)
         ]
 
     if filtro_nac:
-        ids_nac = df_players[df_players["Nacionalidad"] == filtro_nac]["ID_Jugador"].astype(str)
+        ids_nac = (
+            df_players[df_players["Nacionalidad"] == filtro_nac]["ID_Jugador"]
+            .astype(str)
+        )
         df_filtrado = df_filtrado[
             df_filtrado["ID_Jugador"].astype(str).isin(ids_nac)
         ]
@@ -1542,30 +1547,36 @@ if menu == "Lista corta":
         unsafe_allow_html=True
     )
 
-
-
     # =========================================================
     # CSS TARJETAS
     # =========================================================
-    st.markdown("""
-    <style>
-    .player-card {
-        display:flex;align-items:center;justify-content:flex-start;
-        background:linear-gradient(90deg,#0e1117,#1e3c72);
-        padding:0.6em 0.8em;border-radius:12px;color:white;
-        font-family:Arial, sans-serif;box-shadow:0 0 6px rgba(0,0,0,0.4);
-        width:230px;min-height:75px;margin:6px auto;transition:0.2s;
-    }
-    .player-card:hover {transform:scale(1.05);box-shadow:0 0 12px #00c6ff;}
-    .player-photo {width:55px;height:55px;border-radius:50%;object-fit:cover;
-        border:2px solid #00c6ff;margin-right:10px;}
-    .player-info h5 {font-size:13px;margin:0;color:#00c6ff;font-weight:bold;}
-    .player-info p {font-size:11.5px;margin:1px 0;color:#ccc;}
-    .player-link a {color:#00c6ff;font-size:10.5px;text-decoration:none;}
-    .player-link a:hover{text-decoration:underline;}
-    .line-title {color:#00c6ff;font-weight:bold;font-size:16px;margin:10px 0 5px;text-align:center;}
-    </style>
-    """, unsafe_allow_html=True)
+    st.markdown(
+        """
+        <style>
+        .player-card {
+            display:flex;align-items:center;justify-content:flex-start;
+            background:linear-gradient(90deg,#0e1117,#1e3c72);
+            padding:0.6em 0.8em;border-radius:12px;color:white;
+            font-family:Arial, sans-serif;box-shadow:0 0 6px rgba(0,0,0,0.4);
+            width:230px;min-height:75px;margin:6px auto;transition:0.2s;
+        }
+        .player-card:hover {transform:scale(1.05);box-shadow:0 0 12px #00c6ff;}
+        .player-photo {
+            width:55px;height:55px;border-radius:50%;object-fit:cover;
+            border:2px solid #00c6ff;margin-right:10px;
+        }
+        .player-info h5 {font-size:13px;margin:0;color:#00c6ff;font-weight:bold;}
+        .player-info p {font-size:11.5px;margin:1px 0;color:#ccc;}
+        .player-link a {color:#00c6ff;font-size:10.5px;text-decoration:none;}
+        .player-link a:hover{text-decoration:underline;}
+        .line-title {
+            color:#00c6ff;font-weight:bold;font-size:16px;
+            margin:10px 0 5px;text-align:center;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
 
     # =========================================================
     # SISTEMA 4-2-3-1
@@ -1573,12 +1584,19 @@ if menu == "Lista corta":
     sistema = {
         "Arqueros": ["Arquero"],
         "Defensas": [
-            "Lateral derecho", "Defensa central derecho",
-            "Defensa central izquierdo", "Lateral izquierdo"
+            "Lateral derecho",
+            "Defensa central derecho",
+            "Defensa central izquierdo",
+            "Lateral izquierdo",
         ],
-        "Mediocampistas defensivos": ["Mediocampista mixto", "Mediocampista defensivo"],
+        "Mediocampistas defensivos": [
+            "Mediocampista mixto",
+            "Mediocampista defensivo",
+        ],
         "Mediocampistas ofensivos": [
-            "Extremo derecho", "Mediocampista ofensivo", "Extremo izquierdo"
+            "Extremo derecho",
+            "Mediocampista ofensivo",
+            "Extremo izquierdo",
         ],
         "Delanteros": ["Delantero centro"],
     }
@@ -1594,149 +1612,169 @@ if menu == "Lista corta":
         cantidad = len(jugadores_linea)
         with st.expander(f"{linea} ({cantidad})", expanded=True):
 
-            # ---- ARQUEROS / DELANTEROS (5x5 filas) ----
+            # ARQUEROS / DELANTEROS
             if linea in ["Arqueros", "Delanteros"]:
-                jugadores_pos = jugadores_linea.copy()
-                if jugadores_pos.empty:
-                    st.markdown("<p style='color:gray;font-size:11px;text-align:center;'>— Vacante —</p>", unsafe_allow_html=True)
-                else:
-                    jugadores_lista = list(jugadores_pos.iterrows())
-                    for fila in range(0, len(jugadores_lista), 5):
-                        fila_jugadores = jugadores_lista[fila:fila + 5]
-                        fila_cols = st.columns(len(fila_jugadores))
-                        for fcol, (_, row) in zip(fila_cols, fila_jugadores):
-                            with fcol:
-                                url_foto = str(row.get("URL_Foto", "")).strip()
-                                if not url_foto.startswith("http"):
-                                    url_foto = "https://via.placeholder.com/60"
-                                partes = str(row.get("Nombre", "")).split()
-                                nombre = partes[0] if partes else "Sin nombre"
-                                apellido = partes[-1] if len(partes) > 1 else ""
-                                edad, altura = row.get("Edad","-"), row.get("Altura","-")
-                                club = row.get("Club","-")
-                                url_perfil = str(row.get("URL_Perfil",""))
-                                link_html = (
-                                    f"<div class='player-link'><a href='{url_perfil}' target='_blank'>Ver perfil</a></div>"
-                                    if url_perfil.startswith("http") else ""
-                                )
-                                st.markdown(f"""
-                                    <div class="player-card">
-                                        <img src="{url_foto}" class="player-photo"/>
-                                        <div class="player-info">
-                                            <h5>{nombre} {apellido}</h5>
-                                            <p>{club}</p>
-                                            <p>Edad: {edad} | Altura: {altura} cm</p>
-                                            {link_html}
-                                        </div>
-                                    </div>
-                                """, unsafe_allow_html=True)
+                jugadores_lista = list(jugadores_linea.iterrows())
+                for fila in range(0, len(jugadores_lista), 5):
+                    fila_jugadores = jugadores_lista[fila:fila + 5]
+                    fila_cols = st.columns(len(fila_jugadores))
+                    for fcol, (_, row) in zip(fila_cols, fila_jugadores):
+                        with fcol:
+                            url_foto = str(row.get("URL_Foto", "")).strip()
+                            if not url_foto.startswith("http"):
+                                url_foto = "https://via.placeholder.com/60"
 
-            # ---- RESTO (Defensas, Mediocampistas) ----
+                            partes = str(row.get("Nombre", "")).split()
+                            nombre = partes[0] if partes else "Sin nombre"
+                            apellido = partes[-1] if len(partes) > 1 else ""
+
+                            edad = row.get("Edad", "-")
+                            altura = row.get("Altura", "-")
+                            club = row.get("Club", "-")
+                            url_perfil = str(row.get("URL_Perfil", ""))
+
+                            link_html = (
+                                f"<div class='player-link'><a href='{url_perfil}' target='_blank'>Ver perfil</a></div>"
+                                if url_perfil.startswith("http") else ""
+                            )
+
+                            st.markdown(
+                                f"""
+                                <div class="player-card">
+                                    <img src="{url_foto}" class="player-photo"/>
+                                    <div class="player-info">
+                                        <h5>{nombre} {apellido}</h5>
+                                        <p>{club}</p>
+                                        <p>Edad: {edad} | Altura: {altura} cm</p>
+                                        {link_html}
+                                    </div>
+                                </div>
+                                """,
+                                unsafe_allow_html=True
+                            )
+
+            # DEFENSAS / MEDIOS
             else:
                 cols = st.columns(len(posiciones))
                 for i, pos in enumerate(posiciones):
                     jugadores_pos = jugadores_linea[jugadores_linea["Posición"] == pos]
                     with cols[i]:
-                        st.markdown(f"<div class='line-title'>{pos}</div>", unsafe_allow_html=True)
+                        st.markdown(
+                            f"<div class='line-title'>{pos}</div>",
+                            unsafe_allow_html=True
+                        )
+
                         if jugadores_pos.empty:
-                            st.markdown("<p style='color:gray;font-size:11px;text-align:center;'>— Vacante —</p>", unsafe_allow_html=True)
-                        else:
-                            jugadores_lista = list(jugadores_pos.iterrows())
-                            salto = 2 if "Mediocampista" in pos else 1
-                            for fila in range(0, len(jugadores_lista), salto):
-                                fila_jugadores = jugadores_lista[fila:fila + salto]
-                                fila_cols = st.columns(len(fila_jugadores))
-                                for fcol, (_, row) in zip(fila_cols, fila_jugadores):
-                                    with fcol:
-                                        url_foto = str(row.get("URL_Foto", "")).strip()
-                                        if not url_foto.startswith("http"):
-                                            url_foto = "https://via.placeholder.com/60"
-                                        partes = str(row.get("Nombre", "")).split()
-                                        nombre = partes[0] if partes else "Sin nombre"
-                                        apellido = partes[-1] if len(partes) > 1 else ""
-                                        edad, altura = row.get("Edad","-"), row.get("Altura","-")
-                                        club = row.get("Club","-")
-                                        url_perfil = str(row.get("URL_Perfil",""))
-                                        link_html = (
-                                            f"<div class='player-link'><a href='{url_perfil}' target='_blank'>Ver perfil</a></div>"
-                                            if url_perfil.startswith("http") else ""
-                                        )
-                                        st.markdown(f"""
-                                            <div class="player-card">
-                                                <img src="{url_foto}" class="player-photo"/>
-                                                <div class="player-info">
-                                                    <h5>{nombre} {apellido}</h5>
-                                                    <p>{club}</p>
-                                                    <p>Edad: {edad} | Altura: {altura} cm</p>
-                                                    {link_html}
-                                                </div>
+                            st.markdown(
+                                "<p style='color:gray;font-size:11px;text-align:center;'>— Vacante —</p>",
+                                unsafe_allow_html=True
+                            )
+                            continue
+
+                        jugadores_lista = list(jugadores_pos.iterrows())
+                        salto = 2 if "Mediocampista" in pos else 1
+
+                        for fila in range(0, len(jugadores_lista), salto):
+                            fila_jugadores = jugadores_lista[fila:fila + salto]
+                            fila_cols = st.columns(len(fila_jugadores))
+                            for fcol, (_, row) in zip(fila_cols, fila_jugadores):
+                                with fcol:
+                                    url_foto = str(row.get("URL_Foto", "")).strip()
+                                    if not url_foto.startswith("http"):
+                                        url_foto = "https://via.placeholder.com/60"
+
+                                    partes = str(row.get("Nombre", "")).split()
+                                    nombre = partes[0] if partes else "Sin nombre"
+                                    apellido = partes[-1] if len(partes) > 1 else ""
+
+                                    edad = row.get("Edad", "-")
+                                    altura = row.get("Altura", "-")
+                                    club = row.get("Club", "-")
+                                    url_perfil = str(row.get("URL_Perfil", ""))
+
+                                    link_html = (
+                                        f"<div class='player-link'><a href='{url_perfil}' target='_blank'>Ver perfil</a></div>"
+                                        if url_perfil.startswith("http") else ""
+                                    )
+
+                                    st.markdown(
+                                        f"""
+                                        <div class="player-card">
+                                            <img src="{url_foto}" class="player-photo"/>
+                                            <div class="player-info">
+                                                <h5>{nombre} {apellido}</h5>
+                                                <p>{club}</p>
+                                                <p>Edad: {edad} | Altura: {altura} cm</p>
+                                                {link_html}
                                             </div>
-                                        """, unsafe_allow_html=True)
+                                        </div>
+                                        """,
+                                        unsafe_allow_html=True
+                                    )
 
-   # =========================================================
-# GESTOR DE LISTA CORTA — Eliminación limpia con buscador
-# =========================================================
-st.markdown("---")
-st.markdown("### 🗑️ Gestor de Lista Corta (Eliminar jugadores)")
+    # =========================================================
+    # GESTOR DE LISTA CORTA — Eliminación
+    # =========================================================
+    st.markdown("---")
+    st.markdown("### 🗑️ Gestor de Lista Corta (Eliminar jugadores)")
 
-busqueda = st.text_input("Buscar jugador para eliminar (por nombre o club)")
-if busqueda:
-    df_busqueda = df_filtrado[
-        df_filtrado["Nombre"].str.contains(busqueda, case=False, na=False) |
-        df_filtrado["Club"].str.contains(busqueda, case=False, na=False)
-    ]
-else:
-    df_busqueda = df_filtrado.copy()
+    busqueda = st.text_input("Buscar jugador para eliminar (por nombre o club)")
 
-if df_busqueda.empty:
-    st.info("No se encontraron jugadores que coincidan con la búsqueda.")
-else:
-    st.dataframe(
-        df_busqueda[["Nombre","Posición","Club","Agregado_Por"]],
-        use_container_width=True,
-        hide_index=True
-    )
+    if busqueda:
+        df_busqueda = df_filtrado[
+            df_filtrado["Nombre"].str.contains(busqueda, case=False, na=False) |
+            df_filtrado["Club"].str.contains(busqueda, case=False, na=False)
+        ]
+    else:
+        df_busqueda = df_filtrado.copy()
 
-    jugador_sel = st.selectbox(
-        "Seleccionar jugador a eliminar",
-        [""] + sorted(df_busqueda["Nombre"].unique())
-    )
+    if df_busqueda.empty:
+        st.info("No se encontraron jugadores que coincidan con la búsqueda.")
+    else:
+        st.dataframe(
+            df_busqueda[["Nombre", "Posición", "Club", "Agregado_Por"]],
+            use_container_width=True,
+            hide_index=True
+        )
 
-    if jugador_sel:
-        jugador_row = df_busqueda[df_busqueda["Nombre"] == jugador_sel].iloc[0]
-        st.warning(f"⚠️ Vas a eliminar a **{jugador_sel}** de TU lista corta.")
-        confirmar = st.checkbox("Confirmar eliminación")
+        jugador_sel = st.selectbox(
+            "Seleccionar jugador a eliminar",
+            [""] + sorted(df_busqueda["Nombre"].unique())
+        )
 
-        if st.button("🗑️ Eliminar jugador", type="primary", disabled=not confirmar):
-            try:
-                ws_short = obtener_hoja("Lista corta")
-                data_short = ws_short.get_all_records()
-                df_short_local = pd.DataFrame(data_short)
+        if jugador_sel:
+            jugador_row = df_busqueda[df_busqueda["Nombre"] == jugador_sel].iloc[0]
+            st.warning(f"⚠️ Vas a eliminar a **{jugador_sel}** de TU lista corta.")
+            confirmar = st.checkbox("Confirmar eliminación")
 
-                fila = df_short_local.index[
-                    (df_short_local["ID_Jugador"].astype(str) == str(jugador_row["ID_Jugador"])) &
-                    (df_short_local["Agregado_Por"] == CURRENT_USER)
-                ]
+            if st.button("🗑️ Eliminar jugador", type="primary", disabled=not confirmar):
+                try:
+                    ws_short = obtener_hoja("Lista corta")
+                    data_short = ws_short.get_all_records()
+                    df_short_local = pd.DataFrame(data_short)
 
-                if not fila.empty:
-                    df_short_local = df_short_local.drop(fila[0])
-                    ws_short.clear()
-                    ws_short.append_row(list(df_short_local.columns))
-                    if not df_short_local.empty:
+                    fila = df_short_local.index[
+                        (df_short_local["ID_Jugador"].astype(str) == str(jugador_row["ID_Jugador"])) &
+                        (df_short_local["Agregado_Por"] == CURRENT_USER)
+                    ]
+
+                    if not fila.empty:
+                        df_short_local = df_short_local.drop(fila[0])
+                        ws_short.clear()
                         ws_short.update(
                             [df_short_local.columns.values.tolist()] +
                             df_short_local.values.tolist()
                         )
-                    st.toast(
-                        f"🗑️ Jugador {jugador_sel} eliminado correctamente de TU lista.",
-                        icon="🗑️"
-                    )
-                    st.cache_data.clear()
-                    st.experimental_rerun()
-                else:
-                    st.warning("⚠️ No se encontró el jugador en tu lista corta.")
-            except Exception as e:
-                st.error(f"⚠️ Error al eliminar: {e}")
+                        st.toast(
+                            f"🗑️ Jugador {jugador_sel} eliminado correctamente de TU lista.",
+                            icon="🗑️"
+                        )
+                        st.cache_data.clear()
+                        st.experimental_rerun()
+                    else:
+                        st.warning("⚠️ No se encontró el jugador en tu lista corta.")
+                except Exception as e:
+                    st.error(f"⚠️ Error al eliminar: {e}")
 
 
 
@@ -2377,6 +2415,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
