@@ -1408,7 +1408,7 @@ if menu == "Ver informes":
             st.info("📍 Seleccioná un registro para ver la ficha del jugador.")
 
 # =========================================================
-# BLOQUE 5 / 5 — Lista corta táctica (versión final con privacidad y gestor de eliminación)
+# BLOQUE 5 / 5 — Lista corta táctica
 # =========================================================
 
 if menu == "Lista corta":
@@ -1430,23 +1430,23 @@ if menu == "Lista corta":
     if CURRENT_ROLE not in ["admin"]:
         df_short = df_short[df_short["Agregado_Por"] == CURRENT_USER]
 
-    # ⚠️ cortar referencia para evitar SettingWithCopyWarning
+    # cortar referencia (evita SettingWithCopyWarning)
     df_short = df_short.copy()
 
     # =========================================================
-    # NORMALIZAR FECHA / AÑO / SEMESTRE (como Panel Scouts)
+    # NORMALIZAR FECHA / AÑO / SEMESTRE (LISTA CORTA)
     # =========================================================
+    # Usamos Fecha_Agregado (columna real de la hoja)
+    if "Fecha_Agregado" not in df_short.columns:
+        df_short["Fecha_Agregado"] = None
+
     df_short["Fecha_dt"] = pd.to_datetime(
-        df_short.get("Fecha", None),
+        df_short["Fecha_Agregado"],
         errors="coerce",
         dayfirst=True
     )
 
-    df_short["Año"] = (
-        df_short["Fecha_dt"]
-        .dt.year
-        .astype("Int64")
-    )
+    df_short["Año"] = df_short["Fecha_dt"].dt.year.astype("Int64")
 
     df_short["Semestre"] = df_short["Fecha_dt"].dt.month.apply(
         lambda m: "1º" if m <= 6 else "2º" if pd.notna(m) else ""
@@ -1510,11 +1510,15 @@ if menu == "Lista corta":
 
     if filtro_liga:
         ids_liga = df_players[df_players["Liga"] == filtro_liga]["ID_Jugador"].astype(str)
-        df_filtrado = df_filtrado[df_filtrado["ID_Jugador"].astype(str).isin(ids_liga)]
+        df_filtrado = df_filtrado[
+            df_filtrado["ID_Jugador"].astype(str).isin(ids_liga)
+        ]
 
     if filtro_nac:
         ids_nac = df_players[df_players["Nacionalidad"] == filtro_nac]["ID_Jugador"].astype(str)
-        df_filtrado = df_filtrado[df_filtrado["ID_Jugador"].astype(str).isin(ids_nac)]
+        df_filtrado = df_filtrado[
+            df_filtrado["ID_Jugador"].astype(str).isin(ids_nac)
+        ]
 
     if filtro_anio:
         df_filtrado = df_filtrado[df_filtrado["Año"] == int(filtro_anio)]
@@ -1535,8 +1539,9 @@ if menu == "Lista corta":
     st.markdown(
         f"### Vista táctica (sistema 4-2-3-1) — "
         f"<span style='color:#00c6ff;'>Total jugadores: {total_jugadores}</span>",
-        unsafe_allow_html=True,
+        unsafe_allow_html=True
     )
+
 
 
     # =========================================================
@@ -2372,6 +2377,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
