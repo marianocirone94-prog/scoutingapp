@@ -1414,7 +1414,10 @@ if menu == "Ver informes":
 if menu == "Lista corta":
     st.subheader("Lista corta de jugadores")
 
-    df_short = df_short_user.copy()          # decisiones por usuario
+    # -----------------------------------------------------
+    # DATASETS
+    # -----------------------------------------------------
+    df_short = df_short_user.copy()          # decisiones (todas; privacidad luego)
     df_players = df_players_all.copy()       # base completa de jugadores
 
     if df_short.empty:
@@ -1422,74 +1425,119 @@ if menu == "Lista corta":
         st.stop()
 
     # =========================================================
-# FILTRO DE PRIVACIDAD POR USUARIO
-# =========================================================
-if CURRENT_ROLE not in ["admin"]:
-    df_short = df_short[df_short["Agregado_Por"] == CURRENT_USER]
+    # FILTRO DE PRIVACIDAD POR USUARIO
+    # =========================================================
+    if CURRENT_ROLE not in ["admin"]:
+        df_short = df_short[df_short["Agregado_Por"] == CURRENT_USER]
 
-# =========================================================
-# NORMALIZAR FECHA / AÑO / SEMESTRE (como Panel Scouts)
-# =========================================================
-df_short["Fecha_dt"] = pd.to_datetime(
-    df_short.get("Fecha", ""),
-    errors="coerce",
-    dayfirst=True
-)
+    # ⚠️ cortar referencia para evitar SettingWithCopyWarning
+    df_short = df_short.copy()
 
-df_short["Año"] = (
-    df_short["Fecha_dt"]
-    .dt.year
-    .astype("Int64")
-)
+    # =========================================================
+    # NORMALIZAR FECHA / AÑO / SEMESTRE (como Panel Scouts)
+    # =========================================================
+    df_short["Fecha_dt"] = pd.to_datetime(
+        df_short.get("Fecha", None),
+        errors="coerce",
+        dayfirst=True
+    )
 
-df_short["Semestre"] = df_short["Fecha_dt"].dt.month.apply(
-    lambda m: "1º" if m <= 6 else "2º" if pd.notna(m) else ""
-)
+    df_short["Año"] = (
+        df_short["Fecha_dt"]
+        .dt.year
+        .astype("Int64")
+    )
 
+    df_short["Semestre"] = df_short["Fecha_dt"].dt.month.apply(
+        lambda m: "1º" if m <= 6 else "2º" if pd.notna(m) else ""
+    )
 
     # =========================================================
     # FILTROS
     # =========================================================
     col1, col2, col3, col4, col5, col6 = st.columns(6)
+
     with col1:
-        filtro_scout = st.selectbox("Scout", [""] + sorted(df_short["Agregado_Por"].dropna().unique()))
+        filtro_scout = st.selectbox(
+            "Scout",
+            [""] + sorted(df_short["Agregado_Por"].dropna().unique())
+        )
+
     with col2:
-        filtro_liga = st.selectbox("Liga", [""] + sorted(df_players["Liga"].dropna().unique()))
+        filtro_liga = st.selectbox(
+            "Liga",
+            [""] + sorted(df_players["Liga"].dropna().unique())
+        )
+
     with col3:
-        filtro_nac = st.selectbox("Nacionalidad", [""] + sorted(df_players["Nacionalidad"].dropna().unique()))
+        filtro_nac = st.selectbox(
+            "Nacionalidad",
+            [""] + sorted(df_players["Nacionalidad"].dropna().unique())
+        )
+
     with col4:
+        opciones_anio = (
+            df_short["Año"]
+            .dropna()
+            .astype(int)
+            .unique()
+            .tolist()
+        )
         filtro_anio = st.selectbox(
             "Año",
-            [""] + sorted([x for x in df_short["Año"].dropna().unique() if x != "-"], reverse=True)
+            [""] + sorted(opciones_anio, reverse=True)
         )
-    with col5:
-        filtro_sem = st.selectbox("Semestre", ["", "1º", "2º"])
-    with col6:
-        filtro_promesa = st.selectbox("Promesa", ["", "Sí", "No"])
 
+    with col5:
+        filtro_sem = st.selectbox(
+            "Semestre",
+            ["", "1º", "2º"]
+        )
+
+    with col6:
+        filtro_promesa = st.selectbox(
+            "Promesa",
+            ["", "Sí", "No"]
+        )
+
+    # =========================================================
+    # APLICAR FILTROS
+    # =========================================================
     df_filtrado = df_short.copy()
+
     if filtro_scout:
         df_filtrado = df_filtrado[df_filtrado["Agregado_Por"] == filtro_scout]
+
     if filtro_liga:
-        ids_liga = df_players[df_players["Liga"] == filtro_liga]["ID_Jugador"].astype(str).tolist()
-        df_filtrado = df_filtrado[df_filtrado["ID_Jugador"].isin(ids_liga)]
+        ids_liga = df_players[df_players["Liga"] == filtro_liga]["ID_Jugador"].astype(str)
+        df_filtrado = df_filtrado[df_filtrado["ID_Jugador"].astype(str).isin(ids_liga)]
+
     if filtro_nac:
-        ids_nac = df_players[df_players["Nacionalidad"] == filtro_nac]["ID_Jugador"].astype(str).tolist()
-        df_filtrado = df_filtrado[df_filtrado["ID_Jugador"].isin(ids_nac)]
+        ids_nac = df_players[df_players["Nacionalidad"] == filtro_nac]["ID_Jugador"].astype(str)
+        df_filtrado = df_filtrado[df_filtrado["ID_Jugador"].astype(str).isin(ids_nac)]
+
     if filtro_anio:
-        df_filtrado = df_filtrado[df_filtrado["Año"] == filtro_anio]
+        df_filtrado = df_filtrado[df_filtrado["Año"] == int(filtro_anio)]
+
     if filtro_sem:
         df_filtrado = df_filtrado[df_filtrado["Semestre"] == filtro_sem]
+
     if filtro_promesa == "Sí":
-        df_filtrado = df_filtrado[df_filtrado["Posición"].str.contains("Promesa", case=False, na=False)]
+        df_filtrado = df_filtrado[
+            df_filtrado["Posición"].str.contains("Promesa", case=False, na=False)
+        ]
     elif filtro_promesa == "No":
-        df_filtrado = df_filtrado[~df_filtrado["Posición"].str.contains("Promesa", case=False, na=False)]
+        df_filtrado = df_filtrado[
+            ~df_filtrado["Posición"].str.contains("Promesa", case=False, na=False)
+        ]
 
     total_jugadores = len(df_filtrado)
     st.markdown(
-        f"### Vista táctica (sistema 4-2-3-1) — <span style='color:#00c6ff;'>Total jugadores: {total_jugadores}</span>",
+        f"### Vista táctica (sistema 4-2-3-1) — "
+        f"<span style='color:#00c6ff;'>Total jugadores: {total_jugadores}</span>",
         unsafe_allow_html=True,
     )
+
 
     # =========================================================
     # CSS TARJETAS
@@ -2324,6 +2372,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
