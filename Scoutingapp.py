@@ -1414,8 +1414,8 @@ if menu == "Ver informes":
 if menu == "Lista corta":
     st.subheader("Lista corta de jugadores")
 
-    df_short = df_short_user.copy()
-    df_players = df_players_user.copy()
+    df_short = df_short_user.copy()          # decisiones por usuario
+    df_players = df_players_all.copy()       # base completa de jugadores
 
     if df_short.empty:
         st.info("No hay jugadores cargados en la lista corta actualmente.")
@@ -1432,7 +1432,6 @@ if menu == "Lista corta":
         if col not in df_short.columns:
             df_short[col] = ""
 
-
     # =========================================================
     # FILTROS
     # =========================================================
@@ -1444,7 +1443,10 @@ if menu == "Lista corta":
     with col3:
         filtro_nac = st.selectbox("Nacionalidad", [""] + sorted(df_players["Nacionalidad"].dropna().unique()))
     with col4:
-        filtro_anio = st.selectbox("Año", [""] + sorted([x for x in df_short["Año"].dropna().unique() if x != "-"], reverse=True))
+        filtro_anio = st.selectbox(
+            "Año",
+            [""] + sorted([x for x in df_short["Año"].dropna().unique() if x != "-"], reverse=True)
+        )
     with col5:
         filtro_sem = st.selectbox("Semestre", ["", "1º", "2º"])
     with col6:
@@ -1603,56 +1605,71 @@ if menu == "Lista corta":
                                             </div>
                                         """, unsafe_allow_html=True)
 
-    # =========================================================
-    # GESTOR DE LISTA CORTA — Eliminación limpia con buscador
-    # =========================================================
-    st.markdown("---")
-    st.markdown("### 🗑️ Gestor de Lista Corta (Eliminar jugadores)")
+   # =========================================================
+# GESTOR DE LISTA CORTA — Eliminación limpia con buscador
+# =========================================================
+st.markdown("---")
+st.markdown("### 🗑️ Gestor de Lista Corta (Eliminar jugadores)")
 
-    busqueda = st.text_input("Buscar jugador para eliminar (por nombre o club)")
-    if busqueda:
-        df_busqueda = df_filtrado[
-            df_filtrado["Nombre"].str.contains(busqueda, case=False, na=False) |
-            df_filtrado["Club"].str.contains(busqueda, case=False, na=False)
-        ]
-    else:
-        df_busqueda = df_filtrado.copy()
+busqueda = st.text_input("Buscar jugador para eliminar (por nombre o club)")
+if busqueda:
+    df_busqueda = df_filtrado[
+        df_filtrado["Nombre"].str.contains(busqueda, case=False, na=False) |
+        df_filtrado["Club"].str.contains(busqueda, case=False, na=False)
+    ]
+else:
+    df_busqueda = df_filtrado.copy()
 
-    if df_busqueda.empty:
-        st.info("No se encontraron jugadores que coincidan con la búsqueda.")
-    else:
-        st.dataframe(
-            df_busqueda[["Nombre","Posición","Club","Agregado_Por"]],
-            use_container_width=True, hide_index=True
-        )
-        jugador_sel = st.selectbox("Seleccionar jugador a eliminar", [""] + sorted(df_busqueda["Nombre"].unique()))
-        if jugador_sel:
-            jugador_row = df_busqueda[df_busqueda["Nombre"] == jugador_sel].iloc[0]
-            st.warning(f"⚠️ Vas a eliminar a **{jugador_sel}** de la lista corta.")
-            confirmar = st.checkbox("Confirmar eliminación")
-            if st.button("🗑️ Eliminar jugador", type="primary", disabled=not confirmar):
-                try:
-                    ws_short = obtener_hoja("Lista corta")
-                    data_short = ws_short.get_all_records()
-                    df_short_local = pd.DataFrame(data_short)
-                    fila = df_short_local.index[
-                        df_short_local["ID_Jugador"].astype(str) == str(jugador_row["ID_Jugador"])
-                    ]
-                    if not fila.empty:
-                        df_short_local = df_short_local.drop(fila[0])
-                        ws_short.clear()
-                        ws_short.append_row(list(df_short_local.columns))
-                        if not df_short_local.empty:
-                            ws_short.update(
-                                [df_short_local.columns.values.tolist()] + df_short_local.values.tolist()
-                            )
-                        st.toast(f"🗑️ Jugador {jugador_sel} eliminado correctamente.", icon="🗑️")
-                        st.cache_data.clear()
-                        st.experimental_rerun()
-                    else:
-                        st.warning("⚠️ No se encontró el jugador en la hoja.")
-                except Exception as e:
-                    st.error(f"⚠️ Error al eliminar: {e}")
+if df_busqueda.empty:
+    st.info("No se encontraron jugadores que coincidan con la búsqueda.")
+else:
+    st.dataframe(
+        df_busqueda[["Nombre","Posición","Club","Agregado_Por"]],
+        use_container_width=True,
+        hide_index=True
+    )
+
+    jugador_sel = st.selectbox(
+        "Seleccionar jugador a eliminar",
+        [""] + sorted(df_busqueda["Nombre"].unique())
+    )
+
+    if jugador_sel:
+        jugador_row = df_busqueda[df_busqueda["Nombre"] == jugador_sel].iloc[0]
+        st.warning(f"⚠️ Vas a eliminar a **{jugador_sel}** de TU lista corta.")
+        confirmar = st.checkbox("Confirmar eliminación")
+
+        if st.button("🗑️ Eliminar jugador", type="primary", disabled=not confirmar):
+            try:
+                ws_short = obtener_hoja("Lista corta")
+                data_short = ws_short.get_all_records()
+                df_short_local = pd.DataFrame(data_short)
+
+                fila = df_short_local.index[
+                    (df_short_local["ID_Jugador"].astype(str) == str(jugador_row["ID_Jugador"])) &
+                    (df_short_local["Agregado_Por"] == CURRENT_USER)
+                ]
+
+                if not fila.empty:
+                    df_short_local = df_short_local.drop(fila[0])
+                    ws_short.clear()
+                    ws_short.append_row(list(df_short_local.columns))
+                    if not df_short_local.empty:
+                        ws_short.update(
+                            [df_short_local.columns.values.tolist()] +
+                            df_short_local.values.tolist()
+                        )
+                    st.toast(
+                        f"🗑️ Jugador {jugador_sel} eliminado correctamente de TU lista.",
+                        icon="🗑️"
+                    )
+                    st.cache_data.clear()
+                    st.experimental_rerun()
+                else:
+                    st.warning("⚠️ No se encontró el jugador en tu lista corta.")
+            except Exception as e:
+                st.error(f"⚠️ Error al eliminar: {e}")
+
 
 
 # =========================================================
@@ -2292,6 +2309,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
