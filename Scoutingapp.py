@@ -801,7 +801,6 @@ if menu == "Jugadores":
                             jugador.get("Posición", "-"),
                             jugador.get("URL_Foto", ""),
                             jugador.get("URL_Perfil", ""),
-                            jugador.get("URL_Instagram", ""),
                             CURRENT_USER,
                             date.today().strftime("%d/%m/%Y")
                         ]
@@ -2462,6 +2461,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
