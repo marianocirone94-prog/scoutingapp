@@ -631,11 +631,10 @@ if menu == "Jugadores":
     st.subheader("Gestión de jugadores e informes individuales")
 
     # ---------------------------------------------------------
-    # DATASETS FILTRADOS POR USUARIO
+    # DATASETS
     # ---------------------------------------------------------
     df_players = df_players_all.copy()      # 🔓 todos los jugadores
     df_reports = df_reports_user.copy()     # 🔐 solo informes del scout
-
 
     # ---------------------------------------------------------
     # OPCIONES PREDEFINIDAS
@@ -717,7 +716,7 @@ if menu == "Jugadores":
 
                 nueva_url_foto = st.text_input("URL Foto")
                 nueva_url_perfil = st.text_input("URL Perfil")
-                nueva_url_instagram = st.text_input("URL Instagram")
+                nueva_instagram = st.text_input("Instagram")   # ← CORREGIDO
 
                 guardar = st.form_submit_button("💾 Guardar jugador")
 
@@ -731,7 +730,7 @@ if menu == "Jugadores":
                             nueva_nacionalidad, nueva_seg_nac,
                             nueva_altura, nuevo_pie, nueva_posicion,
                             car_str, nuevo_club, nueva_liga, "",
-                            nueva_url_foto, nueva_url_perfil, nueva_url_instagram
+                            nueva_url_foto, nueva_url_perfil, nueva_instagram
                         ]
 
                         ws = obtener_hoja("Jugadores")
@@ -773,9 +772,8 @@ if menu == "Jugadores":
             if str(jugador.get("URL_Perfil","")).startswith("http"):
                 st.markdown(f"[🌐 Perfil externo]({jugador['URL_Perfil']})")
 
-            if str(jugador.get("URL_Instagram","")).startswith("http"):
-                st.markdown(f"[📸 Instagram]({jugador['URL_Instagram']})")
-
+            if str(jugador.get("Instagram","")).startswith("http"):   # ← CORREGIDO
+                st.markdown(f"[📸 Instagram]({jugador['Instagram']})")
 
         # ---------------------------------------------------------
         # AGREGAR A LISTA CORTA
@@ -2461,6 +2459,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
