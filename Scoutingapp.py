@@ -1422,15 +1422,30 @@ if menu == "Lista corta":
         st.stop()
 
     # =========================================================
-    # FILTRO DE PRIVACIDAD POR USUARIO
-    # =========================================================
-    if CURRENT_ROLE not in ["admin"]:
-        df_short = df_short[df_short["Agregado_Por"] == CURRENT_USER]
+# FILTRO DE PRIVACIDAD POR USUARIO
+# =========================================================
+if CURRENT_ROLE not in ["admin"]:
+    df_short = df_short[df_short["Agregado_Por"] == CURRENT_USER]
 
-    # Aseguramos columnas necesarias
-    for col in ["Año", "Semestre"]:
-        if col not in df_short.columns:
-            df_short[col] = ""
+# =========================================================
+# NORMALIZAR FECHA / AÑO / SEMESTRE (como Panel Scouts)
+# =========================================================
+df_short["Fecha_dt"] = pd.to_datetime(
+    df_short.get("Fecha", ""),
+    errors="coerce",
+    dayfirst=True
+)
+
+df_short["Año"] = (
+    df_short["Fecha_dt"]
+    .dt.year
+    .astype("Int64")
+)
+
+df_short["Semestre"] = df_short["Fecha_dt"].dt.month.apply(
+    lambda m: "1º" if m <= 6 else "2º" if pd.notna(m) else ""
+)
+
 
     # =========================================================
     # FILTROS
@@ -2309,6 +2324,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
