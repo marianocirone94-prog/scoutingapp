@@ -2167,12 +2167,12 @@ if menu == "Panel General":
 
 
 # =========================================================
-# 🧭 PANEL SCOUTS — BLOQUE UNIFICADO (FIX DEFINITIVO)
+# 🧭 PANEL SCOUTS — BLOQUE ESTABLE Y COHERENTE
 # =========================================================
 if menu == "Panel Scouts":
 
     # -----------------------------------------------------
-    # 🔐 ACCESO
+    # 🔐 CONTROL DE ACCESO
     # -----------------------------------------------------
     if CURRENT_ROLE not in ["admin", "scout"]:
         st.warning("⛔ No tenés permisos para acceder a este panel.")
@@ -2184,7 +2184,7 @@ if menu == "Panel Scouts":
     )
 
     # -----------------------------------------------------
-    # 📦 DATA BASE (YA FILTRADA POR ROL)
+    # 📦 DATA BASE (YA FILTRADA POR USUARIO)
     # -----------------------------------------------------
     df_reports = df_reports_user.copy()
     df_players = df_players_user.copy()
@@ -2194,29 +2194,38 @@ if menu == "Panel Scouts":
         st.stop()
 
     # -----------------------------------------------------
-    # 🧹 NORMALIZACIONES
+    # 🧹 NORMALIZACIÓN BÁSICA
     # -----------------------------------------------------
     df_reports["Scout"] = df_reports["Scout"].astype(str).str.strip()
     df_reports["ID_Jugador"] = df_reports["ID_Jugador"].astype(str)
     df_players["ID_Jugador"] = df_players["ID_Jugador"].astype(str)
 
-    # ---- FECHA (NO PELEAMOS MÁS CON SHEETS)
+    # -----------------------------------------------------
+    # 🕒 FECHA (USO PRÁCTICO, SIN PELEAR CON SHEETS)
+    # -----------------------------------------------------
     df_reports["Fecha_dt"] = pd.to_datetime(
         df_reports["Fecha_Informe"],
         errors="coerce",
         dayfirst=True
     )
 
-    df_reports = df_reports[df_reports["Fecha_dt"].notna()]
-
-    df_reports["Año"] = df_reports["Fecha_dt"].dt.year
-    df_reports["Mes"] = df_reports["Fecha_dt"].dt.strftime("%Y-%m")
-    df_reports["Semestre"] = df_reports["Fecha_dt"].dt.month.apply(
-        lambda m: "1º" if m <= 6 else "2º"
+    # AÑO COMO STRING (FIX DEFINITIVO)
+    df_reports["Año"] = (
+        df_reports["Fecha_Informe"]
+        .astype(str)
+        .str[-4:]
     )
 
+    # SEMESTRE DESDE EL MES
+    df_reports["Mes_num"] = df_reports["Fecha_dt"].dt.month
+    df_reports["Semestre"] = df_reports["Mes_num"].apply(
+        lambda m: "1º" if m and m <= 6 else "2º"
+    )
+
+    df_reports["Mes"] = df_reports["Fecha_dt"].dt.strftime("%Y-%m")
+
     # -----------------------------------------------------
-    # 🔗 MERGE ÚNICO
+    # 🔗 MERGE CON JUGADORES
     # -----------------------------------------------------
     df = df_reports.merge(
         df_players[["ID_Jugador", "Posición", "Liga"]],
@@ -2225,22 +2234,25 @@ if menu == "Panel Scouts":
     )
 
     # -----------------------------------------------------
-    # 🔎 FILTROS UI
+    # 🔎 FILTROS
     # -----------------------------------------------------
     st.markdown("### 🔎 Filtros")
 
-    c1, c2, c3 = st.columns(3)
+    f1, f2, f3 = st.columns(3)
 
-    with c1:
+    with f1:
         filtro_anio = st.multiselect(
             "Año",
             sorted(df["Año"].dropna().unique(), reverse=True)
         )
 
-    with c2:
-        filtro_sem = st.multiselect("Semestre", ["1º", "2º"])
+    with f2:
+        filtro_sem = st.multiselect(
+            "Semestre",
+            ["1º", "2º"]
+        )
 
-    with c3:
+    with f3:
         if CURRENT_ROLE == "admin":
             filtro_scout = st.multiselect(
                 "Scout",
@@ -2276,28 +2288,6 @@ if menu == "Panel Scouts":
     k4.metric("🏟️ Ligas", df_f["Liga"].nunique())
 
     # -----------------------------------------------------
-    # 🚨 ALERTAS (USAN df_f, NO OTRO)
-    # -----------------------------------------------------
-    hoy = pd.Timestamp.today().normalize()
-
-    ultima = (
-        df_f.groupby("Scout")["Fecha_dt"]
-        .max()
-        .reset_index()
-    )
-
-    ultima["Dias"] = (hoy - ultima["Fecha_dt"]).dt.days
-
-    alerta = ultima[(ultima["Dias"] > 30) & (ultima["Dias"] <= 60)]
-    fuera = ultima[ultima["Dias"] > 60]
-
-    if not alerta.empty:
-        st.warning("⚠ Inactivos +30 días: " + ", ".join(alerta["Scout"]))
-
-    if not fuera.empty and CURRENT_ROLE == "admin":
-        st.error("❌ Fuera del radar (+60 días): " + ", ".join(fuera["Scout"]))
-
-    # -----------------------------------------------------
     # 🏆 RANKING
     # -----------------------------------------------------
     pesos = {
@@ -2331,6 +2321,8 @@ if menu == "Panel Scouts":
     col1, col2 = st.columns(2)
 
     with col1:
+        st.markdown("### 📈 Evolución mensual total")
+
         total_mes = (
             df_f.groupby("Mes")
             .size()
@@ -2343,6 +2335,8 @@ if menu == "Panel Scouts":
             use_container_width=True
         )
 
+        st.markdown("### 🧭 Observaciones por posición")
+
         pos_df = df_f["Posición"].value_counts().reset_index()
         pos_df.columns = ["Posición", "Cantidad"]
 
@@ -2352,6 +2346,8 @@ if menu == "Panel Scouts":
         )
 
     with col2:
+        st.markdown("### 📊 Evolución mensual por scout")
+
         scout_mes = (
             df_f.groupby(["Mes", "Scout"])
             .size()
@@ -2361,11 +2357,16 @@ if menu == "Panel Scouts":
 
         st.plotly_chart(
             px.line(
-                scout_mes, x="Mes", y="Informes",
-                color="Scout", markers=True
+                scout_mes,
+                x="Mes",
+                y="Informes",
+                color="Scout",
+                markers=True
             ),
             use_container_width=True
         )
+
+        st.markdown("### 📊 Informes por scout")
 
         bar_df = (
             df_f.groupby("Scout")
@@ -2381,6 +2382,8 @@ if menu == "Panel Scouts":
     # -----------------------------------------------------
     # 🎯 DISTRIBUCIÓN DE DECISIONES
     # -----------------------------------------------------
+    st.markdown("### 🎯 Distribución de decisiones por scout")
+
     tabla_lineas = (
         df_f.groupby(["Scout", "Línea"])
         .size()
@@ -2391,6 +2394,7 @@ if menu == "Panel Scouts":
     )
 
     st.dataframe(tabla_lineas, use_container_width=True)
+
 
 # =========================================================
 # CIERRE PROFESIONAL (footer)
@@ -2410,6 +2414,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
