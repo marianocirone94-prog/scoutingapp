@@ -2167,7 +2167,7 @@ if menu == "Panel General":
 
 
 # =========================================================
-# 🧭 PANEL SCOUTS — CONTROL POR USUARIO
+# 🧭 PANEL SCOUTS — CONTROL POR USUARIO (FIX DEFINITIVO)
 # =========================================================
 if menu == "Panel Scouts":
 
@@ -2217,7 +2217,7 @@ if menu == "Panel Scouts":
         ]
 
     # -----------------------------------------------------
-    # 🕒 FECHAS — PARSEO ROBUSTO (FIX DICIEMBRE)
+    # 🕒 FECHAS — FIX DEFINITIVO (STRING + PARSEO ROBUSTO)
     # -----------------------------------------------------
     def parse_fecha(fecha):
         if pd.isna(fecha):
@@ -2241,10 +2241,14 @@ if menu == "Panel Scouts":
 
         return pd.NaT
 
+    # 🔑 CLAVE: forzar TODO a string antes del parseo
+    df_reports["Fecha_Informe_dt"] = (
+        df_reports["Fecha_Informe"]
+        .astype(str)
+        .apply(parse_fecha)
+    )
 
-    df_reports["Fecha_Informe_dt"] = df_reports["Fecha_Informe"].apply(parse_fecha)
-
-    # eliminamos solo las que realmente no se pueden interpretar
+    # solo descartamos lo realmente inválido
     df_reports = df_reports[
         df_reports["Fecha_Informe_dt"].notna()
     ]
@@ -2481,6 +2485,7 @@ if menu == "Panel Scouts":
         use_container_width=True
     )
 
+
 # =========================================================
 # CIERRE PROFESIONAL (footer)
 # =========================================================
@@ -2499,6 +2504,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
