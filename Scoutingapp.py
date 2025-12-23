@@ -2189,26 +2189,47 @@ if menu == "Panel Scouts":
     df_players = df_players_user.copy()
     df_reports = df_reports_user.copy()
 
+    # IDs como string
     df_players["ID_Jugador"] = df_players["ID_Jugador"].astype(str)
     df_reports["ID_Jugador"] = df_reports["ID_Jugador"].astype(str)
 
+    # -----------------------------------------------------
+    # 🧹 NORMALIZACIÓN DE SCOUT (CLAVE)
+    # -----------------------------------------------------
     df_reports["Scout"] = df_reports["Scout"].astype(str).str.strip()
     df_reports = df_reports[df_reports["Scout"] != ""]
 
-    # -----------------------------------------------------
-    # 🔐 PRIVACIDAD POR ROL
-    # -----------------------------------------------------
+    df_reports["Scout_norm"] = (
+        df_reports["Scout"]
+        .str.lower()
+        .str.replace(" ", "", regex=False)
+    )
+
+    CURRENT_USER_NORM = (
+        str(CURRENT_USER)
+        .strip()
+        .lower()
+        .replace(" ", "")
+    )
+
     if CURRENT_ROLE != "admin":
-        df_reports = df_reports[df_reports["Scout"] == CURRENT_USER]
+        df_reports = df_reports[
+            df_reports["Scout_norm"] == CURRENT_USER_NORM
+        ]
 
     # -----------------------------------------------------
-    # 🕒 FECHAS Y DERIVADOS
+    # 🕒 FECHAS (BLINDAJE TOTAL)
     # -----------------------------------------------------
     df_reports["Fecha_Informe_dt"] = pd.to_datetime(
         df_reports["Fecha_Informe"],
         errors="coerce",
         dayfirst=True
     )
+
+    # eliminar informes sin fecha válida (rompen KPIs y gráficos)
+    df_reports = df_reports[
+        df_reports["Fecha_Informe_dt"].notna()
+    ]
 
     hoy = pd.Timestamp.today().normalize()
 
@@ -2225,7 +2246,7 @@ if menu == "Panel Scouts":
     )
 
     # -----------------------------------------------------
-    # 🔗 UNIFICACIÓN
+    # 🔗 UNIFICACIÓN CON JUGADORES
     # -----------------------------------------------------
     df = df_reports.merge(
         df_players[["ID_Jugador", "Posición", "Liga"]],
@@ -2442,7 +2463,6 @@ if menu == "Panel Scouts":
         use_container_width=True
     )
 
-
 # =========================================================
 # CIERRE PROFESIONAL (footer)
 # =========================================================
@@ -2461,6 +2481,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
