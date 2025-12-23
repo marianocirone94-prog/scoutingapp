@@ -2189,12 +2189,11 @@ if menu == "Panel Scouts":
     df_players = df_players_user.copy()
     df_reports = df_reports_user.copy()
 
-    # IDs como string
     df_players["ID_Jugador"] = df_players["ID_Jugador"].astype(str)
     df_reports["ID_Jugador"] = df_reports["ID_Jugador"].astype(str)
 
     # -----------------------------------------------------
-    # 🧹 NORMALIZACIÓN DE SCOUT (CLAVE)
+    # 🧹 NORMALIZACIÓN DE SCOUT
     # -----------------------------------------------------
     df_reports["Scout"] = df_reports["Scout"].astype(str).str.strip()
     df_reports = df_reports[df_reports["Scout"] != ""]
@@ -2218,15 +2217,34 @@ if menu == "Panel Scouts":
         ]
 
     # -----------------------------------------------------
-    # 🕒 FECHAS (BLINDAJE TOTAL)
+    # 🕒 FECHAS — PARSEO ROBUSTO (FIX DICIEMBRE)
     # -----------------------------------------------------
-    df_reports["Fecha_Informe_dt"] = pd.to_datetime(
-        df_reports["Fecha_Informe"],
-        errors="coerce",
-        dayfirst=True
-    )
+    def parse_fecha(fecha):
+        if pd.isna(fecha):
+            return pd.NaT
 
-    # eliminar informes sin fecha válida (rompen KPIs y gráficos)
+        fecha = str(fecha).strip()
+
+        formatos = [
+            "%d/%m/%Y",
+            "%d/%m/%y",
+            "%Y-%m-%d",
+            "%d-%m-%Y",
+            "%d-%m-%y"
+        ]
+
+        for fmt in formatos:
+            try:
+                return pd.to_datetime(fecha, format=fmt)
+            except Exception:
+                continue
+
+        return pd.NaT
+
+
+    df_reports["Fecha_Informe_dt"] = df_reports["Fecha_Informe"].apply(parse_fecha)
+
+    # eliminamos solo las que realmente no se pueden interpretar
     df_reports = df_reports[
         df_reports["Fecha_Informe_dt"].notna()
     ]
@@ -2481,6 +2499,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
