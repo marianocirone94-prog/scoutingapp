@@ -2167,12 +2167,12 @@ if menu == "Panel General":
 
 
 # =========================================================
-# 🧭 PANEL SCOUTS — CONTROL POR USUARIO (FIX DEFINITIVO)
+# 🧭 PANEL SCOUTS — BLOQUE UNIFICADO (FIX DEFINITIVO)
 # =========================================================
 if menu == "Panel Scouts":
 
     # -----------------------------------------------------
-    # 🔐 CONTROL DE ACCESO
+    # 🔐 ACCESO
     # -----------------------------------------------------
     if CURRENT_ROLE not in ["admin", "scout"]:
         st.warning("⛔ No tenés permisos para acceder a este panel.")
@@ -2184,91 +2184,39 @@ if menu == "Panel Scouts":
     )
 
     # -----------------------------------------------------
-    # 📦 DATOS DESDE SESSION STATE
+    # 📦 DATA BASE (YA FILTRADA POR ROL)
     # -----------------------------------------------------
-    df_players = df_players_user.copy()
     df_reports = df_reports_user.copy()
+    df_players = df_players_user.copy()
 
-    df_players["ID_Jugador"] = df_players["ID_Jugador"].astype(str)
-    df_reports["ID_Jugador"] = df_reports["ID_Jugador"].astype(str)
+    if df_reports.empty:
+        st.info("No hay informes disponibles.")
+        st.stop()
 
     # -----------------------------------------------------
-    # 🧹 NORMALIZACIÓN DE SCOUT
+    # 🧹 NORMALIZACIONES
     # -----------------------------------------------------
     df_reports["Scout"] = df_reports["Scout"].astype(str).str.strip()
-    df_reports = df_reports[df_reports["Scout"] != ""]
+    df_reports["ID_Jugador"] = df_reports["ID_Jugador"].astype(str)
+    df_players["ID_Jugador"] = df_players["ID_Jugador"].astype(str)
 
-    df_reports["Scout_norm"] = (
-        df_reports["Scout"]
-        .str.lower()
-        .str.replace(" ", "", regex=False)
+    # ---- FECHA (NO PELEAMOS MÁS CON SHEETS)
+    df_reports["Fecha_dt"] = pd.to_datetime(
+        df_reports["Fecha_Informe"],
+        errors="coerce",
+        dayfirst=True
     )
 
-    CURRENT_USER_NORM = (
-        str(CURRENT_USER)
-        .strip()
-        .lower()
-        .replace(" ", "")
-    )
+    df_reports = df_reports[df_reports["Fecha_dt"].notna()]
 
-    if CURRENT_ROLE != "admin":
-        df_reports = df_reports[
-            df_reports["Scout_norm"] == CURRENT_USER_NORM
-        ]
-
-    # -----------------------------------------------------
-    # 🕒 FECHAS — FIX DEFINITIVO (STRING + PARSEO ROBUSTO)
-    # -----------------------------------------------------
-    def parse_fecha(fecha):
-        if pd.isna(fecha):
-            return pd.NaT
-
-        fecha = str(fecha).strip()
-
-        formatos = [
-            "%d/%m/%Y",
-            "%d/%m/%y",
-            "%Y-%m-%d",
-            "%d-%m-%Y",
-            "%d-%m-%y"
-        ]
-
-        for fmt in formatos:
-            try:
-                return pd.to_datetime(fecha, format=fmt)
-            except Exception:
-                continue
-
-        return pd.NaT
-
-    # 🔑 CLAVE: forzar TODO a string antes del parseo
-    df_reports["Fecha_Informe_dt"] = (
-        df_reports["Fecha_Informe"]
-        .astype(str)
-        .apply(parse_fecha)
-    )
-
-    # solo descartamos lo realmente inválido
-    df_reports = df_reports[
-        df_reports["Fecha_Informe_dt"].notna()
-    ]
-
-    hoy = pd.Timestamp.today().normalize()
-
-    df_reports["Año"] = (
-        df_reports["Fecha_Informe_dt"]
-        .dt.year
-        .astype("Int64")
-    )
-
-    df_reports["Mes"] = df_reports["Fecha_Informe_dt"].dt.strftime("%Y-%m")
-    df_reports["Semana"] = df_reports["Fecha_Informe_dt"].dt.strftime("%Y-%U")
-    df_reports["Semestre"] = df_reports["Fecha_Informe_dt"].dt.month.apply(
+    df_reports["Año"] = df_reports["Fecha_dt"].dt.year
+    df_reports["Mes"] = df_reports["Fecha_dt"].dt.strftime("%Y-%m")
+    df_reports["Semestre"] = df_reports["Fecha_dt"].dt.month.apply(
         lambda m: "1º" if m <= 6 else "2º"
     )
 
     # -----------------------------------------------------
-    # 🔗 UNIFICACIÓN CON JUGADORES
+    # 🔗 MERGE ÚNICO
     # -----------------------------------------------------
     df = df_reports.merge(
         df_players[["ID_Jugador", "Posición", "Liga"]],
@@ -2277,33 +2225,22 @@ if menu == "Panel Scouts":
     )
 
     # -----------------------------------------------------
-    # 🔎 FILTROS
+    # 🔎 FILTROS UI
     # -----------------------------------------------------
     st.markdown("### 🔎 Filtros")
 
-    f1, f2, f3 = st.columns(3)
+    c1, c2, c3 = st.columns(3)
 
-    with f1:
-        opciones_anio = (
-            df["Año"]
-            .dropna()
-            .astype(int)
-            .unique()
-            .tolist()
-        )
-
+    with c1:
         filtro_anio = st.multiselect(
             "Año",
-            sorted(opciones_anio, reverse=True)
+            sorted(df["Año"].dropna().unique(), reverse=True)
         )
 
-    with f2:
-        filtro_sem = st.multiselect(
-            "Semestre",
-            ["1º", "2º"]
-        )
+    with c2:
+        filtro_sem = st.multiselect("Semestre", ["1º", "2º"])
 
-    with f3:
+    with c3:
         if CURRENT_ROLE == "admin":
             filtro_scout = st.multiselect(
                 "Scout",
@@ -2313,7 +2250,7 @@ if menu == "Panel Scouts":
             filtro_scout = []
 
     # -----------------------------------------------------
-    # APLICAR FILTROS
+    # 🎯 DATAFRAME FINAL (ÚNICO)
     # -----------------------------------------------------
     df_f = df.copy()
 
@@ -2339,27 +2276,29 @@ if menu == "Panel Scouts":
     k4.metric("🏟️ Ligas", df_f["Liga"].nunique())
 
     # -----------------------------------------------------
-    # 🚨 ALERTA DE INACTIVIDAD
+    # 🚨 ALERTAS (USAN df_f, NO OTRO)
     # -----------------------------------------------------
+    hoy = pd.Timestamp.today().normalize()
+
     ultima = (
-        df_reports.groupby("Scout")["Fecha_Informe_dt"]
+        df_f.groupby("Scout")["Fecha_dt"]
         .max()
         .reset_index()
     )
 
-    ultima["Dias"] = (hoy - ultima["Fecha_Informe_dt"]).dt.days
+    ultima["Dias"] = (hoy - ultima["Fecha_dt"]).dt.days
 
     alerta = ultima[(ultima["Dias"] > 30) & (ultima["Dias"] <= 60)]
     fuera = ultima[ultima["Dias"] > 60]
 
     if not alerta.empty:
-        st.warning("⚠ Inactivos +30 días: " + ", ".join(alerta["Scout"].astype(str)))
+        st.warning("⚠ Inactivos +30 días: " + ", ".join(alerta["Scout"]))
 
     if not fuera.empty and CURRENT_ROLE == "admin":
-        st.error("❌ Fuera del radar (+60 días): " + ", ".join(fuera["Scout"].astype(str)))
+        st.error("❌ Fuera del radar (+60 días): " + ", ".join(fuera["Scout"]))
 
     # -----------------------------------------------------
-    # 🏆 RANKING DE SCOUTS
+    # 🏆 RANKING
     # -----------------------------------------------------
     pesos = {
         "1ra (Fichar)": 3,
@@ -2387,28 +2326,11 @@ if menu == "Panel Scouts":
     st.dataframe(ranking, use_container_width=True)
 
     # -----------------------------------------------------
-    # 🎯 META
-    # -----------------------------------------------------
-    META = 300
-
-    ranking["Estado"] = ranking["Informes"].apply(
-        lambda x: "🟢 OK" if x >= META else "🟡 En progreso"
-    )
-
-    st.markdown("### 🎯 Meta mínima (300 informes)")
-    st.dataframe(
-        ranking[["Scout", "Informes", "Estado"]],
-        use_container_width=True
-    )
-
-    # -----------------------------------------------------
-    # 📈 GRÁFICOS
+    # 📈 GRÁFICOS (TODOS df_f)
     # -----------------------------------------------------
     col1, col2 = st.columns(2)
 
     with col1:
-        st.markdown("### 📈 Evolución mensual total")
-
         total_mes = (
             df_f.groupby("Mes")
             .size()
@@ -2421,8 +2343,6 @@ if menu == "Panel Scouts":
             use_container_width=True
         )
 
-        st.markdown("### 🧭 Observaciones por posición")
-
         pos_df = df_f["Posición"].value_counts().reset_index()
         pos_df.columns = ["Posición", "Cantidad"]
 
@@ -2432,8 +2352,6 @@ if menu == "Panel Scouts":
         )
 
     with col2:
-        st.markdown("### 📊 Evolución mensual por scout")
-
         scout_mes = (
             df_f.groupby(["Mes", "Scout"])
             .size()
@@ -2442,11 +2360,12 @@ if menu == "Panel Scouts":
         )
 
         st.plotly_chart(
-            px.line(scout_mes, x="Mes", y="Informes", color="Scout", markers=True),
+            px.line(
+                scout_mes, x="Mes", y="Informes",
+                color="Scout", markers=True
+            ),
             use_container_width=True
         )
-
-        st.markdown("### 📊 Informes por scout")
 
         bar_df = (
             df_f.groupby("Scout")
@@ -2454,21 +2373,14 @@ if menu == "Panel Scouts":
             .reset_index(name="Informes")
         )
 
-        fig_bar = px.bar(
-            bar_df,
-            x="Scout",
-            y="Informes",
-            text="Informes"
+        st.plotly_chart(
+            px.bar(bar_df, x="Scout", y="Informes", text="Informes"),
+            use_container_width=True
         )
-
-        fig_bar.update_traces(textposition="outside")
-        st.plotly_chart(fig_bar, use_container_width=True)
 
     # -----------------------------------------------------
     # 🎯 DISTRIBUCIÓN DE DECISIONES
     # -----------------------------------------------------
-    st.markdown("### 🎯 Distribución de decisiones por scout")
-
     tabla_lineas = (
         df_f.groupby(["Scout", "Línea"])
         .size()
@@ -2478,13 +2390,7 @@ if menu == "Panel Scouts":
         .astype(int)
     )
 
-    st.dataframe(
-        tabla_lineas.style
-            .format("{:.0f}")
-            .background_gradient(cmap="Greens"),
-        use_container_width=True
-    )
-
+    st.dataframe(tabla_lineas, use_container_width=True)
 
 # =========================================================
 # CIERRE PROFESIONAL (footer)
@@ -2504,6 +2410,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
