@@ -1990,7 +1990,7 @@ if menu == "Agenda":
             guardar_nuevo(id_jugador, jugador_sel, scout, fecha_rev, motivo)
 
 # =========================================================
-# 🏠 PANEL GENERAL — ScoutingApp PRO (MÉTRICAS POR PUESTO + COMPARADOR)
+# 🏠 PANEL GENERAL — ScoutingApp PRO (FINAL)
 # =========================================================
 if menu == "Panel General":
 
@@ -2000,7 +2000,7 @@ if menu == "Panel General":
     )
 
     # =========================
-    # DATA
+    # DATA BASE
     # =========================
     df_players = df_players_user.copy()
     df_reports = df_reports_user.copy()
@@ -2019,7 +2019,7 @@ if menu == "Panel General":
     hace_30 = hoy - timedelta(days=30)
 
     # =========================
-    # EDAD
+    # EDAD SEGURA
     # =========================
     def edad_segura(fecha):
         try:
@@ -2031,7 +2031,7 @@ if menu == "Panel General":
     df_players["Edad"] = df_players["Fecha_Nac"].apply(edad_segura)
 
     # =========================
-    # MÉTRICAS
+    # MÉTRICAS LIMPIAS
     # =========================
     metricas = [
         "Controles","Perfiles","Pase_corto","Pase_largo","Pase_filtrado",
@@ -2082,17 +2082,16 @@ if menu == "Panel General":
     scores = []
 
     for id_jug, grp in df_reports.groupby("ID_Jugador"):
-        pos = df_players.loc[df_players["ID_Jugador"] == id_jug, "Posición"]
-        if pos.empty:
+        pos_row = df_players.loc[df_players["ID_Jugador"] == id_jug, "Posición"]
+        if pos_row.empty:
             continue
 
-        pos = pos.values[0]
+        pos = str(pos_row.values[0])
         mets = metricas_por_posicion.get(pos)
         if not mets:
             continue
 
         score = grp[mets].mean().mean()
-
         scores.append({
             "ID_Jugador": id_jug,
             "Score_Posicional": round(score, 2)
@@ -2123,6 +2122,37 @@ if menu == "Panel General":
         <div class="kpi-card"><div class="kpi-title">Informes últimos 30 días</div><div class="kpi-value">{informes_30}</div></div>
     </div>
     """, unsafe_allow_html=True)
+
+    # =========================
+    # CONTRATOS POR VENCER
+    # =========================
+    if "Fecha_Fin_Contrato" in df_players.columns:
+
+        df_c = df_players.copy()
+        df_c["Fecha_Fin_dt"] = pd.to_datetime(df_c["Fecha_Fin_Contrato"], errors="coerce", dayfirst=True)
+        df_c = df_c.dropna(subset=["Fecha_Fin_dt"])
+
+        if CURRENT_ROLE != "admin" and "Agregado_Por" in df_c.columns:
+            df_c = df_c[df_c["Agregado_Por"] == CURRENT_USER]
+
+        lim6 = hoy + timedelta(days=180)
+        lim12 = hoy + timedelta(days=365)
+
+        df6 = df_c[df_c["Fecha_Fin_dt"] <= lim6]
+        df12 = df_c[(df_c["Fecha_Fin_dt"] > lim6) & (df_c["Fecha_Fin_dt"] <= lim12)]
+
+        st.markdown("<div class='panel-title'>📄 Contratos por vencer</div>", unsafe_allow_html=True)
+
+        c1, c2 = st.columns(2)
+        with c1: st.metric("🔴 ≤ 6 meses", len(df6))
+        with c2: st.metric("🟡 ≤ 12 meses", len(df12))
+
+        if not df6.empty or not df12.empty:
+            st.dataframe(
+                pd.concat([df6, df12]).sort_values("Fecha_Fin_dt")[["Nombre","Club","Posición","Fecha_Fin_Contrato"]],
+                use_container_width=True,
+                hide_index=True
+            )
 
     # =========================
     # TOPS POR POSICIÓN
@@ -2162,54 +2192,36 @@ if menu == "Panel General":
         with cols[i % 4]:
             render_top(df_scores[df_scores["Posición"] == pos], titulo)
 
-    # =====================================================
-    # 🆚 COMPARADOR DE JUGADORES (CON FILTROS)
-    # =====================================================
+    # =========================
+    # COMPARADOR DE JUGADORES
+    # =========================
     st.markdown("<div class='panel-title'>🆚 Comparador de jugadores</div>", unsafe_allow_html=True)
 
-    # -------- Filtros --------
     col_f1, col_f2, col_f3 = st.columns(3)
 
+    opciones_pos = df_players["Posición"].dropna().astype(str).unique().tolist()
+    opciones_pie = df_players["Pie_Hábil"].dropna().astype(str).unique().tolist()
+
     with col_f1:
-        filtro_pos = st.selectbox("Posición", ["Todas"] + sorted(df_players["Posición"].dropna().unique().tolist()))
-
+        filtro_pos = st.selectbox("Posición", ["Todas"] + sorted(opciones_pos))
     with col_f2:
-        filtro_pie = st.selectbox("Pie hábil", ["Todos"] + sorted(df_players["Pie_Hábil"].dropna().unique().tolist()))
-
+        filtro_pie = st.selectbox("Pie hábil", ["Todos"] + sorted(opciones_pie))
     with col_f3:
-        edad_min, edad_max = st.slider(
-            "Edad",
-            min_value=15,
-            max_value=45,
-            value=(18, 35)
-        )
+        edad_min, edad_max = st.slider("Edad", 15, 45, (18, 35))
 
-    df_cmp_base = df_players.copy()
-
+    df_base = df_players.copy()
     if filtro_pos != "Todas":
-        df_cmp_base = df_cmp_base[df_cmp_base["Posición"] == filtro_pos]
-
+        df_base = df_base[df_base["Posición"].astype(str) == filtro_pos]
     if filtro_pie != "Todos":
-        df_cmp_base = df_cmp_base[df_cmp_base["Pie_Hábil"] == filtro_pie]
+        df_base = df_base[df_base["Pie_Hábil"].astype(str) == filtro_pie]
 
-    df_cmp_base = df_cmp_base[
-        (df_cmp_base["Edad"] >= edad_min) &
-        (df_cmp_base["Edad"] <= edad_max)
-    ]
+    df_base = df_base[(df_base["Edad"] >= edad_min) & (df_base["Edad"] <= edad_max)]
 
-    opciones_cmp = {
-        f"{r.Nombre} ({r.Club})": r.ID_Jugador
-        for r in df_cmp_base.itertuples()
-    }
+    opciones_cmp = {f"{r.Nombre} ({r.Club})": r.ID_Jugador for r in df_base.itertuples()}
 
-    seleccionados = st.multiselect(
-        "Seleccioná de 2 a 6 jugadores",
-        opciones=list(opciones_cmp.keys()),
-        max_selections=6
-    )
+    seleccionados = st.multiselect("Seleccioná de 2 a 6 jugadores", list(opciones_cmp.keys()), max_selections=6)
 
     if 2 <= len(seleccionados) <= 6:
-
         ids = [opciones_cmp[n] for n in seleccionados]
 
         df_cmp = (
@@ -2229,11 +2241,6 @@ if menu == "Panel General":
             use_container_width=True,
             hide_index=True
         )
-
-    elif len(seleccionados) == 1:
-        st.info("Seleccioná al menos 2 jugadores para comparar.")
-
-
 
 # =========================================================
 # 🧭 PANEL SCOUTS — BLOQUE ESTABLE Y COHERENTE
@@ -2483,6 +2490,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
