@@ -525,33 +525,77 @@ def radar_chart(prom_jugador, prom_posicion):
 
 @st.cache_data(ttl=120)
 def cargar_datos():
+
     columnas_jug = [
-        "ID_Jugador","Nombre","Fecha_Nac","Nacionalidad","Segunda_Nacionalidad",
-        "Altura","Pie_Hábil","Posición","Caracteristica","Club","Liga",
-        "Sexo","URL_Foto","URL_Perfil","Instagram","Fecha_Fin_Contrato"
+        "ID_Jugador",
+        "Nombre",
+        "Fecha_Nac",
+        "Nacionalidad",
+        "Segunda_Nacionalidad",
+        "Altura",
+        "Pie_Hábil",
+        "Posición",
+        "Caracteristica",
+        "Club",
+        "Liga",
+        "Sexo",
+        "URL_Foto",
+        "URL_Perfil",
+        "Instagram",
+        "Fecha_Fin_Contrato"   # ← NO OBLIGATORIA
     ]
 
     columnas_inf = [
-        "ID_Informe","ID_Jugador","Scout","Fecha_Partido","Fecha_Informe",
-        "Equipos_Resultados","Formación","Observaciones","Línea",
-        "Controles","Perfiles","Pase_corto","Pase_largo","Pase_filtrado",
-        "1v1_defensivo","Recuperacion","Intercepciones","Duelos_aereos",
-        "Regate","Velocidad","Duelos_ofensivos",
-        "Resiliencia","Liderazgo","Inteligencia_tactica",
-        "Inteligencia_emocional","Posicionamiento",
-        "Vision_de_juego","Movimientos_sin_pelota"
+        "ID_Informe",
+        "ID_Jugador",
+        "Scout",
+        "Fecha_Partido",
+        "Fecha_Informe",
+        "Equipos_Resultados",
+        "Formación",
+        "Observaciones",
+        "Línea",
+        "Controles",
+        "Perfiles",
+        "Pase_corto",
+        "Pase_largo",
+        "Pase_filtrado",
+        "1v1_defensivo",
+        "Recuperacion",
+        "Intercepciones",
+        "Duelos_aereos",
+        "Regate",
+        "Velocidad",
+        "Duelos_ofensivos",
+        "Resiliencia",
+        "Liderazgo",
+        "Inteligencia_tactica",
+        "Inteligencia_emocional",
+        "Posicionamiento",
+        "Vision_de_juego",
+        "Movimientos_sin_pelota"
     ]
 
     columnas_short = [
-        "ID_Jugador","Nombre","Edad","Altura","Club","Posición",
-        "URL_Foto","URL_Perfil","Agregado_Por","Fecha_Agregado"
+        "ID_Jugador",
+        "Nombre",
+        "Edad",
+        "Altura",
+        "Club",
+        "Posición",
+        "URL_Foto",
+        "URL_Perfil",
+        "Agregado_Por",
+        "Fecha_Agregado"
     ]
 
     df_players = cargar_datos_sheets("Jugadores", columnas_jug)
     df_reports = cargar_datos_sheets("Informes", columnas_inf)
     df_short   = cargar_datos_sheets("Lista corta", columnas_short)
 
-    # Normalización de IDs
+    # ---------------------------------------------------------
+    # NORMALIZACIÓN DE IDS
+    # ---------------------------------------------------------
     for df in (df_players, df_reports, df_short):
         if not df.empty and "ID_Jugador" in df.columns:
             df["ID_Jugador"] = df["ID_Jugador"].astype(str)
@@ -703,25 +747,27 @@ if menu == "Jugadores":
         with st.expander("➕ Agregar nuevo jugador", expanded=False):
             with st.form("nuevo_jugador_form", clear_on_submit=True):
 
-                nuevo_nombre = st.text_input("Nombre completo")
-                nueva_fecha = st.text_input("Fecha de nacimiento (dd/mm/aaaa)")
-                nueva_altura = st.number_input("Altura (cm)", 140, 210, 175)
-                nuevo_pie = st.selectbox("Pie hábil", opciones_pies)
-                nueva_posicion = st.selectbox("Posición principal", opciones_posiciones)
-                nuevo_club = st.text_input("Club actual")
-                nueva_liga = st.selectbox("Liga", opciones_ligas)
-                nueva_nacionalidad = st.selectbox("Nacionalidad", opciones_paises)
-                nueva_seg_nac = st.selectbox("Segunda nacionalidad", [""] + opciones_paises)
-                nueva_caracteristica = st.multiselect("Características", opciones_caracteristicas)
+                col1, col2 = st.columns(2)
 
-                nueva_url_foto = st.text_input("URL Foto")
-                nueva_url_perfil = st.text_input("URL Perfil")
-                nueva_instagram = st.text_input("Instagram")
+                with col1:
+                    nuevo_nombre = st.text_input("Nombre completo")
+                    nueva_fecha = st.text_input("Fecha de nacimiento (dd/mm/aaaa)")
+                    nueva_altura = st.number_input("Altura (cm)", 140, 210, 175)
+                    nuevo_pie = st.selectbox("Pie hábil", opciones_pies)
+                    nueva_posicion = st.selectbox("Posición principal", opciones_posiciones)
+                    nueva_fecha_fin_contrato = st.text_input(
+                        "Fin de contrato (dd/mm/aaaa)"
+                    )
 
-                # 🆕 FIN DE CONTRATO
-                nueva_fecha_fin_contrato = st.text_input(
-                    "Fin de contrato (dd/mm/aaaa)"
-                )
+                with col2:
+                    nuevo_club = st.text_input("Club actual")
+                    nueva_liga = st.selectbox("Liga", opciones_ligas)
+                    nueva_nacionalidad = st.selectbox("Nacionalidad", opciones_paises)
+                    nueva_seg_nac = st.selectbox("Segunda nacionalidad", [""] + opciones_paises)
+                    nueva_caracteristica = st.multiselect("Características", opciones_caracteristicas)
+                    nueva_url_foto = st.text_input("URL Foto")
+                    nueva_url_perfil = st.text_input("URL Perfil")
+                    nueva_instagram = st.text_input("Instagram")
 
                 guardar = st.form_submit_button("💾 Guardar jugador")
 
@@ -736,7 +782,7 @@ if menu == "Jugadores":
                             nueva_altura, nuevo_pie, nueva_posicion,
                             car_str, nuevo_club, nueva_liga, "",
                             nueva_url_foto, nueva_url_perfil, nueva_instagram,
-                            nueva_fecha_fin_contrato  # 🆕
+                            nueva_fecha_fin_contrato
                         ]
 
                         ws = obtener_hoja("Jugadores")
@@ -775,7 +821,6 @@ if menu == "Jugadores":
             st.write(f"🎯 Posición: {jugador.get('Posición','-')}")
             st.write(f"🏟️ Club: {jugador.get('Club','-')} ({jugador.get('Liga','-')})")
 
-            # 🆕 FIN DE CONTRATO
             if jugador.get("Fecha_Fin_Contrato"):
                 st.write(f"📄 Fin de contrato: {jugador['Fecha_Fin_Contrato']}")
 
@@ -792,61 +837,60 @@ if menu == "Jugadores":
 
             with st.form(f"editar_jugador_form_{jugador['ID_Jugador']}"):
 
-                e_nombre = st.text_input("Nombre completo", value=jugador.get("Nombre", ""))
-                e_fecha = st.text_input("Fecha de nacimiento (dd/mm/aaaa)", value=jugador.get("Fecha_Nac", ""))
-                e_altura = st.number_input(
-                    "Altura (cm)", 140, 210,
-                    int(float(jugador.get("Altura", 175))) if str(jugador.get("Altura", "")).strip() else 175
-                )
+                col1, col2 = st.columns(2)
 
-                e_pie = st.selectbox(
-                    "Pie hábil", opciones_pies,
-                    index=opciones_pies.index(jugador["Pie_Hábil"]) if jugador["Pie_Hábil"] in opciones_pies else 0
-                )
+                with col1:
+                    e_nombre = st.text_input("Nombre completo", value=jugador.get("Nombre", ""))
+                    e_fecha = st.text_input("Fecha de nacimiento (dd/mm/aaaa)", value=jugador.get("Fecha_Nac", ""))
+                    e_altura = st.number_input(
+                        "Altura (cm)", 140, 210,
+                        int(float(jugador.get("Altura", 175))) if str(jugador.get("Altura", "")).strip() else 175
+                    )
+                    e_pie = st.selectbox(
+                        "Pie hábil", opciones_pies,
+                        index=opciones_pies.index(jugador["Pie_Hábil"]) if jugador["Pie_Hábil"] in opciones_pies else 0
+                    )
+                    e_pos = st.selectbox(
+                        "Posición", opciones_posiciones,
+                        index=opciones_posiciones.index(jugador["Posición"]) if jugador["Posición"] in opciones_posiciones else 0
+                    )
+                    e_fin_contrato = st.text_input(
+                        "Fin de contrato (dd/mm/aaaa)",
+                        value=str(jugador.get("Fecha_Fin_Contrato", ""))
+                    )
 
-                e_pos = st.selectbox(
-                    "Posición", opciones_posiciones,
-                    index=opciones_posiciones.index(jugador["Posición"]) if jugador["Posición"] in opciones_posiciones else 0
-                )
+                with col2:
+                    e_club = st.text_input("Club actual", value=jugador.get("Club", ""))
+                    e_liga = st.selectbox(
+                        "Liga", opciones_ligas,
+                        index=opciones_ligas.index(jugador["Liga"]) if jugador["Liga"] in opciones_ligas else 0
+                    )
+                    e_nac = st.selectbox(
+                        "Nacionalidad principal", opciones_paises,
+                        index=opciones_paises.index(jugador["Nacionalidad"]) if jugador["Nacionalidad"] in opciones_paises else 0
+                    )
 
-                e_club = st.text_input("Club actual", value=jugador.get("Club", ""))
-                e_liga = st.selectbox(
-                    "Liga", opciones_ligas,
-                    index=opciones_ligas.index(jugador["Liga"]) if jugador["Liga"] in opciones_ligas else 0
-                )
+                    e_seg_opciones = [""] + opciones_paises
+                    e_seg = st.selectbox(
+                        "Segunda nacionalidad (opcional)",
+                        e_seg_opciones,
+                        index=e_seg_opciones.index(jugador.get("Segunda_Nacionalidad", "")) 
+                        if jugador.get("Segunda_Nacionalidad", "") in e_seg_opciones else 0
+                    )
 
-                e_nac = st.selectbox(
-                    "Nacionalidad principal", opciones_paises,
-                    index=opciones_paises.index(jugador["Nacionalidad"]) if jugador["Nacionalidad"] in opciones_paises else 0
-                )
+                    e_car = st.multiselect(
+                        "Características",
+                        opciones_caracteristicas,
+                        default=[
+                            c.strip().lower()
+                            for c in str(jugador.get("Caracteristica", "")).split(",")
+                            if c.strip().lower() in [o.lower() for o in opciones_caracteristicas]
+                        ]
+                    )
 
-                e_seg_opciones = [""] + opciones_paises
-                e_seg = st.selectbox(
-                    "Segunda nacionalidad (opcional)",
-                    e_seg_opciones,
-                    index=e_seg_opciones.index(jugador.get("Segunda_Nacionalidad", "")) 
-                    if jugador.get("Segunda_Nacionalidad", "") in e_seg_opciones else 0
-                )
-
-                e_car = st.multiselect(
-                    "Características del jugador",
-                    opciones_caracteristicas,
-                    default=[
-                        c.strip().lower()
-                        for c in str(jugador.get("Caracteristica", "")).split(",")
-                        if c.strip().lower() in [o.lower() for o in opciones_caracteristicas]
-                    ]
-                )
-
-                e_foto = st.text_input("URL de foto", value=str(jugador.get("URL_Foto", "")))
-                e_link = st.text_input("URL perfil externo", value=str(jugador.get("URL_Perfil", "")))
-                e_instagram = st.text_input("URL Instagram", value=str(jugador.get("Instagram", "")))
-
-                # 🆕 FIN DE CONTRATO
-                e_fin_contrato = st.text_input(
-                    "Fin de contrato (dd/mm/aaaa)",
-                    value=str(jugador.get("Fecha_Fin_Contrato", ""))
-                )
+                    e_foto = st.text_input("URL de foto", value=str(jugador.get("URL_Foto", "")))
+                    e_link = st.text_input("URL perfil externo", value=str(jugador.get("URL_Perfil", "")))
+                    e_instagram = st.text_input("URL Instagram", value=str(jugador.get("Instagram", "")))
 
                 guardar_ed = st.form_submit_button("💾 Guardar cambios")
 
@@ -880,7 +924,7 @@ if menu == "Jugadores":
                                 e_foto,
                                 e_link,
                                 e_instagram,
-                                e_fin_contrato  # 🆕
+                                e_fin_contrato
                             ]
 
                             ws.update(f"A{row_number}:P{row_number}", [valores])
@@ -893,6 +937,7 @@ if menu == "Jugadores":
 
                     except Exception as e:
                         st.error(f"⚠️ Error al guardar: {e}")
+
 
 
         # ---------------------------------------------------------
@@ -2383,6 +2428,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
