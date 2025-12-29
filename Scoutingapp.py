@@ -526,81 +526,33 @@ def radar_chart(prom_jugador, prom_posicion):
 @st.cache_data(ttl=120)
 def cargar_datos():
 
-    columnas_jug = [
-        "ID_Jugador",
-        "Nombre",
-        "Fecha_Nac",
-        "Nacionalidad",
-        "Segunda_Nacionalidad",
-        "Altura",
-        "Pie_Hábil",
-        "Posición",
-        "Caracteristica",
-        "Club",
-        "Liga",
-        "Sexo",
-        "URL_Foto",
-        "URL_Perfil",
-        "Instagram",
-        "Fecha_Fin_Contrato"   # ← NO OBLIGATORIA
-    ]
+    columnas_jug = ["ID_Jugador","Nombre","Fecha_Nac","Nacionalidad","Segunda_Nacionalidad",
+                    "Altura","Pie_Hábil","Posición","Caracteristica","Club","Liga",
+                    "Sexo","URL_Foto","URL_Perfil","Instagram","Fecha_Fin_Contrato"]
 
-    columnas_inf = [
-        "ID_Informe",
-        "ID_Jugador",
-        "Scout",
-        "Fecha_Partido",
-        "Fecha_Informe",
-        "Equipos_Resultados",
-        "Formación",
-        "Observaciones",
-        "Línea",
-        "Controles",
-        "Perfiles",
-        "Pase_corto",
-        "Pase_largo",
-        "Pase_filtrado",
-        "1v1_defensivo",
-        "Recuperacion",
-        "Intercepciones",
-        "Duelos_aereos",
-        "Regate",
-        "Velocidad",
-        "Duelos_ofensivos",
-        "Resiliencia",
-        "Liderazgo",
-        "Inteligencia_tactica",
-        "Inteligencia_emocional",
-        "Posicionamiento",
-        "Vision_de_juego",
-        "Movimientos_sin_pelota"
-    ]
+    columnas_inf = ["ID_Informe","ID_Jugador","Scout","Fecha_Partido","Fecha_Informe",
+                    "Equipos_Resultados","Formación","Observaciones","Línea",
+                    "Controles","Perfiles","Pase_corto","Pase_largo","Pase_filtrado",
+                    "1v1_defensivo","Recuperacion","Intercepciones","Duelos_aereos",
+                    "Regate","Velocidad","Duelos_ofensivos",
+                    "Resiliencia","Liderazgo","Inteligencia_tactica",
+                    "Inteligencia_emocional","Posicionamiento",
+                    "Vision_de_juego","Movimientos_sin_pelota"]
 
-    columnas_short = [
-        "ID_Jugador",
-        "Nombre",
-        "Edad",
-        "Altura",
-        "Club",
-        "Posición",
-        "URL_Foto",
-        "URL_Perfil",
-        "Agregado_Por",
-        "Fecha_Agregado"
-    ]
+    columnas_short = ["ID_Jugador","Nombre","Edad","Altura","Club","Posición",
+                      "URL_Foto","URL_Perfil","Agregado_Por","Fecha_Agregado"]
 
     df_players = cargar_datos_sheets("Jugadores", columnas_jug)
     df_reports = cargar_datos_sheets("Informes", columnas_inf)
     df_short   = cargar_datos_sheets("Lista corta", columnas_short)
 
-    # ---------------------------------------------------------
-    # NORMALIZACIÓN DE IDS
-    # ---------------------------------------------------------
+    # Normalización de IDs
     for df in (df_players, df_reports, df_short):
         if not df.empty and "ID_Jugador" in df.columns:
             df["ID_Jugador"] = df["ID_Jugador"].astype(str)
 
     return df_players, df_reports, df_short
+
 
 # ---------------------------------------------------------
 # INICIALIZACIÓN
@@ -2428,6 +2380,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
