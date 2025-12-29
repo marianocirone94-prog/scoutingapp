@@ -528,7 +528,7 @@ def cargar_datos():
     columnas_jug = [
         "ID_Jugador","Nombre","Fecha_Nac","Nacionalidad","Segunda_Nacionalidad",
         "Altura","Pie_Hábil","Posición","Caracteristica","Club","Liga",
-        "Sexo","URL_Foto","URL_Perfil","Instagram"
+        "Sexo","URL_Foto","URL_Perfil","Instagram","Fecha_Fin_Contrato"
     ]
 
     columnas_inf = [
@@ -716,7 +716,12 @@ if menu == "Jugadores":
 
                 nueva_url_foto = st.text_input("URL Foto")
                 nueva_url_perfil = st.text_input("URL Perfil")
-                nueva_instagram = st.text_input("Instagram")   # ← CORREGIDO
+                nueva_instagram = st.text_input("Instagram")
+
+                # 🆕 FIN DE CONTRATO
+                nueva_fecha_fin_contrato = st.text_input(
+                    "Fin de contrato (dd/mm/aaaa)"
+                )
 
                 guardar = st.form_submit_button("💾 Guardar jugador")
 
@@ -730,7 +735,8 @@ if menu == "Jugadores":
                             nueva_nacionalidad, nueva_seg_nac,
                             nueva_altura, nuevo_pie, nueva_posicion,
                             car_str, nuevo_club, nueva_liga, "",
-                            nueva_url_foto, nueva_url_perfil, nueva_instagram
+                            nueva_url_foto, nueva_url_perfil, nueva_instagram,
+                            nueva_fecha_fin_contrato  # 🆕
                         ]
 
                         ws = obtener_hoja("Jugadores")
@@ -769,50 +775,15 @@ if menu == "Jugadores":
             st.write(f"🎯 Posición: {jugador.get('Posición','-')}")
             st.write(f"🏟️ Club: {jugador.get('Club','-')} ({jugador.get('Liga','-')})")
 
+            # 🆕 FIN DE CONTRATO
+            if jugador.get("Fecha_Fin_Contrato"):
+                st.write(f"📄 Fin de contrato: {jugador['Fecha_Fin_Contrato']}")
+
             if str(jugador.get("URL_Perfil","")).startswith("http"):
                 st.markdown(f"[🌐 Perfil externo]({jugador['URL_Perfil']})")
 
-            if str(jugador.get("Instagram","")).startswith("http"):   # ← CORREGIDO
+            if str(jugador.get("Instagram","")).startswith("http"):
                 st.markdown(f"[📸 Instagram]({jugador['Instagram']})")
-
-        # ---------------------------------------------------------
-        # AGREGAR A LISTA CORTA
-        # ---------------------------------------------------------
-        if CURRENT_ROLE in ["admin", "scout"]:
-
-            if st.button("⭐ Agregar a Lista Corta"):
-                try:
-                    ws_short = obtener_hoja("Lista corta")
-                    data_short = ws_short.get_all_records()
-                    df_short_local = pd.DataFrame(data_short)
-
-                    if (
-                        "ID_Jugador" in df_short_local.columns
-                        and str(jugador["ID_Jugador"]) in df_short_local["ID_Jugador"].astype(str).values
-                    ):
-                        st.warning("⚠️ Este jugador ya está en la lista corta.")
-                    else:
-                        nueva_fila = [
-                            jugador["ID_Jugador"],
-                            jugador["Nombre"],
-                            calcular_edad(jugador["Fecha_Nac"]),
-                            jugador.get("Altura", "-"),
-                            jugador.get("Club", "-"),
-                            jugador.get("Posición", "-"),
-                            jugador.get("URL_Foto", ""),
-                            jugador.get("URL_Perfil", ""),
-                            CURRENT_USER,
-                            date.today().strftime("%d/%m/%Y")
-                        ]
-
-                        ws_short.append_row(nueva_fila, value_input_option="USER_ENTERED")
-                        st.toast(f"⭐ {jugador['Nombre']} agregado a la lista corta", icon="⭐")
-
-                        st.cache_data.clear()
-                        df_short = df_short_usercargar_datos_sheets("Lista corta")
-
-                except Exception as e:
-                    st.error(f"⚠️ Error al agregar a lista corta: {e}")
 
         # ---------------------------------------------------------
         # EDITAR DATOS DEL JUGADOR
@@ -824,46 +795,38 @@ if menu == "Jugadores":
                 e_nombre = st.text_input("Nombre completo", value=jugador.get("Nombre", ""))
                 e_fecha = st.text_input("Fecha de nacimiento (dd/mm/aaaa)", value=jugador.get("Fecha_Nac", ""))
                 e_altura = st.number_input(
-                    "Altura (cm)",
-                    140,
-                    210,
+                    "Altura (cm)", 140, 210,
                     int(float(jugador.get("Altura", 175))) if str(jugador.get("Altura", "")).strip() else 175
                 )
 
                 e_pie = st.selectbox(
-                    "Pie hábil",
-                    opciones_pies,
+                    "Pie hábil", opciones_pies,
                     index=opciones_pies.index(jugador["Pie_Hábil"]) if jugador["Pie_Hábil"] in opciones_pies else 0
                 )
 
                 e_pos = st.selectbox(
-                    "Posición",
-                    opciones_posiciones,
+                    "Posición", opciones_posiciones,
                     index=opciones_posiciones.index(jugador["Posición"]) if jugador["Posición"] in opciones_posiciones else 0
                 )
 
                 e_club = st.text_input("Club actual", value=jugador.get("Club", ""))
                 e_liga = st.selectbox(
-                    "Liga",
-                    opciones_ligas,
+                    "Liga", opciones_ligas,
                     index=opciones_ligas.index(jugador["Liga"]) if jugador["Liga"] in opciones_ligas else 0
                 )
 
                 e_nac = st.selectbox(
-                    "Nacionalidad principal",
-                    opciones_paises,
+                    "Nacionalidad principal", opciones_paises,
                     index=opciones_paises.index(jugador["Nacionalidad"]) if jugador["Nacionalidad"] in opciones_paises else 0
                 )
 
                 e_seg_opciones = [""] + opciones_paises
-
                 e_seg = st.selectbox(
                     "Segunda nacionalidad (opcional)",
-                e_seg_opciones,
+                    e_seg_opciones,
                     index=e_seg_opciones.index(jugador.get("Segunda_Nacionalidad", "")) 
                     if jugador.get("Segunda_Nacionalidad", "") in e_seg_opciones else 0
-                 )
-
+                )
 
                 e_car = st.multiselect(
                     "Características del jugador",
@@ -877,7 +840,13 @@ if menu == "Jugadores":
 
                 e_foto = st.text_input("URL de foto", value=str(jugador.get("URL_Foto", "")))
                 e_link = st.text_input("URL perfil externo", value=str(jugador.get("URL_Perfil", "")))
-                e_instagram = st.text_input("URL Instagram", value=str(jugador.get("URL_Instagram", "")))
+                e_instagram = st.text_input("URL Instagram", value=str(jugador.get("Instagram", "")))
+
+                # 🆕 FIN DE CONTRATO
+                e_fin_contrato = st.text_input(
+                    "Fin de contrato (dd/mm/aaaa)",
+                    value=str(jugador.get("Fecha_Fin_Contrato", ""))
+                )
 
                 guardar_ed = st.form_submit_button("💾 Guardar cambios")
 
@@ -910,14 +879,13 @@ if menu == "Jugadores":
                                 "",
                                 e_foto,
                                 e_link,
-                                e_instagram
+                                e_instagram,
+                                e_fin_contrato  # 🆕
                             ]
 
-                            ws.update(f"A{row_number}:O{row_number}", [valores])
+                            ws.update(f"A{row_number}:P{row_number}", [valores])
 
                             st.cache_data.clear()
-                            df_players = df_players_usercargar_datos_sheets("Jugadores")
-
                             st.toast("✅ Datos actualizados correctamente.", icon="✅")
                             st.experimental_rerun()
                         else:
@@ -925,6 +893,7 @@ if menu == "Jugadores":
 
                     except Exception as e:
                         st.error(f"⚠️ Error al guardar: {e}")
+
 
         # ---------------------------------------------------------
         # ELIMINAR JUGADOR
@@ -2414,6 +2383,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
