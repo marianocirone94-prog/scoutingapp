@@ -1990,7 +1990,7 @@ if menu == "Agenda":
             guardar_nuevo(id_jugador, jugador_sel, scout, fecha_rev, motivo)
 
 # =========================================================
-# 🏠 PANEL GENERAL — ScoutingApp PRO (FINAL)
+# 🏠 PANEL GENERAL — ScoutingApp PRO (FINAL + ALERTAS)
 # =========================================================
 if menu == "Panel General":
 
@@ -2055,59 +2055,6 @@ if menu == "Panel General":
             df_reports[m] = 0.0
 
     # =========================
-    # MÉTRICAS POR POSICIÓN
-    # =========================
-    metricas_por_posicion = {
-        "Arquero": ["Posicionamiento","Liderazgo","Inteligencia_tactica","Controles"],
-
-        "Lateral derecho": ["Velocidad","Duelos_ofensivos","1v1_defensivo","Posicionamiento","Pase_corto"],
-        "Lateral izquierdo": ["Velocidad","Duelos_ofensivos","1v1_defensivo","Posicionamiento","Pase_corto"],
-
-        "Defensa central derecho": ["Duelos_aereos","Intercepciones","1v1_defensivo","Posicionamiento","Liderazgo"],
-        "Defensa central izquierdo": ["Duelos_aereos","Intercepciones","1v1_defensivo","Posicionamiento","Liderazgo"],
-
-        "Mediocampista defensivo": ["Recuperacion","Intercepciones","Posicionamiento","Inteligencia_tactica","Pase_corto"],
-        "Mediocampista mixto": ["Recuperacion","Pase_corto","Pase_largo","Inteligencia_tactica","Movimientos_sin_pelota"],
-        "Mediocampista ofensivo": ["Vision_de_juego","Pase_filtrado","Controles","Movimientos_sin_pelota","Inteligencia_emocional"],
-
-        "Extremo derecho": ["Regate","Velocidad","Duelos_ofensivos","Movimientos_sin_pelota","Pase_filtrado"],
-        "Extremo izquierdo": ["Regate","Velocidad","Duelos_ofensivos","Movimientos_sin_pelota","Pase_filtrado"],
-
-        "Delantero centro": ["Movimientos_sin_pelota","Duelos_ofensivos","Controles","Inteligencia_emocional","Resiliencia"],
-    }
-
-    # =========================
-    # SCORE POSICIONAL
-    # =========================
-    scores = []
-
-    for id_jug, grp in df_reports.groupby("ID_Jugador"):
-        pos_row = df_players.loc[df_players["ID_Jugador"] == id_jug, "Posición"]
-        if pos_row.empty:
-            continue
-
-        pos = str(pos_row.values[0])
-        mets = metricas_por_posicion.get(pos)
-        if not mets:
-            continue
-
-        score = grp[mets].mean().mean()
-        scores.append({
-            "ID_Jugador": id_jug,
-            "Score_Posicional": round(score, 2)
-        })
-
-    df_scores = (
-        pd.DataFrame(scores)
-        .merge(
-            df_players[["ID_Jugador","Nombre","Posición","Edad","Club","Pie_Hábil"]],
-            on="ID_Jugador",
-            how="left"
-        )
-        .sort_values("Score_Posicional", ascending=False)
-    )
-
-    # =========================
     # KPIs
     # =========================
     inicio_semestre = datetime(hoy.year, 1, 1) if hoy.month <= 6 else datetime(hoy.year, 7, 1)
@@ -2122,6 +2069,48 @@ if menu == "Panel General":
         <div class="kpi-card"><div class="kpi-title">Informes últimos 30 días</div><div class="kpi-value">{informes_30}</div></div>
     </div>
     """, unsafe_allow_html=True)
+
+    # =====================================================
+    # ⏰ ALERTA — SEGUIMIENTOS PRIORITARIOS VENCIDOS (> 46 días)
+    # =====================================================
+    st.markdown("<div class='panel-title'>⏰ Seguimientos prioritarios vencidos</div>", unsafe_allow_html=True)
+
+    df_last = (
+        df_reports
+        .sort_values("Fecha_Informe_dt")
+        .groupby("ID_Jugador")
+        .last()
+        .reset_index()
+    )
+
+    df_last = df_last[df_last["Línea"].isin(["1ra", "2da"])]
+    df_last["Dias_sin_evaluar"] = (hoy - df_last["Fecha_Informe_dt"]).dt.days
+    df_last = df_last[df_last["Dias_sin_evaluar"] > 46]
+
+    if CURRENT_ROLE != "admin" and "Scout" in df_last.columns:
+        df_last = df_last[df_last["Scout"] == CURRENT_USER]
+
+    df_alertas = (
+        df_last
+        .merge(
+            df_players[["ID_Jugador","Nombre","Club","Posición"]],
+            on="ID_Jugador",
+            how="left"
+        )
+        .sort_values("Dias_sin_evaluar", ascending=False)
+    )
+
+    if df_alertas.empty:
+        st.success("No hay seguimientos prioritarios vencidos.")
+    else:
+        st.dataframe(
+            df_alertas[
+                ["Nombre","Club","Posición","Línea","Fecha_Informe","Dias_sin_evaluar"]
+            ],
+            use_container_width=True,
+            hide_index=True
+        )
+
 
     # =========================
     # CONTRATOS POR VENCER
@@ -2490,6 +2479,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
