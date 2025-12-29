@@ -2072,7 +2072,7 @@ if menu == "Panel General":
     )
 
     # =========================
-    # KPIs
+    # KPIs (SIN SCOUTS ACTIVOS)
     # =========================
     inicio_semestre = datetime(hoy.year, 1, 1) if hoy.month <= 6 else datetime(hoy.year, 7, 1)
 
@@ -2083,11 +2083,59 @@ if menu == "Panel General":
     <div class="kpi-container">
         <div class="kpi-card"><div class="kpi-title">Jugadores evaluados</div><div class="kpi-value">{df_players["ID_Jugador"].nunique()}</div></div>
         <div class="kpi-card"><div class="kpi-title">Informes cargados</div><div class="kpi-value">{len(df_reports)}</div></div>
-        <div class="kpi-card"><div class="kpi-title">Scouts activos</div><div class="kpi-value">{df_reports["Scout"].nunique()}</div></div>
         <div class="kpi-card"><div class="kpi-title">Jugadores este semestre</div><div class="kpi-value">{jugadores_sem}</div></div>
         <div class="kpi-card"><div class="kpi-title">Informes últimos 30 días</div><div class="kpi-value">{informes_30}</div></div>
     </div>
     """, unsafe_allow_html=True)
+
+    # =====================================================
+    # 📄 CONTRATOS POR VENCER (NUEVO BLOQUE)
+    # =====================================================
+    if "Fecha_Fin_Contrato" in df_players.columns:
+
+        df_contratos = df_players.copy()
+
+        # Parseo fecha fin contrato
+        df_contratos["Fecha_Fin_dt"] = pd.to_datetime(
+            df_contratos["Fecha_Fin_Contrato"], errors="coerce", dayfirst=True
+        )
+
+        df_contratos = df_contratos.dropna(subset=["Fecha_Fin_dt"])
+
+        # Visibilidad por rol
+        if CURRENT_ROLE != "admin" and "Agregado_Por" in df_contratos.columns:
+            df_contratos = df_contratos[df_contratos["Agregado_Por"] == CURRENT_USER]
+
+        # Ventanas
+        limite_6 = hoy + timedelta(days=180)
+        limite_12 = hoy + timedelta(days=365)
+
+        df_6 = df_contratos[df_contratos["Fecha_Fin_dt"] <= limite_6]
+        df_12 = df_contratos[
+            (df_contratos["Fecha_Fin_dt"] > limite_6) &
+            (df_contratos["Fecha_Fin_dt"] <= limite_12)
+        ]
+
+        st.markdown("<div class='panel-title'>📄 Contratos por vencer</div>", unsafe_allow_html=True)
+
+        col_a, col_b = st.columns(2)
+
+        with col_a:
+            st.metric("🔴 Vence en ≤ 6 meses", len(df_6))
+
+        with col_b:
+            st.metric("🟡 Vence en ≤ 12 meses", len(df_12))
+
+        if not df_6.empty or not df_12.empty:
+            df_show = pd.concat([df_6, df_12]).sort_values("Fecha_Fin_dt")
+
+            st.dataframe(
+                df_show[["Nombre","Club","Posición","Fecha_Fin_Contrato"]],
+                use_container_width=True,
+                hide_index=True
+            )
+        else:
+            st.info("No hay jugadores con contratos próximos a vencer.")
 
     # =========================
     # FUNCIÓN RENDER (TU FORMATO)
@@ -2129,6 +2177,7 @@ if menu == "Panel General":
     for i,(pos,titulo) in enumerate(posiciones):
         with cols[i % 4]:
             render_top(df_scores[df_scores["Posición"] == pos], titulo, "Score_Total")
+
 
 
 # =========================================================
@@ -2379,6 +2428,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
