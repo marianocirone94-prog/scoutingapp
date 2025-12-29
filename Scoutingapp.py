@@ -1990,7 +1990,7 @@ if menu == "Agenda":
             guardar_nuevo(id_jugador, jugador_sel, scout, fecha_rev, motivo)
 
 # =========================================================
-# 🏠 PANEL GENERAL — ScoutingApp PRO (ESTABLE + ESTÉTICO)
+# 🏠 PANEL GENERAL — ScoutingApp PRO (MÉTRICAS POR PUESTO + COMPARADOR)
 # =========================================================
 if menu == "Panel General":
 
@@ -2000,7 +2000,7 @@ if menu == "Panel General":
     )
 
     # =========================
-    # DATA DESDE SESSION
+    # DATA
     # =========================
     df_players = df_players_user.copy()
     df_reports = df_reports_user.copy()
@@ -2019,7 +2019,7 @@ if menu == "Panel General":
     hace_30 = hoy - timedelta(days=30)
 
     # =========================
-    # EDAD SEGURA
+    # EDAD
     # =========================
     def edad_segura(fecha):
         try:
@@ -2031,7 +2031,7 @@ if menu == "Panel General":
     df_players["Edad"] = df_players["Fecha_Nac"].apply(edad_segura)
 
     # =========================
-    # MÉTRICAS LIMPIAS
+    # MÉTRICAS
     # =========================
     metricas = [
         "Controles","Perfiles","Pase_corto","Pase_largo","Pase_filtrado",
@@ -2055,27 +2055,63 @@ if menu == "Panel General":
             df_reports[m] = 0.0
 
     # =========================
-    # SCORE TOTAL (PROMEDIO SIMPLE)
+    # MÉTRICAS POR POSICIÓN
     # =========================
+    metricas_por_posicion = {
+        "Arquero": ["Posicionamiento","Liderazgo","Inteligencia_tactica","Controles"],
+
+        "Lateral derecho": ["Velocidad","Duelos_ofensivos","1v1_defensivo","Posicionamiento","Pase_corto"],
+        "Lateral izquierdo": ["Velocidad","Duelos_ofensivos","1v1_defensivo","Posicionamiento","Pase_corto"],
+
+        "Defensa central derecho": ["Duelos_aereos","Intercepciones","1v1_defensivo","Posicionamiento","Liderazgo"],
+        "Defensa central izquierdo": ["Duelos_aereos","Intercepciones","1v1_defensivo","Posicionamiento","Liderazgo"],
+
+        "Mediocampista defensivo": ["Recuperacion","Intercepciones","Posicionamiento","Inteligencia_tactica","Pase_corto"],
+        "Mediocampista mixto": ["Recuperacion","Pase_corto","Pase_largo","Inteligencia_tactica","Movimientos_sin_pelota"],
+        "Mediocampista ofensivo": ["Vision_de_juego","Pase_filtrado","Controles","Movimientos_sin_pelota","Inteligencia_emocional"],
+
+        "Extremo derecho": ["Regate","Velocidad","Duelos_ofensivos","Movimientos_sin_pelota","Pase_filtrado"],
+        "Extremo izquierdo": ["Regate","Velocidad","Duelos_ofensivos","Movimientos_sin_pelota","Pase_filtrado"],
+
+        "Delantero centro": ["Movimientos_sin_pelota","Duelos_ofensivos","Controles","Inteligencia_emocional","Resiliencia"],
+    }
+
+    # =========================
+    # SCORE POSICIONAL
+    # =========================
+    scores = []
+
+    for id_jug, grp in df_reports.groupby("ID_Jugador"):
+        pos = df_players.loc[df_players["ID_Jugador"] == id_jug, "Posición"]
+        if pos.empty:
+            continue
+
+        pos = pos.values[0]
+        mets = metricas_por_posicion.get(pos)
+        if not mets:
+            continue
+
+        score = grp[mets].mean().mean()
+
+        scores.append({
+            "ID_Jugador": id_jug,
+            "Score_Posicional": round(score, 2)
+        })
+
     df_scores = (
-        df_reports
-        .groupby("ID_Jugador")[metricas]
-        .mean()
-        .mean(axis=1)
-        .reset_index(name="Score_Total")
+        pd.DataFrame(scores)
         .merge(
-            df_players[["ID_Jugador","Nombre","Posición","Edad"]],
+            df_players[["ID_Jugador","Nombre","Posición","Edad","Club","Pie_Hábil"]],
             on="ID_Jugador",
             how="left"
         )
-        .sort_values("Score_Total", ascending=False)
+        .sort_values("Score_Posicional", ascending=False)
     )
 
     # =========================
-    # KPIs (SIN SCOUTS ACTIVOS)
+    # KPIs
     # =========================
     inicio_semestre = datetime(hoy.year, 1, 1) if hoy.month <= 6 else datetime(hoy.year, 7, 1)
-
     jugadores_sem = df_reports[df_reports["Fecha_Informe_dt"] >= inicio_semestre]["ID_Jugador"].nunique()
     informes_30 = df_reports[df_reports["Fecha_Informe_dt"] >= hace_30].shape[0]
 
@@ -2088,59 +2124,10 @@ if menu == "Panel General":
     </div>
     """, unsafe_allow_html=True)
 
-    # =====================================================
-    # 📄 CONTRATOS POR VENCER (NUEVO BLOQUE)
-    # =====================================================
-    if "Fecha_Fin_Contrato" in df_players.columns:
-
-        df_contratos = df_players.copy()
-
-        # Parseo fecha fin contrato
-        df_contratos["Fecha_Fin_dt"] = pd.to_datetime(
-            df_contratos["Fecha_Fin_Contrato"], errors="coerce", dayfirst=True
-        )
-
-        df_contratos = df_contratos.dropna(subset=["Fecha_Fin_dt"])
-
-        # Visibilidad por rol
-        if CURRENT_ROLE != "admin" and "Agregado_Por" in df_contratos.columns:
-            df_contratos = df_contratos[df_contratos["Agregado_Por"] == CURRENT_USER]
-
-        # Ventanas
-        limite_6 = hoy + timedelta(days=180)
-        limite_12 = hoy + timedelta(days=365)
-
-        df_6 = df_contratos[df_contratos["Fecha_Fin_dt"] <= limite_6]
-        df_12 = df_contratos[
-            (df_contratos["Fecha_Fin_dt"] > limite_6) &
-            (df_contratos["Fecha_Fin_dt"] <= limite_12)
-        ]
-
-        st.markdown("<div class='panel-title'>📄 Contratos por vencer</div>", unsafe_allow_html=True)
-
-        col_a, col_b = st.columns(2)
-
-        with col_a:
-            st.metric("🔴 Vence en ≤ 6 meses", len(df_6))
-
-        with col_b:
-            st.metric("🟡 Vence en ≤ 12 meses", len(df_12))
-
-        if not df_6.empty or not df_12.empty:
-            df_show = pd.concat([df_6, df_12]).sort_values("Fecha_Fin_dt")
-
-            st.dataframe(
-                df_show[["Nombre","Club","Posición","Fecha_Fin_Contrato"]],
-                use_container_width=True,
-                hide_index=True
-            )
-        else:
-            st.info("No hay jugadores con contratos próximos a vencer.")
-
     # =========================
-    # FUNCIÓN RENDER (TU FORMATO)
+    # TOPS POR POSICIÓN
     # =========================
-    def render_top(df, titulo, campo):
+    def render_top(df, titulo):
         st.markdown(f"<div class='panel-title'>{titulo}</div>", unsafe_allow_html=True)
         if df.empty:
             st.info("Sin datos")
@@ -2152,13 +2139,10 @@ if menu == "Panel General":
                     <div class='rank-num'>#{i}</div>
                     <div class='rank-name'>{r.Nombre}</div>
                 </div>
-                <div class='rank-score'>{round(getattr(r, campo),2)}</div>
+                <div class='rank-score'>{r.Score_Posicional}</div>
             </div>
             """, unsafe_allow_html=True)
 
-    # =========================
-    # TOP POR POSICIÓN (4 COL)
-    # =========================
     posiciones = [
         ("Arquero","🧤 Arqueros"),
         ("Lateral derecho","➡️ Laterales derechos"),
@@ -2176,7 +2160,78 @@ if menu == "Panel General":
     cols = st.columns(4)
     for i,(pos,titulo) in enumerate(posiciones):
         with cols[i % 4]:
-            render_top(df_scores[df_scores["Posición"] == pos], titulo, "Score_Total")
+            render_top(df_scores[df_scores["Posición"] == pos], titulo)
+
+    # =====================================================
+    # 🆚 COMPARADOR DE JUGADORES (CON FILTROS)
+    # =====================================================
+    st.markdown("<div class='panel-title'>🆚 Comparador de jugadores</div>", unsafe_allow_html=True)
+
+    # -------- Filtros --------
+    col_f1, col_f2, col_f3 = st.columns(3)
+
+    with col_f1:
+        filtro_pos = st.selectbox("Posición", ["Todas"] + sorted(df_players["Posición"].dropna().unique().tolist()))
+
+    with col_f2:
+        filtro_pie = st.selectbox("Pie hábil", ["Todos"] + sorted(df_players["Pie_Hábil"].dropna().unique().tolist()))
+
+    with col_f3:
+        edad_min, edad_max = st.slider(
+            "Edad",
+            min_value=15,
+            max_value=45,
+            value=(18, 35)
+        )
+
+    df_cmp_base = df_players.copy()
+
+    if filtro_pos != "Todas":
+        df_cmp_base = df_cmp_base[df_cmp_base["Posición"] == filtro_pos]
+
+    if filtro_pie != "Todos":
+        df_cmp_base = df_cmp_base[df_cmp_base["Pie_Hábil"] == filtro_pie]
+
+    df_cmp_base = df_cmp_base[
+        (df_cmp_base["Edad"] >= edad_min) &
+        (df_cmp_base["Edad"] <= edad_max)
+    ]
+
+    opciones_cmp = {
+        f"{r.Nombre} ({r.Club})": r.ID_Jugador
+        for r in df_cmp_base.itertuples()
+    }
+
+    seleccionados = st.multiselect(
+        "Seleccioná de 2 a 6 jugadores",
+        opciones=list(opciones_cmp.keys()),
+        max_selections=6
+    )
+
+    if 2 <= len(seleccionados) <= 6:
+
+        ids = [opciones_cmp[n] for n in seleccionados]
+
+        df_cmp = (
+            df_reports[df_reports["ID_Jugador"].isin(ids)]
+            .groupby("ID_Jugador")[metricas]
+            .mean()
+            .reset_index()
+            .merge(
+                df_players[["ID_Jugador","Nombre","Posición","Edad","Club","Pie_Hábil"]],
+                on="ID_Jugador",
+                how="left"
+            )
+        )
+
+        st.dataframe(
+            df_cmp[["Nombre","Club","Posición","Pie_Hábil","Edad"] + metricas],
+            use_container_width=True,
+            hide_index=True
+        )
+
+    elif len(seleccionados) == 1:
+        st.info("Seleccioná al menos 2 jugadores para comparar.")
 
 
 
@@ -2428,6 +2483,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
