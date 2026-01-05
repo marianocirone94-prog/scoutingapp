@@ -612,7 +612,8 @@ menu = st.sidebar.radio(
         "Jugadores",
         "Ver informes",
         "Lista corta",
-        "Panel Scouts"
+        "Panel Scouts",
+        "Área Préstamos"   # ← NUEVO
     ]
 )
 
@@ -2507,6 +2508,34 @@ if menu == "Panel Scouts":
 
 
 # =========================================================
+# BLOQUE — ÁREA PRÉSTAMOS (Power BI)
+# =========================================================
+
+if menu == "Área Préstamos":
+
+    st.markdown("## 🔄 Área Préstamos — Seguimiento de jugadores cedidos")
+    st.markdown(
+        """
+        <p style="color:#b0b0b0;font-size:14px;">
+        Panel de control para monitorear jugadores a préstamo: minutos, continuidad,
+        rendimiento competitivo y situación contractual.
+        </p>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.markdown("---")
+
+    powerbi_url = "https://app.powerbi.com/view?r=eyJrIjoiODg0NjhjMjMtZmRlNy00MGNhLWFmMGEtNDJjZThiZjQwODY4IiwidCI6ImVjYTkwN2Y1LTYwNmMtNDJmNS04NTM2LTUwYjY4ZTRhMGM4MyJ9"
+
+    st.components.v1.iframe(
+        src=powerbi_url,
+        height=900,
+        scrolling=True
+    )
+
+
+# =========================================================
 # CIERRE PROFESIONAL (footer)
 # =========================================================
 st.markdown("---")
@@ -2524,6 +2553,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
