@@ -2027,7 +2027,7 @@ if menu == "Agenda":
             guardar_nuevo(id_jugador, jugador_sel, scout, fecha_rev, motivo)
 
 # =========================================================
-# 🏠 PANEL GENERAL — ScoutingApp PRO (FINAL + CONSENSO + FILTROS)
+# 🏠 PANEL GENERAL — ScoutingApp PRO (FINAL + CONSENSO)
 # =========================================================
 if menu == "Panel General":
 
@@ -2082,13 +2082,16 @@ if menu == "Panel General":
     ]
 
     for m in metricas:
-        df_reports[m] = (
-            df_reports[m]
-            .astype(str)
-            .str.replace(",", ".", regex=False)
-            .replace(["", "nan", "None", "-", "—"], 0)
-            .astype(float)
-        )
+        if m in df_reports.columns:
+            df_reports[m] = (
+                df_reports[m]
+                .astype(str)
+                .str.replace(",", ".", regex=False)
+                .replace(["", "nan", "None", "-", "—"], 0)
+                .astype(float)
+            )
+        else:
+            df_reports[m] = 0.0
 
     # =========================
     # KPIs
@@ -2107,7 +2110,7 @@ if menu == "Panel General":
     """, unsafe_allow_html=True)
 
     # =====================================================
-    # ⭐ CONSENSO — LISTA CORTA (SOLO >1 SCOUT)
+    # ⭐ CONSENSO — LISTA CORTA
     # =====================================================
     st.markdown("<div class='panel-title'>⭐ Consenso en Lista Corta</div>", unsafe_allow_html=True)
 
@@ -2116,13 +2119,18 @@ if menu == "Panel General":
     )
 
     col_c1, col_c2 = st.columns(2)
+
     with col_c1:
         filtro_anio = st.selectbox(
             "Año",
             ["Todos"] + sorted(df_short["Fecha_Agregado_dt"].dt.year.dropna().unique().tolist())
         )
+
     with col_c2:
-        filtro_sem = st.selectbox("Semestre", ["Todos", "1° semestre", "2° semestre"])
+        filtro_sem = st.selectbox(
+            "Semestre",
+            ["Todos", "1° semestre", "2° semestre"]
+        )
 
     df_consenso = df_short.copy()
 
@@ -2153,12 +2161,9 @@ if menu == "Panel General":
         )
 
     # =====================================================
-    # ⏰ SEGUIMIENTOS PRIORITARIOS VENCIDOS (MEJORADO)
+    # ⏰ SEGUIMIENTOS PRIORITARIOS VENCIDOS
     # =====================================================
     st.markdown("<div class='panel-title'>⏰ Seguimientos prioritarios vencidos</div>", unsafe_allow_html=True)
-
-    if "ocultar_alertas" not in st.session_state:
-        st.session_state["ocultar_alertas"] = set()
 
     lineas_prioritarias = ["1ra (Fichar)", "2da (Seguir)", "Joven Promesa"]
 
@@ -2170,11 +2175,18 @@ if menu == "Panel General":
         .reset_index()
     )
 
+    df_last = df_last[df_last["Línea"].isin(lineas_prioritarias)]
     df_last["Dias_sin_evaluar"] = (hoy - df_last["Fecha_Informe_dt"]).dt.days
-    df_last = df_last[df_last["Dias_sin_evaluar"] > 46]
-    df_last = df_last[~df_last["ID_Jugador"].isin(st.session_state["ocultar_alertas"])]
 
-    df_last = df_last.merge(
+    df_last = df_last[
+        (df_last["Dias_sin_evaluar"] > 46) &
+        (df_last["Dias_sin_evaluar"] <= 100)
+    ]
+
+    if CURRENT_ROLE != "admin":
+        df_last = df_last[df_last["Scout"] == CURRENT_USER]
+
+    df_alertas = df_last.merge(
         df_players[["ID_Jugador","Nombre","Club","Posición"]],
         on="ID_Jugador",
         how="left"
@@ -2184,49 +2196,184 @@ if menu == "Panel General":
 
     with col_f1:
         filtro_pos = st.multiselect(
-            "Filtrar por posición",
-            sorted(df_last["Posición"].dropna().unique().tolist())
+            "Posición",
+            sorted(df_alertas["Posición"].dropna().unique().tolist())
         )
 
     with col_f2:
         filtro_linea = st.multiselect(
-            "Filtrar por línea",
-            sorted(df_last["Línea"].dropna().unique().tolist())
+            "Línea",
+            sorted(df_alertas["Línea"].dropna().unique().tolist())
         )
 
     with col_f3:
-        filtro_dias = st.selectbox("Filtrar por días", ["Todas","47–60","61–80","81–100"])
+        filtro_dias = st.selectbox(
+            "Días sin evaluar",
+            ["Todos", "47–60", "61–80", "81–100"]
+        )
 
     if filtro_pos:
-        df_last = df_last[df_last["Posición"].isin(filtro_pos)]
+        df_alertas = df_alertas[df_alertas["Posición"].isin(filtro_pos)]
 
     if filtro_linea:
-        df_last = df_last[df_last["Línea"].isin(filtro_linea)]
+        df_alertas = df_alertas[df_alertas["Línea"].isin(filtro_linea)]
 
-    if filtro_dias != "Todas":
+    if filtro_dias != "Todos":
         rangos = {
-            "47–60": (47,60),
-            "61–80": (61,80),
-            "81–100": (81,100)
+            "47–60": (47, 60),
+            "61–80": (61, 80),
+            "81–100": (81, 100)
         }
         r = rangos[filtro_dias]
-        df_last = df_last[(df_last["Dias_sin_evaluar"] >= r[0]) & (df_last["Dias_sin_evaluar"] <= r[1])]
+        df_alertas = df_alertas[
+            (df_alertas["Dias_sin_evaluar"] >= r[0]) &
+            (df_alertas["Dias_sin_evaluar"] <= r[1])
+        ]
 
-    if df_last.empty:
-        st.success("No hay seguimientos vencidos.")
+    if df_alertas.empty:
+        st.success("No hay seguimientos prioritarios vencidos.")
     else:
-        for _, r in df_last.iterrows():
-            c1, c2 = st.columns([5,1])
-            with c1:
-                st.write(
-                    f"**{r['Nombre']}** | {r['Club']} | {r['Posición']} | "
-                    f"{r['Línea']} | ⏳ {r['Dias_sin_evaluar']} días"
-                )
-            with c2:
-                if st.button("Quitar", key=f"oc_{r['ID_Jugador']}"):
-                    st.session_state["ocultar_alertas"].add(r["ID_Jugador"])
-                    st.experimental_rerun()
+        st.dataframe(
+            df_alertas[["Nombre","Club","Posición","Línea","Fecha_Informe","Dias_sin_evaluar"]],
+            use_container_width=True,
+            hide_index=True
+        )
 
+    # =========================
+    # CONTRATOS POR VENCER
+    # =========================
+    if "Fecha_Fin_Contrato" in df_players.columns:
+
+        df_c = df_players.copy()
+        df_c["Fecha_Fin_dt"] = pd.to_datetime(df_c["Fecha_Fin_Contrato"], errors="coerce", dayfirst=True)
+        df_c = df_c.dropna(subset=["Fecha_Fin_dt"])
+
+        lim6 = hoy + timedelta(days=180)
+        lim12 = hoy + timedelta(days=365)
+
+        df6 = df_c[df_c["Fecha_Fin_dt"] <= lim6]
+        df12 = df_c[(df_c["Fecha_Fin_dt"] > lim6) & (df_c["Fecha_Fin_dt"] <= lim12)]
+
+        st.markdown("<div class='panel-title'>📄 Contratos por vencer</div>", unsafe_allow_html=True)
+
+        c1, c2 = st.columns(2)
+        with c1: st.metric("🔴 ≤ 6 meses", len(df6))
+        with c2: st.metric("🟡 ≤ 12 meses", len(df12))
+
+        if not df6.empty or not df12.empty:
+            st.dataframe(
+                pd.concat([df6, df12]).sort_values("Fecha_Fin_dt")[
+                    ["Nombre","Club","Posición","Fecha_Fin_Contrato"]
+                ],
+                use_container_width=True,
+                hide_index=True
+            )
+
+    # =========================
+    # TOPS POR POSICIÓN
+    # =========================
+    df_scores = (
+        df_reports
+        .groupby("ID_Jugador")[metricas]
+        .mean()
+        .mean(axis=1)
+        .reset_index(name="Score")
+        .merge(
+            df_players[["ID_Jugador","Nombre","Posición"]],
+            on="ID_Jugador",
+            how="left"
+        )
+        .sort_values("Score", ascending=False)
+    )
+
+    def render_top(df, titulo):
+        st.markdown(f"<div class='panel-title'>{titulo}</div>", unsafe_allow_html=True)
+        if df.empty:
+            st.info("Sin datos")
+            return
+        for i, r in enumerate(df.head(10).itertuples(), 1):
+            st.markdown(f"""
+            <div class='rank-card'>
+                <div class='rank-left'>
+                    <div class='rank-num'>#{i}</div>
+                    <div class='rank-name'>{r.Nombre}</div>
+                </div>
+                <div class='rank-score'>{round(r.Score,2)}</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+    posiciones = [
+        ("Arquero","🧤 Arqueros"),
+        ("Lateral derecho","➡️ Laterales derechos"),
+        ("Defensa central derecho","🛡️ Centrales derechos"),
+        ("Defensa central izquierdo","🛡️ Centrales izquierdos"),
+        ("Lateral izquierdo","⬅️ Laterales izquierdos"),
+        ("Mediocampista defensivo","🔒 Volantes defensivos"),
+        ("Mediocampista mixto","🔄 Volantes mixtos"),
+        ("Mediocampista ofensivo","🎯 Volantes ofensivos"),
+        ("Extremo derecho","⚡ Extremos derechos"),
+        ("Extremo izquierdo","⚡ Extremos izquierdos"),
+        ("Delantero centro","🎯 Delanteros centro"),
+    ]
+
+    cols = st.columns(4)
+    for i, (pos, titulo) in enumerate(posiciones):
+        with cols[i % 4]:
+            render_top(df_scores[df_scores["Posición"] == pos], titulo)
+
+    # =========================
+    # COMPARADOR DE JUGADORES
+    # =========================
+    st.markdown("<div class='panel-title'>🆚 Comparador de jugadores</div>", unsafe_allow_html=True)
+
+    col_f1, col_f2, col_f3 = st.columns(3)
+
+    opciones_pos = sorted(df_players["Posición"].dropna().astype(str).unique().tolist())
+    opciones_pie = sorted(df_players["Pie_Hábil"].dropna().astype(str).unique().tolist())
+
+    with col_f1:
+        filtro_pos = st.selectbox("Posición", ["Todas"] + opciones_pos)
+    with col_f2:
+        filtro_pie = st.selectbox("Pie hábil", ["Todos"] + opciones_pie)
+    with col_f3:
+        edad_min, edad_max = st.slider("Edad", 15, 45, (18, 35))
+
+    df_base = df_players.copy()
+    if filtro_pos != "Todas":
+        df_base = df_base[df_base["Posición"] == filtro_pos]
+    if filtro_pie != "Todos":
+        df_base = df_base[df_base["Pie_Hábil"] == filtro_pie]
+
+    df_base = df_base[(df_base["Edad"] >= edad_min) & (df_base["Edad"] <= edad_max)]
+
+    opciones_cmp = {f"{r.Nombre} ({r.Club})": r.ID_Jugador for r in df_base.itertuples()}
+
+    seleccionados = st.multiselect(
+        "Seleccioná de 2 a 6 jugadores",
+        list(opciones_cmp.keys()),
+        max_selections=6
+    )
+
+    if 2 <= len(seleccionados) <= 6:
+        ids = [opciones_cmp[n] for n in seleccionados]
+
+        df_cmp = (
+            df_reports[df_reports["ID_Jugador"].isin(ids)]
+            .groupby("ID_Jugador")[metricas]
+            .mean()
+            .reset_index()
+            .merge(
+                df_players[["ID_Jugador","Nombre","Posición","Edad","Club","Pie_Hábil"]],
+                on="ID_Jugador",
+                how="left"
+            )
+        )
+
+        st.dataframe(
+            df_cmp[["Nombre","Club","Posición","Pie_Hábil","Edad"] + metricas],
+            use_container_width=True,
+            hide_index=True
+        )
 
 # =========================================================
 # 🧭 PANEL SCOUTS — BLOQUE ESTABLE Y COHERENTE
@@ -2504,6 +2651,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
