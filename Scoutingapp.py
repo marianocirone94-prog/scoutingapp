@@ -782,6 +782,42 @@ if menu == "Jugadores":
             if str(jugador.get("Instagram","")).startswith("http"):
                 st.markdown(f"[📸 Instagram]({jugador['Instagram']})")
 
+            # ⭐ AGREGAR A LISTA CORTA (NUEVO)
+            if CURRENT_ROLE in ["admin", "scout"]:
+                if st.button("⭐ Agregar a lista corta"):
+                    try:
+                        ws_short = obtener_hoja("Lista corta")
+                        data_short = ws_short.get_all_records()
+                        df_short_local = pd.DataFrame(data_short)
+
+                        existe = df_short_local[
+                            (df_short_local["ID_Jugador"].astype(str) == str(jugador["ID_Jugador"])) &
+                            (df_short_local["Agregado_Por"] == CURRENT_USER)
+                        ] if not df_short_local.empty else pd.DataFrame()
+
+                        if not existe.empty:
+                            st.info("⚠️ Ya agregaste este jugador a tu lista corta")
+                        else:
+                            nueva_fila = [
+                                jugador["ID_Jugador"],
+                                jugador["Nombre"],
+                                edad,
+                                jugador.get("Altura","-"),
+                                jugador.get("Club","-"),
+                                jugador.get("Posición","-"),
+                                jugador.get("URL_Foto",""),
+                                jugador.get("URL_Perfil",""),
+                                CURRENT_USER,
+                                date.today().strftime("%d/%m/%Y")
+                            ]
+
+                            ws_short.append_row(nueva_fila, value_input_option="USER_ENTERED")
+                            st.toast("⭐ Jugador agregado a Lista Corta", icon="⭐")
+                            st.cache_data.clear()
+
+                    except Exception as e:
+                        st.error(f"⚠️ Error al agregar a lista corta: {e}")
+
         # ---------------------------------------------------------
         # EDITAR DATOS DEL JUGADOR
         # ---------------------------------------------------------
@@ -1991,7 +2027,7 @@ if menu == "Agenda":
             guardar_nuevo(id_jugador, jugador_sel, scout, fecha_rev, motivo)
 
 # =========================================================
-# 🏠 PANEL GENERAL — ScoutingApp PRO (FINAL + ALERTAS)
+# 🏠 PANEL GENERAL — ScoutingApp PRO (FINAL + CONSENSO + FILTROS)
 # =========================================================
 if menu == "Panel General":
 
@@ -2005,9 +2041,11 @@ if menu == "Panel General":
     # =========================
     df_players = df_players_user.copy()
     df_reports = df_reports_user.copy()
+    df_short = df_short_user.copy()
 
     df_players["ID_Jugador"] = df_players["ID_Jugador"].astype(str)
     df_reports["ID_Jugador"] = df_reports["ID_Jugador"].astype(str)
+    df_short["ID_Jugador"] = df_short["ID_Jugador"].astype(str)
 
     # =========================
     # FECHAS
@@ -2044,16 +2082,13 @@ if menu == "Panel General":
     ]
 
     for m in metricas:
-        if m in df_reports.columns:
-            df_reports[m] = (
-                df_reports[m]
-                .astype(str)
-                .str.replace(",", ".", regex=False)
-                .replace(["", "nan", "None", "-", "—"], 0)
-                .astype(float)
-            )
-        else:
-            df_reports[m] = 0.0
+        df_reports[m] = (
+            df_reports[m]
+            .astype(str)
+            .str.replace(",", ".", regex=False)
+            .replace(["", "nan", "None", "-", "—"], 0)
+            .astype(float)
+        )
 
     # =========================
     # KPIs
@@ -2072,13 +2107,58 @@ if menu == "Panel General":
     """, unsafe_allow_html=True)
 
     # =====================================================
-    # ⏰ ALERTA — SEGUIMIENTOS PRIORITARIOS VENCIDOS (+ FILTRO)
-    # Reglas:
-    #  - Última línea: 1ra (Fichar), 2da (Seguir), Joven Promesa
-    #  - Días sin evaluar > 46
-    #  - Días sin evaluar <= 100
+    # ⭐ CONSENSO — LISTA CORTA (SOLO >1 SCOUT)
+    # =====================================================
+    st.markdown("<div class='panel-title'>⭐ Consenso en Lista Corta</div>", unsafe_allow_html=True)
+
+    df_short["Fecha_Agregado_dt"] = pd.to_datetime(
+        df_short["Fecha_Agregado"], errors="coerce", dayfirst=True
+    )
+
+    col_c1, col_c2 = st.columns(2)
+    with col_c1:
+        filtro_anio = st.selectbox(
+            "Año",
+            ["Todos"] + sorted(df_short["Fecha_Agregado_dt"].dt.year.dropna().unique().tolist())
+        )
+    with col_c2:
+        filtro_sem = st.selectbox("Semestre", ["Todos", "1° semestre", "2° semestre"])
+
+    df_consenso = df_short.copy()
+
+    if filtro_anio != "Todos":
+        df_consenso = df_consenso[df_consenso["Fecha_Agregado_dt"].dt.year == filtro_anio]
+
+    if filtro_sem != "Todos":
+        if filtro_sem == "1° semestre":
+            df_consenso = df_consenso[df_consenso["Fecha_Agregado_dt"].dt.month <= 6]
+        else:
+            df_consenso = df_consenso[df_consenso["Fecha_Agregado_dt"].dt.month >= 7]
+
+    df_consenso = (
+        df_consenso
+        .groupby(["ID_Jugador","Nombre","Club","Posición"], as_index=False)
+        .agg(Cantidad_Scouts=("Agregado_Por","nunique"))
+    )
+
+    df_consenso = df_consenso[df_consenso["Cantidad_Scouts"] > 1]
+
+    if df_consenso.empty:
+        st.info("No hay jugadores con consenso entre scouts.")
+    else:
+        st.dataframe(
+            df_consenso.sort_values("Cantidad_Scouts", ascending=False),
+            use_container_width=True,
+            hide_index=True
+        )
+
+    # =====================================================
+    # ⏰ SEGUIMIENTOS PRIORITARIOS VENCIDOS (MEJORADO)
     # =====================================================
     st.markdown("<div class='panel-title'>⏰ Seguimientos prioritarios vencidos</div>", unsafe_allow_html=True)
+
+    if "ocultar_alertas" not in st.session_state:
+        st.session_state["ocultar_alertas"] = set()
 
     lineas_prioritarias = ["1ra (Fichar)", "2da (Seguir)", "Joven Promesa"]
 
@@ -2090,191 +2170,62 @@ if menu == "Panel General":
         .reset_index()
     )
 
-    df_last = df_last[df_last["Línea"].isin(lineas_prioritarias)]
     df_last["Dias_sin_evaluar"] = (hoy - df_last["Fecha_Informe_dt"]).dt.days
+    df_last = df_last[df_last["Dias_sin_evaluar"] > 46]
+    df_last = df_last[~df_last["ID_Jugador"].isin(st.session_state["ocultar_alertas"])]
 
-    df_last = df_last[
-        (df_last["Dias_sin_evaluar"] > 46) &
-        (df_last["Dias_sin_evaluar"] <= 100)
-    ]
-
-    if CURRENT_ROLE != "admin" and "Scout" in df_last.columns:
-        df_last = df_last[df_last["Scout"] == CURRENT_USER]
-
-    df_alertas = df_last.merge(
+    df_last = df_last.merge(
         df_players[["ID_Jugador","Nombre","Club","Posición"]],
         on="ID_Jugador",
         how="left"
     )
 
-    # ---- FILTRO POR POSICIÓN ----
-    col_af1, col_af2 = st.columns(2)
-
-    with col_af1:
-        opciones_pos_alerta = sorted(df_alertas["Posición"].dropna().unique().tolist())
-        filtro_pos_alerta = st.selectbox("Filtrar por posición", ["Todas"] + opciones_pos_alerta)
-
-    with col_af2:
-        filtro_dias = st.selectbox("Filtrar por días", ["Todas","47–60","61–80","81–100"])
-
-    if filtro_pos_alerta != "Todas":
-        df_alertas = df_alertas[df_alertas["Posición"] == filtro_pos_alerta]
-
-    if filtro_dias != "Todas":
-        if filtro_dias == "47–60":
-            df_alertas = df_alertas[(df_alertas["Dias_sin_evaluar"] >= 47) & (df_alertas["Dias_sin_evaluar"] <= 60)]
-        elif filtro_dias == "61–80":
-            df_alertas = df_alertas[(df_alertas["Dias_sin_evaluar"] >= 61) & (df_alertas["Dias_sin_evaluar"] <= 80)]
-        elif filtro_dias == "81–100":
-            df_alertas = df_alertas[(df_alertas["Dias_sin_evaluar"] >= 81) & (df_alertas["Dias_sin_evaluar"] <= 100)]
-
-    df_alertas = df_alertas.sort_values("Dias_sin_evaluar", ascending=False)
-
-    if df_alertas.empty:
-        st.success("No hay seguimientos prioritarios vencidos.")
-    else:
-        st.dataframe(
-            df_alertas[["Nombre","Club","Posición","Línea","Fecha_Informe","Dias_sin_evaluar"]],
-            use_container_width=True,
-            hide_index=True
-        )
-
-    # =========================
-    # CONTRATOS POR VENCER
-    # =========================
-    if "Fecha_Fin_Contrato" in df_players.columns:
-
-        df_c = df_players.copy()
-        df_c["Fecha_Fin_dt"] = pd.to_datetime(df_c["Fecha_Fin_Contrato"], errors="coerce", dayfirst=True)
-        df_c = df_c.dropna(subset=["Fecha_Fin_dt"])
-
-        if CURRENT_ROLE != "admin" and "Agregado_Por" in df_c.columns:
-            df_c = df_c[df_c["Agregado_Por"] == CURRENT_USER]
-
-        lim6 = hoy + timedelta(days=180)
-        lim12 = hoy + timedelta(days=365)
-
-        df6 = df_c[df_c["Fecha_Fin_dt"] <= lim6]
-        df12 = df_c[(df_c["Fecha_Fin_dt"] > lim6) & (df_c["Fecha_Fin_dt"] <= lim12)]
-
-        st.markdown("<div class='panel-title'>📄 Contratos por vencer</div>", unsafe_allow_html=True)
-
-        c1, c2 = st.columns(2)
-        with c1: st.metric("🔴 ≤ 6 meses", len(df6))
-        with c2: st.metric("🟡 ≤ 12 meses", len(df12))
-
-        if not df6.empty or not df12.empty:
-            st.dataframe(
-                pd.concat([df6, df12]).sort_values("Fecha_Fin_dt")[["Nombre","Club","Posición","Fecha_Fin_Contrato"]],
-                use_container_width=True,
-                hide_index=True
-            )
-
-    # =========================
-    # TOPS POR POSICIÓN (SCORE SIMPLE)
-    # =========================
-    df_scores = (
-        df_reports
-        .groupby("ID_Jugador")[metricas]
-        .mean()
-        .mean(axis=1)
-        .reset_index(name="Score")
-        .merge(
-            df_players[["ID_Jugador","Nombre","Posición"]],
-            on="ID_Jugador",
-            how="left"
-        )
-        .sort_values("Score", ascending=False)
-    )
-
-    def render_top(df, titulo):
-        st.markdown(f"<div class='panel-title'>{titulo}</div>", unsafe_allow_html=True)
-        if df.empty:
-            st.info("Sin datos")
-            return
-        for i, r in enumerate(df.head(10).itertuples(), 1):
-            st.markdown(f"""
-            <div class='rank-card'>
-                <div class='rank-left'>
-                    <div class='rank-num'>#{i}</div>
-                    <div class='rank-name'>{r.Nombre}</div>
-                </div>
-                <div class='rank-score'>{round(r.Score,2)}</div>
-            </div>
-            """, unsafe_allow_html=True)
-
-    posiciones = [
-        ("Arquero","🧤 Arqueros"),
-        ("Lateral derecho","➡️ Laterales derechos"),
-        ("Defensa central derecho","🛡️ Centrales derechos"),
-        ("Defensa central izquierdo","🛡️ Centrales izquierdos"),
-        ("Lateral izquierdo","⬅️ Laterales izquierdos"),
-        ("Mediocampista defensivo","🔒 Volantes defensivos"),
-        ("Mediocampista mixto","🔄 Volantes mixtos"),
-        ("Mediocampista ofensivo","🎯 Volantes ofensivos"),
-        ("Extremo derecho","⚡ Extremos derechos"),
-        ("Extremo izquierdo","⚡ Extremos izquierdos"),
-        ("Delantero centro","🎯 Delanteros centro"),
-    ]
-
-    cols = st.columns(4)
-    for i, (pos, titulo) in enumerate(posiciones):
-        with cols[i % 4]:
-            render_top(df_scores[df_scores["Posición"] == pos], titulo)
-
-    # =========================
-    # COMPARADOR DE JUGADORES
-    # =========================
-    st.markdown("<div class='panel-title'>🆚 Comparador de jugadores</div>", unsafe_allow_html=True)
-
     col_f1, col_f2, col_f3 = st.columns(3)
 
-    opciones_pos = sorted(df_players["Posición"].dropna().astype(str).unique().tolist())
-    opciones_pie = sorted(df_players["Pie_Hábil"].dropna().astype(str).unique().tolist())
-
     with col_f1:
-        filtro_pos = st.selectbox("Posición", ["Todas"] + opciones_pos)
+        filtro_pos = st.multiselect(
+            "Filtrar por posición",
+            sorted(df_last["Posición"].dropna().unique().tolist())
+        )
+
     with col_f2:
-        filtro_pie = st.selectbox("Pie hábil", ["Todos"] + opciones_pie)
+        filtro_linea = st.multiselect(
+            "Filtrar por línea",
+            sorted(df_last["Línea"].dropna().unique().tolist())
+        )
+
     with col_f3:
-        edad_min, edad_max = st.slider("Edad", 15, 45, (18, 35))
+        filtro_dias = st.selectbox("Filtrar por días", ["Todas","47–60","61–80","81–100"])
 
-    df_base = df_players.copy()
-    if filtro_pos != "Todas":
-        df_base = df_base[df_base["Posición"] == filtro_pos]
-    if filtro_pie != "Todos":
-        df_base = df_base[df_base["Pie_Hábil"] == filtro_pie]
+    if filtro_pos:
+        df_last = df_last[df_last["Posición"].isin(filtro_pos)]
 
-    df_base = df_base[(df_base["Edad"] >= edad_min) & (df_base["Edad"] <= edad_max)]
+    if filtro_linea:
+        df_last = df_last[df_last["Línea"].isin(filtro_linea)]
 
-    opciones_cmp = {f"{r.Nombre} ({r.Club})": r.ID_Jugador for r in df_base.itertuples()}
+    if filtro_dias != "Todas":
+        rangos = {
+            "47–60": (47,60),
+            "61–80": (61,80),
+            "81–100": (81,100)
+        }
+        r = rangos[filtro_dias]
+        df_last = df_last[(df_last["Dias_sin_evaluar"] >= r[0]) & (df_last["Dias_sin_evaluar"] <= r[1])]
 
-    seleccionados = st.multiselect(
-        "Seleccioná de 2 a 6 jugadores",
-        list(opciones_cmp.keys()),
-        max_selections=6
-    )
-
-    if 2 <= len(seleccionados) <= 6:
-        ids = [opciones_cmp[n] for n in seleccionados]
-
-        df_cmp = (
-            df_reports[df_reports["ID_Jugador"].isin(ids)]
-            .groupby("ID_Jugador")[metricas]
-            .mean()
-            .reset_index()
-            .merge(
-                df_players[["ID_Jugador","Nombre","Posición","Edad","Club","Pie_Hábil"]],
-                on="ID_Jugador",
-                how="left"
-            )
-        )
-
-        st.dataframe(
-            df_cmp[["Nombre","Club","Posición","Pie_Hábil","Edad"] + metricas],
-            use_container_width=True,
-            hide_index=True
-        )
+    if df_last.empty:
+        st.success("No hay seguimientos vencidos.")
+    else:
+        for _, r in df_last.iterrows():
+            c1, c2 = st.columns([5,1])
+            with c1:
+                st.write(
+                    f"**{r['Nombre']}** | {r['Club']} | {r['Posición']} | "
+                    f"{r['Línea']} | ⏳ {r['Dias_sin_evaluar']} días"
+                )
+            with c2:
+                if st.button("Quitar", key=f"oc_{r['ID_Jugador']}"):
+                    st.session_state["ocultar_alertas"].add(r["ID_Jugador"])
+                    st.experimental_rerun()
 
 
 # =========================================================
@@ -2553,66 +2504,6 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
