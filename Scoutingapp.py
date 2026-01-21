@@ -707,9 +707,7 @@ if menu == "Jugadores":
                     nueva_altura = st.number_input("Altura (cm)", 140, 210, 175)
                     nuevo_pie = st.selectbox("Pie hábil", opciones_pies)
                     nueva_posicion = st.selectbox("Posición principal", opciones_posiciones)
-                    nueva_fecha_fin_contrato = st.text_input(
-                        "Fin de contrato (dd/mm/aaaa)"
-                    )
+                    nueva_fecha_fin_contrato = st.text_input("Fin de contrato (dd/mm/aaaa)")
 
                 with col2:
                     nuevo_club = st.text_input("Club actual")
@@ -818,7 +816,7 @@ if menu == "Jugadores":
                     except Exception as e:
                         st.error(f"⚠️ Error al agregar a lista corta: {e}")
 
-        # ---------------------------------------------------------
+                # ---------------------------------------------------------
         # EDITAR DATOS DEL JUGADOR
         # ---------------------------------------------------------
         with st.expander("✏️ Editar información del jugador", expanded=False):
@@ -926,8 +924,6 @@ if menu == "Jugadores":
                     except Exception as e:
                         st.error(f"⚠️ Error al guardar: {e}")
 
-
-
         # ---------------------------------------------------------
         # ELIMINAR JUGADOR
         # ---------------------------------------------------------
@@ -1017,63 +1013,63 @@ if menu == "Jugadores":
                     ]
                 )
 
-                st.markdown("### Evaluación técnica (0 a 5)")
+                st.markdown("### Evaluación técnica (1 a 10)")
 
                 with st.expander("🎯 Habilidades técnicas"):
                     col1, col2, col3 = st.columns(3)
 
                     with col1:
-                        controles = st.slider("Controles", 0.0, 5.0, 0.0, 0.5)
-                        perfiles = st.slider("Perfiles", 0.0, 5.0, 0.0, 0.5)
+                        controles = st.slider("Controles", 1, 10, 5, 1)
+                        perfiles = st.slider("Perfiles", 1, 10, 5, 1)
 
                     with col2:
-                        pase_corto = st.slider("Pase corto", 0.0, 5.0, 0.0, 0.5)
-                        pase_largo = st.slider("Pase largo", 0.0, 5.0, 0.0, 0.5)
+                        pase_corto = st.slider("Pase corto", 1, 10, 5, 1)
+                        pase_largo = st.slider("Pase largo", 1, 10, 5, 1)
 
                     with col3:
-                        pase_filtrado = st.slider("Pase filtrado", 0.0, 5.0, 0.0, 0.5)
+                        pase_filtrado = st.slider("Pase filtrado", 1, 10, 5, 1)
 
                 with st.expander("Aspectos defensivos"):
                     col1, col2 = st.columns(2)
 
                     with col1:
-                        v1_def = st.slider("1v1 defensivo", 0.0, 5.0, 0.0, 0.5)
-                        recuperacion = st.slider("Recuperación", 0.0, 5.0, 0.0, 0.5)
+                        v1_def = st.slider("1v1 defensivo", 1, 10, 5, 1)
+                        recuperacion = st.slider("Recuperación", 1, 10, 5, 1)
 
                     with col2:
-                        intercepciones = st.slider("Intercepciones", 0.0, 5.0, 0.0, 0.5)
-                        duelos_aereos = st.slider("Duelos aéreos", 0.0, 5.0, 0.0, 0.5)
+                        intercepciones = st.slider("Intercepciones", 1, 10, 5, 1)
+                        duelos_aereos = st.slider("Duelos aéreos", 1, 10, 5, 1)
 
                 with st.expander("Aspectos ofensivos"):
                     col1, col2 = st.columns(2)
 
                     with col1:
-                        regate = st.slider("Regate", 0.0, 5.0, 0.0, 0.5)
-                        velocidad = st.slider("Velocidad", 0.0, 5.0, 0.0, 0.5)
+                        regate = st.slider("Regate", 1, 10, 5, 1)
+                        velocidad = st.slider("Velocidad", 1, 10, 5, 1)
 
                     with col2:
-                        duelos_of = st.slider("Duelos ofensivos", 0.0, 5.0, 0.0, 0.5)
+                        duelos_of = st.slider("Duelos ofensivos", 1, 10, 5, 1)
 
                 with st.expander("Aspectos mentales / psicológicos"):
                     col1, col2 = st.columns(2)
 
                     with col1:
-                        resiliencia = st.slider("Resiliencia", 0.0, 5.0, 0.0, 0.5)
-                        liderazgo = st.slider("Liderazgo", 0.0, 5.0, 0.0, 0.5)
+                        resiliencia = st.slider("Resiliencia", 1, 10, 5, 1)
+                        liderazgo = st.slider("Liderazgo", 1, 10, 5, 1)
 
                     with col2:
-                        int_tactica = st.slider("Inteligencia táctica", 0.0, 5.0, 0.0, 0.5)
-                        int_emocional = st.slider("Inteligencia emocional", 0.0, 5.0, 0.0, 0.5)
+                        int_tactica = st.slider("Inteligencia táctica", 1, 10, 5, 1)
+                        int_emocional = st.slider("Inteligencia emocional", 1, 10, 5, 1)
 
                 with st.expander("Aspectos tácticos"):
                     col1, col2 = st.columns(2)
 
                     with col1:
-                        posicionamiento = st.slider("Posicionamiento", 0.0, 5.0, 0.0, 0.5)
-                        vision = st.slider("Visión de juego", 0.0, 5.0, 0.0, 0.5)
+                        posicionamiento = st.slider("Posicionamiento", 1, 10, 5, 1)
+                        vision = st.slider("Visión de juego", 1, 10, 5, 1)
 
                     with col2:
-                        movimientos = st.slider("Movimientos sin pelota", 0.0, 5.0, 0.0, 0.5)
+                        movimientos = st.slider("Movimientos sin pelota", 1, 10, 5, 1)
 
                 guardar_informe = st.form_submit_button("Guardar informe")
 
@@ -1133,6 +1129,8 @@ if menu == "Jugadores":
 
                     except Exception as e:
                         st.error(f"⚠️ Error al guardar el informe: {e}")
+
+
 
 # =========================================================
 # BLOQUE 4 / 5 — Ver Informes (optimizado y con ficha completa)
@@ -2651,6 +2649,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
