@@ -212,33 +212,44 @@ st.set_page_config(
 )
 
 # =========================================================
-# 🚀 FONDO FUTURISTA AZUL / NEGRO — ScoutingApp PRO
+# 🚀 FONDO FUTURISTA AZUL / NEGRO — ScoutingApp PRO (ANIMADO)
 # =========================================================
 
 st.markdown("""
 <style>
 
 /* =====================================================
-   FONDO GLOBAL — FUTURISTA / TECH
+   FONDO GLOBAL — FUTURISTA / TECH CON MOVIMIENTO
 ===================================================== */
 .stApp {
     background:
         radial-gradient(
-            circle at 15% 10%,
-            rgba(0,198,255,0.18),
-            transparent 35%
+            circle at 20% 15%,
+            rgba(0,198,255,0.22),
+            transparent 38%
         ),
         radial-gradient(
-            circle at 85% 30%,
-            rgba(30,60,114,0.35),
-            transparent 40%
+            circle at 80% 35%,
+            rgba(30,60,114,0.40),
+            transparent 42%
         ),
         linear-gradient(
-            160deg,
-            #1e3c72 0%,
-            #16213e 40%,
-            #0e1117 75%
-        ) !important;
+            120deg,
+            #1e3c72,
+            #16213e,
+            #0e1117
+        );
+    background-size: 220% 220%;
+    animation: fondoVivo 55s ease-in-out infinite;
+}
+
+/* =====================================================
+   ANIMACIÓN SUAVE DEL FONDO
+===================================================== */
+@keyframes fondoVivo {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
 }
 
 /* =====================================================
@@ -254,23 +265,23 @@ h1, h2, h3, h4, h5, h6, .stMarkdown {
 div[data-testid="stContainer"] {
     background: linear-gradient(
         145deg,
-        rgba(30,60,114,0.75),
-        rgba(14,17,23,0.90)
+        rgba(30,60,114,0.78),
+        rgba(14,17,23,0.92)
     );
     border-radius: 18px;
     padding: 18px;
     margin-bottom: 18px;
     box-shadow:
-        0 12px 34px rgba(0,0,0,0.55),
+        0 14px 36px rgba(0,0,0,0.55),
         inset 0 1px 0 rgba(255,255,255,0.06),
-        inset 0 0 20px rgba(0,198,255,0.05);
+        inset 0 0 24px rgba(0,198,255,0.06);
 }
 
 /* =====================================================
    SLIDERS — NEÓN SUAVE
 ===================================================== */
 .stSlider > div[data-baseweb="slider"] > div {
-    background: rgba(255,255,255,0.25) !important;
+    background: rgba(255,255,255,0.26) !important;
     border-radius: 8px;
 }
 
@@ -283,7 +294,7 @@ div[data-testid="stContainer"] {
     border: 2px solid #ffffff !important;
     box-shadow:
         0 0 10px rgba(0,198,255,0.9),
-        0 0 18px rgba(0,198,255,0.4) !important;
+        0 0 20px rgba(0,198,255,0.45) !important;
 }
 
 /* =====================================================
@@ -2734,6 +2745,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
