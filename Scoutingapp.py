@@ -222,69 +222,79 @@ st.markdown("""
 <style>
 
 /* =====================================================
-   TEXTO Y TIPOGRAFÍA (SE RESPETA PALETA)
+   TEXTO / TIPOGRAFÍA GLOBAL
+   (mantiene identidad visual)
 ===================================================== */
 h1, h2, h3, h4, h5, h6, .stMarkdown {
-    color: white !important;
+    color: #ffffff !important;
 }
 
 /* =====================================================
-   SLIDERS (OPTIMIZADOS PARA FONDO CON IMAGEN)
+   SLIDERS
+   (optimizados para fondo con imagen)
 ===================================================== */
 .stSlider > div[data-baseweb="slider"] > div {
-    background: rgba(255,255,255,0.18) !important;
+    background: rgba(255, 255, 255, 0.18) !important;
     border-radius: 6px;
 }
+
 .stSlider > div[data-baseweb="slider"] > div > div {
     background-color: #00c6ff !important;
 }
+
 .stSlider [role="slider"] {
     background-color: #00c6ff !important;
     border: 2px solid #ffffff !important;
-    box-shadow: 0 0 6px rgba(0,198,255,0.85) !important;
+    box-shadow: 0 0 6px rgba(0, 198, 255, 0.85) !important;
 }
 
 /* =====================================================
-   ALERTAS (MISMO COLOR, MEJOR CONTRASTE)
+   ALERTAS
+   (mismos colores, mejor contraste)
 ===================================================== */
 .stAlert.success {
-    background-color: rgba(0,51,102,0.95) !important;
+    background-color: rgba(0, 51, 102, 0.95) !important;
     color: #00c6ff !important;
     border-left: 4px solid #00c6ff !important;
 }
+
 .stAlert.warning {
-    background-color: rgba(51,43,0,0.95) !important;
+    background-color: rgba(51, 43, 0, 0.95) !important;
     color: #ffd700 !important;
     border-left: 4px solid #ffd700 !important;
 }
+
 .stAlert.error {
-    background-color: rgba(51,0,0,0.95) !important;
+    background-color: rgba(51, 0, 0, 0.95) !important;
     color: #ff6f61 !important;
     border-left: 4px solid #ff6f61 !important;
 }
 
 /* =====================================================
-   CONTENEDORES GENERALES (CLAVE PARA EL FONDO)
+   CONTENEDORES PRINCIPALES
+   (cards / bloques flotantes)
 ===================================================== */
 div[data-testid="stContainer"] {
-    background-color: rgba(22,27,34,0.92);
+    background-color: rgba(22, 27, 34, 0.92);
     backdrop-filter: blur(6px);
     border-radius: 16px;
     padding: 18px;
     margin-bottom: 18px;
-    box-shadow: 0 10px 28px rgba(0,0,0,0.45);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
 }
 
 /* =====================================================
-   SIDEBAR (OSCURA, COHERENTE)
+   SIDEBAR
+   (oscura, coherente con el layout)
 ===================================================== */
 section[data-testid="stSidebar"] {
-    background-color: rgba(14,17,23,0.98);
-    border-right: 1px solid rgba(255,255,255,0.05);
+    background-color: rgba(14, 17, 23, 0.98);
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 </style>
 """, unsafe_allow_html=True)
+
 
 # =========================================================
 # 🎨 CSS ESPECÍFICO — PANEL GENERAL (NO TOCAR LUEGO)
@@ -2699,6 +2709,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
