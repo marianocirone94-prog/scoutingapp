@@ -396,7 +396,7 @@ section[data-testid="stSidebar"] {
     border-right: 1px solid rgba(255,255,255,0.06);
 }
 
-/* Item activo del menú (radio) */
+/* Item activo del menú */
 section[data-testid="stSidebar"]
 div[role="radiogroup"] > label[data-selected="true"] {
     background: linear-gradient(
@@ -454,9 +454,63 @@ div[data-testid="stDataFrame"] tbody tr:hover td {
     ) !important;
 }
 
+/* =====================================================
+   🛠️ FIX DEFINITIVO — LÍNEAS ROJAS / FOCUS / INVALID
+===================================================== */
+
+/* Inputs base */
+input, textarea, select {
+    outline: none !important;
+    border-color: rgba(0,198,255,0.55) !important;
+}
+
+/* Selectbox / Multiselect */
+div[data-baseweb="select"] > div {
+    border-color: rgba(0,198,255,0.55) !important;
+    box-shadow: none !important;
+}
+
+div[data-baseweb="select"] > div:hover {
+    border-color: #00c6ff !important;
+}
+
+div[data-baseweb="select"] > div:focus,
+div[data-baseweb="select"] > div:focus-within {
+    border-color: #00c6ff !important;
+    box-shadow:
+        0 0 0 1px rgba(0,198,255,0.65),
+        0 0 12px rgba(0,198,255,0.35) !important;
+}
+
+/* Estados inválidos */
+div[data-baseweb="select"] [aria-invalid="true"],
+input:invalid,
+textarea:invalid {
+    border-color: #00c6ff !important;
+    box-shadow: 0 0 0 1px rgba(0,198,255,0.6) !important;
+}
+
+/* TextInput */
+div[data-testid="stTextInput"] input {
+    border-color: rgba(0,198,255,0.45) !important;
+}
+
+div[data-testid="stTextInput"] input:focus {
+    border-color: #00c6ff !important;
+    box-shadow:
+        0 0 0 1px rgba(0,198,255,0.6),
+        0 0 12px rgba(0,198,255,0.35) !important;
+}
+
+/* Multiselect pills */
+div[data-baseweb="tag"] {
+    background-color: rgba(0,198,255,0.15) !important;
+    border: 1px solid rgba(0,198,255,0.45) !important;
+    color: #00c6ff !important;
+}
+
 </style>
 """, unsafe_allow_html=True)
-
 
 
 
@@ -2872,6 +2926,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
