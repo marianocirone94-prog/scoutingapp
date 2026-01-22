@@ -33,20 +33,35 @@ from google.oauth2.service_account import Credentials
 def apply_glass_plotly(fig):
     """
     Aplica un layout transparente y coherente con el diseño
-    glass/futurista de la app. Elimina el fondo negro por defecto
-    de Plotly y permite que se vea el fondo animado.
+    glass/futurista de la app.
+    Elimina el fondo negro/blanco por defecto de Plotly.
     """
     fig.update_layout(
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(color="white"),
+        font=dict(
+            color="white",
+            size=12
+        ),
         legend=dict(
             bgcolor="rgba(0,0,0,0)",
-            borderwidth=0
+            borderwidth=0,
+            font=dict(color="white")
+        ),
+        xaxis=dict(
+            showgrid=True,
+            gridcolor="rgba(255,255,255,0.08)",
+            zeroline=False
+        ),
+        yaxis=dict(
+            showgrid=True,
+            gridcolor="rgba(255,255,255,0.08)",
+            zeroline=False
         ),
         margin=dict(l=20, r=20, t=40, b=20)
     )
     return fig
+
 
 # =========================================================
 # BLOQUE DE CONEXIÓN A GOOGLE SHEETS (FINAL - SEGURO Y MULTIUSUARIO)
@@ -2857,6 +2872,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
