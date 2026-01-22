@@ -371,10 +371,8 @@ div[role="radiogroup"] > label[data-selected="true"] {
 }
 
 /* =====================================================
-   📊 TABLAS — GLASS LIGERO (REEMPLAZO DEFINITIVO)
+   📊 TABLAS — GLASS LIGERO (NO NEGRO OPACO)
 ===================================================== */
-
-/* Contenedor de la tabla */
 div[data-testid="stDataFrame"] {
     background: linear-gradient(
         145deg,
@@ -389,13 +387,11 @@ div[data-testid="stDataFrame"] {
         inset 0 0 18px rgba(0,198,255,0.05);
 }
 
-/* Tabla */
 div[data-testid="stDataFrame"] table {
     background-color: transparent !important;
     color: #ffffff !important;
 }
 
-/* Header */
 div[data-testid="stDataFrame"] thead th {
     background: linear-gradient(
         180deg,
@@ -407,13 +403,11 @@ div[data-testid="stDataFrame"] thead th {
     border-bottom: 1px solid rgba(255,255,255,0.14) !important;
 }
 
-/* Celdas */
 div[data-testid="stDataFrame"] tbody td {
     background-color: transparent !important;
     border-bottom: 1px solid rgba(255,255,255,0.06) !important;
 }
 
-/* Hover fila — suave */
 div[data-testid="stDataFrame"] tbody tr:hover td {
     background: linear-gradient(
         90deg,
@@ -421,6 +415,9 @@ div[data-testid="stDataFrame"] tbody tr:hover td {
         rgba(0,198,255,0.05)
     ) !important;
 }
+
+</style>
+""", unsafe_allow_html=True)
 
 
 
@@ -2838,6 +2835,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
