@@ -254,33 +254,17 @@ st.markdown("""
 <style>
 
 /* =====================================================
-   🌌 FONDO GLOBAL — FUTURISTA / TECH CON MOVIMIENTO
+🌌 FONDO GLOBAL — FUTURISTA / TECH CON MOVIMIENTO
 ===================================================== */
 .stApp {
     background:
-        radial-gradient(
-            circle at 20% 15%,
-            rgba(0,198,255,0.22),
-            transparent 38%
-        ),
-        radial-gradient(
-            circle at 80% 35%,
-            rgba(30,60,114,0.40),
-            transparent 42%
-        ),
-        linear-gradient(
-            120deg,
-            #1e3c72,
-            #16213e,
-            #0e1117
-        );
+        radial-gradient(circle at 20% 15%, rgba(0,198,255,0.22), transparent 38%),
+        radial-gradient(circle at 80% 35%, rgba(30,60,114,0.40), transparent 42%),
+        linear-gradient(120deg, #1e3c72, #16213e, #0e1117);
     background-size: 220% 220%;
     animation: fondoVivo 15s ease-in-out infinite;
 }
 
-/* =====================================================
-   🎞️ ANIMACIÓN SUAVE DEL FONDO
-===================================================== */
 @keyframes fondoVivo {
     0%   { background-position: 0% 50%; }
     50%  { background-position: 100% 50%; }
@@ -288,14 +272,14 @@ st.markdown("""
 }
 
 /* =====================================================
-   ✍️ TEXTO / TIPOGRAFÍA GLOBAL
+✍️ TEXTO / TIPOGRAFÍA GLOBAL
 ===================================================== */
-h1, h2, h3, h4, h5, h6, .stMarkdown {
+h1, h2, h3, h4, h5, h6, .stMarkdown, label {
     color: #ffffff !important;
 }
 
 /* =====================================================
-   🧊 CONTENEDORES / CARDS — GLASS TECH + TRANSICIÓN
+🧊 CONTENEDORES GENERALES — GLASS
 ===================================================== */
 div[data-testid="stContainer"] {
     background: linear-gradient(
@@ -308,29 +292,39 @@ div[data-testid="stContainer"] {
     margin-bottom: 18px;
     box-shadow:
         0 14px 36px rgba(0,0,0,0.55),
-        inset 0 1px 0 rgba(255,255,255,0.06),
         inset 0 0 24px rgba(0,198,255,0.06);
     animation: fadeUp 0.35s ease;
 }
 
-/* =====================================================
-   🔄 TRANSICIÓN SUAVE AL CAMBIAR FILTROS
-===================================================== */
 @keyframes fadeUp {
-    from {
-        opacity: 0;
-        transform: translateY(8px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 
 /* =====================================================
-   ⭐ KPI — HOVER GLOW (INTERACCIÓN PREMIUM)
+📊 KPI / TARJETAS — ESTILO DEFINITIVO (RESTAURADO)
 ===================================================== */
+.kpi-container {
+    display: flex;
+    justify-content: center;
+    gap: 22px;
+    margin: 25px 0 35px 0;
+    flex-wrap: wrap;
+}
+
 .kpi-card {
+    background: linear-gradient(
+        135deg,
+        rgba(14,17,23,0.95),
+        rgba(30,60,114,0.95)
+    );
+    border-radius: 16px;
+    padding: 18px 22px;
+    min-width: 220px;
+    text-align: center;
+    box-shadow:
+        0 10px 26px rgba(0,0,0,0.55),
+        inset 0 0 18px rgba(0,198,255,0.06);
     transition:
         transform 0.25s ease,
         box-shadow 0.25s ease;
@@ -339,15 +333,28 @@ div[data-testid="stContainer"] {
 .kpi-card:hover {
     transform: translateY(-4px);
     box-shadow:
-        0 16px 40px rgba(0,0,0,0.6),
-        0 0 22px rgba(0,198,255,0.45);
+        0 16px 40px rgba(0,0,0,0.65),
+        0 0 24px rgba(0,198,255,0.45);
+}
+
+.kpi-title {
+    color: #00c6ff;
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+.kpi-value {
+    font-size: 30px;
+    font-weight: 800;
+    color: #ffffff;
 }
 
 /* =====================================================
-   🎚️ SLIDERS — NEÓN SUAVE
+🎚️ SLIDERS — CYAN LIMPIO (SIN ROJO)
 ===================================================== */
 .stSlider > div[data-baseweb="slider"] > div {
-    background: rgba(255,255,255,0.26) !important;
+    background: rgba(255,255,255,0.25) !important;
     border-radius: 8px;
 }
 
@@ -359,44 +366,24 @@ div[data-testid="stContainer"] {
     background-color: #00c6ff !important;
     border: 2px solid #ffffff !important;
     box-shadow:
-        0 0 10px rgba(0,198,255,0.9),
-        0 0 20px rgba(0,198,255,0.45) !important;
+        0 0 8px rgba(0,198,255,0.9),
+        0 0 16px rgba(0,198,255,0.4) !important;
 }
 
-/* =====================================================
-   🚨 ALERTAS
-===================================================== */
-.stAlert.success {
-    background-color: rgba(0,51,102,0.97) !important;
+.stSlider span,
+.stSlider [data-testid="stSliderThumbValue"] {
     color: #00c6ff !important;
-    border-left: 4px solid #00c6ff !important;
-}
-
-.stAlert.warning {
-    background-color: rgba(51,43,0,0.97) !important;
-    color: #ffd700 !important;
-    border-left: 4px solid #ffd700 !important;
-}
-
-.stAlert.error {
-    background-color: rgba(51,0,0,0.97) !important;
-    color: #ff6f61 !important;
-    border-left: 4px solid #ff6f61 !important;
+    font-weight: 700;
 }
 
 /* =====================================================
-   📂 SIDEBAR — PROFUNDA + ITEM ACTIVO
+📂 SIDEBAR — RADIO / MENÚ (SIN ROJO)
 ===================================================== */
 section[data-testid="stSidebar"] {
-    background: linear-gradient(
-        180deg,
-        #0e1117 0%,
-        #16213e 100%
-    );
+    background: linear-gradient(180deg, #0e1117 0%, #16213e 100%);
     border-right: 1px solid rgba(255,255,255,0.06);
 }
 
-/* Item activo del menú */
 section[data-testid="stSidebar"]
 div[role="radiogroup"] > label[data-selected="true"] {
     background: linear-gradient(
@@ -409,7 +396,7 @@ div[role="radiogroup"] > label[data-selected="true"] {
 }
 
 /* =====================================================
-   📊 TABLAS — GLASS LIGERO (NO NEGRO OPACO)
+📊 TABLAS — GLASS LIGERO
 ===================================================== */
 div[data-testid="stDataFrame"] {
     background: linear-gradient(
@@ -421,7 +408,6 @@ div[data-testid="stDataFrame"] {
     padding: 8px;
     box-shadow:
         0 12px 30px rgba(0,0,0,0.40),
-        inset 0 1px 0 rgba(255,255,255,0.05),
         inset 0 0 18px rgba(0,198,255,0.05);
 }
 
@@ -431,86 +417,66 @@ div[data-testid="stDataFrame"] table {
 }
 
 div[data-testid="stDataFrame"] thead th {
-    background: linear-gradient(
-        180deg,
-        rgba(0,0,0,0.25),
-        rgba(0,0,0,0.10)
-    ) !important;
+    background: rgba(0,0,0,0.20) !important;
     color: #00c6ff !important;
     font-weight: 700;
-    border-bottom: 1px solid rgba(255,255,255,0.14) !important;
-}
-
-div[data-testid="stDataFrame"] tbody td {
-    background-color: transparent !important;
-    border-bottom: 1px solid rgba(255,255,255,0.06) !important;
 }
 
 div[data-testid="stDataFrame"] tbody tr:hover td {
-    background: linear-gradient(
-        90deg,
-        rgba(0,198,255,0.16),
-        rgba(0,198,255,0.05)
-    ) !important;
+    background: rgba(0,198,255,0.15) !important;
 }
 
 /* =====================================================
-   🛠️ FIX DEFINITIVO — LÍNEAS ROJAS / FOCUS / INVALID
+🛠️ FIX DEFINITIVO — ROJOS / FOCUS / INVALID
 ===================================================== */
-
-/* Inputs base */
-input, textarea, select {
+*:focus,
+*:focus-visible {
     outline: none !important;
-    border-color: rgba(0,198,255,0.55) !important;
 }
 
-/* Selectbox / Multiselect */
+input, textarea {
+    caret-color: #00c6ff !important;
+}
+
+div[data-baseweb="input"] > div,
 div[data-baseweb="select"] > div {
-    border-color: rgba(0,198,255,0.55) !important;
+    border: 1px solid rgba(0,198,255,0.45) !important;
     box-shadow: none !important;
 }
 
-div[data-baseweb="select"] > div:hover {
-    border-color: #00c6ff !important;
-}
-
-div[data-baseweb="select"] > div:focus,
+div[data-baseweb="input"] > div:focus-within,
 div[data-baseweb="select"] > div:focus-within {
     border-color: #00c6ff !important;
-    box-shadow:
-        0 0 0 1px rgba(0,198,255,0.65),
-        0 0 12px rgba(0,198,255,0.35) !important;
+    box-shadow: 0 0 10px rgba(0,198,255,0.45) !important;
 }
 
-/* Estados inválidos */
-div[data-baseweb="select"] [aria-invalid="true"],
-input:invalid,
-textarea:invalid {
+div[aria-invalid="true"] {
     border-color: #00c6ff !important;
-    box-shadow: 0 0 0 1px rgba(0,198,255,0.6) !important;
+    box-shadow: 0 0 10px rgba(0,198,255,0.45) !important;
 }
 
-/* TextInput */
-div[data-testid="stTextInput"] input {
-    border-color: rgba(0,198,255,0.45) !important;
-}
-
-div[data-testid="stTextInput"] input:focus {
-    border-color: #00c6ff !important;
-    box-shadow:
-        0 0 0 1px rgba(0,198,255,0.6),
-        0 0 12px rgba(0,198,255,0.35) !important;
-}
-
-/* Multiselect pills */
-div[data-baseweb="tag"] {
-    background-color: rgba(0,198,255,0.15) !important;
-    border: 1px solid rgba(0,198,255,0.45) !important;
+/* =====================================================
+🚨 ALERTAS
+===================================================== */
+.stAlert.success {
+    background-color: rgba(0,51,102,0.97) !important;
     color: #00c6ff !important;
+    border-left: 4px solid #00c6ff !important;
+}
+.stAlert.warning {
+    background-color: rgba(51,43,0,0.97) !important;
+    color: #ffd700 !important;
+    border-left: 4px solid #ffd700 !important;
+}
+.stAlert.error {
+    background-color: rgba(51,0,0,0.97) !important;
+    color: #ff6f61 !important;
+    border-left: 4px solid #ff6f61 !important;
 }
 
 </style>
 """, unsafe_allow_html=True)
+
 
 
 # =========================================================
@@ -2851,6 +2817,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
