@@ -371,43 +371,57 @@ div[role="radiogroup"] > label[data-selected="true"] {
 }
 
 /* =====================================================
-   📊 TABLAS — HOVER DE FILAS (GLASS + GLOW)
+   📊 TABLAS — GLASS LIGERO (REEMPLAZO DEFINITIVO)
 ===================================================== */
+
+/* Contenedor de la tabla */
 div[data-testid="stDataFrame"] {
     background: linear-gradient(
         145deg,
-        rgba(30,60,114,0.65),
-        rgba(14,17,23,0.88)
-    );
-    border-radius: 14px;
-    padding: 6px;
+        rgba(30,60,114,0.45),
+        rgba(14,17,23,0.70)
+    ) !important;
+    border-radius: 16px;
+    padding: 8px;
     box-shadow:
-        0 10px 28px rgba(0,0,0,0.45),
-        inset 0 1px 0 rgba(255,255,255,0.04);
+        0 12px 30px rgba(0,0,0,0.40),
+        inset 0 1px 0 rgba(255,255,255,0.05),
+        inset 0 0 18px rgba(0,198,255,0.05);
 }
 
+/* Tabla */
 div[data-testid="stDataFrame"] table {
     background-color: transparent !important;
     color: #ffffff !important;
 }
 
+/* Header */
 div[data-testid="stDataFrame"] thead th {
-    background-color: rgba(0,0,0,0.35) !important;
+    background: linear-gradient(
+        180deg,
+        rgba(0,0,0,0.25),
+        rgba(0,0,0,0.10)
+    ) !important;
     color: #00c6ff !important;
     font-weight: 700;
-    border-bottom: 1px solid rgba(255,255,255,0.12) !important;
+    border-bottom: 1px solid rgba(255,255,255,0.14) !important;
 }
 
+/* Celdas */
 div[data-testid="stDataFrame"] tbody td {
+    background-color: transparent !important;
     border-bottom: 1px solid rgba(255,255,255,0.06) !important;
 }
 
+/* Hover fila — suave */
 div[data-testid="stDataFrame"] tbody tr:hover td {
-    background-color: rgba(0,198,255,0.12) !important;
+    background: linear-gradient(
+        90deg,
+        rgba(0,198,255,0.16),
+        rgba(0,198,255,0.05)
+    ) !important;
 }
 
-</style>
-""", unsafe_allow_html=True)
 
 
 
@@ -2824,6 +2838,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
