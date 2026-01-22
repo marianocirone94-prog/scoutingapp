@@ -257,7 +257,7 @@ h1, h2, h3, h4, h5, h6, .stMarkdown {
 }
 
 /* =====================================================
-   🧊 CONTENEDORES / CARDS — GLASS TECH
+   🧊 CONTENEDORES / CARDS — GLASS TECH + TRANSICIÓN
 ===================================================== */
 div[data-testid="stContainer"] {
     background: linear-gradient(
@@ -272,6 +272,21 @@ div[data-testid="stContainer"] {
         0 14px 36px rgba(0,0,0,0.55),
         inset 0 1px 0 rgba(255,255,255,0.06),
         inset 0 0 24px rgba(0,198,255,0.06);
+    animation: fadeUp 0.35s ease;
+}
+
+/* =====================================================
+   🔄 TRANSICIÓN SUAVE AL CAMBIAR FILTROS
+===================================================== */
+@keyframes fadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* =====================================================
@@ -332,7 +347,7 @@ div[data-testid="stContainer"] {
 }
 
 /* =====================================================
-   📂 SIDEBAR — PROFUNDA + LIMPIA
+   📂 SIDEBAR — PROFUNDA + ITEM ACTIVO
 ===================================================== */
 section[data-testid="stSidebar"] {
     background: linear-gradient(
@@ -343,8 +358,57 @@ section[data-testid="stSidebar"] {
     border-right: 1px solid rgba(255,255,255,0.06);
 }
 
+/* Item activo del menú (radio) */
+section[data-testid="stSidebar"]
+div[role="radiogroup"] > label[data-selected="true"] {
+    background: linear-gradient(
+        90deg,
+        rgba(0,198,255,0.30),
+        rgba(0,198,255,0.05)
+    );
+    border-left: 4px solid #00c6ff;
+    border-radius: 6px;
+}
+
+/* =====================================================
+   📊 TABLAS — HOVER DE FILAS (GLASS + GLOW)
+===================================================== */
+div[data-testid="stDataFrame"] {
+    background: linear-gradient(
+        145deg,
+        rgba(30,60,114,0.65),
+        rgba(14,17,23,0.88)
+    );
+    border-radius: 14px;
+    padding: 6px;
+    box-shadow:
+        0 10px 28px rgba(0,0,0,0.45),
+        inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
+div[data-testid="stDataFrame"] table {
+    background-color: transparent !important;
+    color: #ffffff !important;
+}
+
+div[data-testid="stDataFrame"] thead th {
+    background-color: rgba(0,0,0,0.35) !important;
+    color: #00c6ff !important;
+    font-weight: 700;
+    border-bottom: 1px solid rgba(255,255,255,0.12) !important;
+}
+
+div[data-testid="stDataFrame"] tbody td {
+    border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+}
+
+div[data-testid="stDataFrame"] tbody tr:hover td {
+    background-color: rgba(0,198,255,0.12) !important;
+}
+
 </style>
 """, unsafe_allow_html=True)
+
 
 
 # =========================================================
@@ -2760,6 +2824,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
