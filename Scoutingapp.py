@@ -1663,34 +1663,34 @@ if menu == "Ver informes":
             st.info("📍 Seleccioná un registro para ver la ficha del jugador.")
 
 # =========================================================
-# BLOQUE 5 / 5 — Lista corta táctica (PRO)
+# BLOQUE 5 / 5 — Lista corta táctica
 # =========================================================
 
 if menu == "Lista corta":
-
-    st.subheader("📋 Lista corta de jugadores")
+    st.subheader("Lista corta de jugadores")
 
     # -----------------------------------------------------
     # DATASETS
     # -----------------------------------------------------
-    df_short = df_short_user.copy()          # decisiones
-    df_players = df_players_all.copy()       # base completa jugadores
+    df_short = df_short_user.copy()          # decisiones (todas; privacidad luego)
+    df_players = df_players_all.copy()       # base completa de jugadores
 
     if df_short.empty:
         st.info("No hay jugadores cargados en la lista corta actualmente.")
         st.stop()
 
-    # -----------------------------------------------------
-    # 🔐 PRIVACIDAD
-    # -----------------------------------------------------
-    if CURRENT_ROLE != "admin":
+    # =========================================================
+    # FILTRO DE PRIVACIDAD POR USUARIO
+    # =========================================================
+    if CURRENT_ROLE not in ["admin"]:
         df_short = df_short[df_short["Agregado_Por"] == CURRENT_USER]
 
+    # Cortar referencia (evita SettingWithCopyWarning)
     df_short = df_short.copy()
 
-    # -----------------------------------------------------
-    # 🕒 FECHA / AÑO / SEMESTRE
-    # -----------------------------------------------------
+    # =========================================================
+    # NORMALIZAR FECHA / AÑO / SEMESTRE (LISTA CORTA)
+    # =========================================================
     if "Fecha_Agregado" not in df_short.columns:
         df_short["Fecha_Agregado"] = None
 
@@ -1703,13 +1703,12 @@ if menu == "Lista corta":
     df_short["Año"] = df_short["Fecha_dt"].dt.year.astype("Int64")
 
     df_short["Semestre"] = df_short["Fecha_dt"].dt.month.apply(
-        lambda m: "1º" if pd.notna(m) and m <= 6 else
-                  "2º" if pd.notna(m) else ""
+        lambda m: "1º" if m <= 6 else "2º" if pd.notna(m) else ""
     )
 
-    # -----------------------------------------------------
-    # 🎯 DEFAULTS AUTOMÁTICOS (AÑO / SEMESTRE ACTUAL)
-    # -----------------------------------------------------
+    # =========================================================
+    # 🔧 AGREGADO 1 / 2 — DEFAULT AÑO + SEMESTRE ACTUAL
+    # =========================================================
     hoy = datetime.today()
     anio_actual = hoy.year
     semestre_actual = "1º" if hoy.month <= 6 else "2º"
@@ -1729,11 +1728,9 @@ if menu == "Lista corta":
 
     default_semestre = semestre_actual
 
-    # -----------------------------------------------------
-    # 🔎 FILTROS
-    # -----------------------------------------------------
-    st.markdown("### 🔎 Filtros")
-
+    # =========================================================
+    # FILTROS
+    # =========================================================
     col1, col2, col3, col4, col5, col6 = st.columns(6)
 
     with col1:
@@ -1777,86 +1774,250 @@ if menu == "Lista corta":
             ["", "Sí", "No"]
         )
 
-    # -----------------------------------------------------
-    # 🧹 APLICAR FILTROS
-    # -----------------------------------------------------
-    df_f = df_short.copy()
+    # =========================================================
+    # APLICAR FILTROS
+    # =========================================================
+    df_filtrado = df_short.copy()
 
     if filtro_scout:
-        df_f = df_f[df_f["Agregado_Por"] == filtro_scout]
+        df_filtrado = df_filtrado[df_filtrado["Agregado_Por"] == filtro_scout]
 
     if filtro_liga:
-        ids = df_players[df_players["Liga"] == filtro_liga]["ID_Jugador"].astype(str)
-        df_f = df_f[df_f["ID_Jugador"].astype(str).isin(ids)]
+        ids_liga = (
+            df_players[df_players["Liga"] == filtro_liga]["ID_Jugador"]
+            .astype(str)
+        )
+        df_filtrado = df_filtrado[
+            df_filtrado["ID_Jugador"].astype(str).isin(ids_liga)
+        ]
 
     if filtro_nac:
-        ids = df_players[df_players["Nacionalidad"] == filtro_nac]["ID_Jugador"].astype(str)
-        df_f = df_f[df_f["ID_Jugador"].astype(str).isin(ids)]
+        ids_nac = (
+            df_players[df_players["Nacionalidad"] == filtro_nac]["ID_Jugador"]
+            .astype(str)
+        )
+        df_filtrado = df_filtrado[
+            df_filtrado["ID_Jugador"].astype(str).isin(ids_nac)
+        ]
 
     if filtro_anio:
-        df_f = df_f[df_f["Año"] == int(filtro_anio)]
+        df_filtrado = df_filtrado[df_filtrado["Año"] == int(filtro_anio)]
 
     if filtro_sem:
-        df_f = df_f[df_f["Semestre"] == filtro_sem]
+        df_filtrado = df_filtrado[df_filtrado["Semestre"] == filtro_sem]
 
     if filtro_promesa == "Sí":
-        df_f = df_f[df_f["Posición"].str.contains("Promesa", case=False, na=False)]
+        df_filtrado = df_filtrado[
+            df_filtrado["Posición"].str.contains("Promesa", case=False, na=False)
+        ]
     elif filtro_promesa == "No":
-        df_f = df_f[~df_f["Posición"].str.contains("Promesa", case=False, na=False)]
+        df_filtrado = df_filtrado[
+            ~df_filtrado["Posición"].str.contains("Promesa", case=False, na=False)
+        ]
 
-    total = len(df_f)
+    total_jugadores = len(df_filtrado)
 
     st.markdown(
-        f"""
-        ### 🧭 Vista táctica — Lista corta  
-        <span style="color:#00c6ff;">Total jugadores: {total}</span>
+        f"### Vista táctica (sistema 4-2-3-1) — "
+        f"<span style='color:#00c6ff;'>Total jugadores: {total_jugadores}</span>",
+        unsafe_allow_html=True
+    )
+
+    # =========================================================
+    # CSS TARJETAS
+    # =========================================================
+    st.markdown(
+        """
+        <style>
+        .player-card {
+            display:flex;align-items:center;justify-content:flex-start;
+            background:linear-gradient(90deg,#0e1117,#1e3c72);
+            padding:0.6em 0.8em;border-radius:12px;color:white;
+            font-family:Arial, sans-serif;box-shadow:0 0 6px rgba(0,0,0,0.4);
+            width:230px;min-height:75px;margin:6px auto;transition:0.2s;
+        }
+        .player-card:hover {transform:scale(1.05);box-shadow:0 0 12px #00c6ff;}
+        .player-photo {
+            width:55px;height:55px;border-radius:50%;object-fit:cover;
+            border:2px solid #00c6ff;margin-right:10px;
+        }
+        .player-info h5 {font-size:13px;margin:0;color:#00c6ff;font-weight:bold;}
+        .player-info p {font-size:11.5px;margin:1px 0;color:#ccc;}
+        .player-link a {color:#00c6ff;font-size:10.5px;text-decoration:none;}
+        .player-link a:hover{text-decoration:underline;}
+        .line-title {
+            color:#00c6ff;font-weight:bold;font-size:16px;
+            margin:10px 0 5px;text-align:center;
+        }
+        </style>
         """,
         unsafe_allow_html=True
     )
 
-    # -----------------------------------------------------
-    # 📊 TABLA RESUMEN (GLASS)
-    # -----------------------------------------------------
-    st.markdown("### 📊 Resumen")
+    # =========================================================
+    # SISTEMA 4-2-3-1
+    # =========================================================
+    sistema = {
+        "Arqueros": ["Arquero"],
+        "Defensas": [
+            "Lateral derecho",
+            "Defensa central derecho",
+            "Defensa central izquierdo",
+            "Lateral izquierdo",
+        ],
+        "Mediocampistas defensivos": [
+            "Mediocampista mixto",
+            "Mediocampista defensivo",
+        ],
+        "Mediocampistas ofensivos": [
+            "Extremo derecho",
+            "Mediocampista ofensivo",
+            "Extremo izquierdo",
+        ],
+        "Delanteros": ["Delantero centro"],
+    }
 
-    st.dataframe(
-        df_f[["Nombre", "Posición", "Club", "Agregado_Por", "Año", "Semestre"]],
-        use_container_width=True,
-        hide_index=True
-    )
+    # =========================================================
+    # RENDER DE JUGADORES
+    # =========================================================
+    for linea, posiciones in sistema.items():
+        jugadores_linea = df_filtrado[df_filtrado["Posición"].isin(posiciones)]
+        if jugadores_linea.empty:
+            continue
 
-    # -----------------------------------------------------
-    # 🗑️ GESTOR DE ELIMINACIÓN
-    # -----------------------------------------------------
+        cantidad = len(jugadores_linea)
+        with st.expander(f"{linea} ({cantidad})", expanded=True):
+
+            if linea in ["Arqueros", "Delanteros"]:
+                jugadores_lista = list(jugadores_linea.iterrows())
+                for fila in range(0, len(jugadores_lista), 5):
+                    fila_jugadores = jugadores_lista[fila:fila + 5]
+                    fila_cols = st.columns(len(fila_jugadores))
+                    for fcol, (_, row) in zip(fila_cols, fila_jugadores):
+                        with fcol:
+                            url_foto = str(row.get("URL_Foto", "")).strip()
+                            if not url_foto.startswith("http"):
+                                url_foto = "https://via.placeholder.com/60"
+
+                            partes = str(row.get("Nombre", "")).split()
+                            nombre = partes[0] if partes else "Sin nombre"
+                            apellido = partes[-1] if len(partes) > 1 else ""
+
+                            edad = row.get("Edad", "-")
+                            altura = row.get("Altura", "-")
+                            club = row.get("Club", "-")
+                            url_perfil = str(row.get("URL_Perfil", ""))
+
+                            link_html = (
+                                f"<div class='player-link'><a href='{url_perfil}' target='_blank'>Ver perfil</a></div>"
+                                if url_perfil.startswith("http") else ""
+                            )
+
+                            st.markdown(
+                                f"""
+                                <div class="player-card">
+                                    <img src="{url_foto}" class="player-photo"/>
+                                    <div class="player-info">
+                                        <h5>{nombre} {apellido}</h5>
+                                        <p>{club}</p>
+                                        <p>Edad: {edad} | Altura: {altura} cm</p>
+                                        {link_html}
+                                    </div>
+                                </div>
+                                """,
+                                unsafe_allow_html=True
+                            )
+
+            else:
+                cols = st.columns(len(posiciones))
+                for i, pos in enumerate(posiciones):
+                    jugadores_pos = jugadores_linea[jugadores_linea["Posición"] == pos]
+                    with cols[i]:
+                        st.markdown(
+                            f"<div class='line-title'>{pos}</div>",
+                            unsafe_allow_html=True
+                        )
+
+                        if jugadores_pos.empty:
+                            st.markdown(
+                                "<p style='color:gray;font-size:11px;text-align:center;'>— Vacante —</p>",
+                                unsafe_allow_html=True
+                            )
+                            continue
+
+                        jugadores_lista = list(jugadores_pos.iterrows())
+                        salto = 2 if "Mediocampista" in pos else 1
+
+                        for fila in range(0, len(jugadores_lista), salto):
+                            fila_jugadores = jugadores_lista[fila:fila + salto]
+                            fila_cols = st.columns(len(fila_jugadores))
+                            for fcol, (_, row) in zip(fila_cols, fila_jugadores):
+                                with fcol:
+                                    url_foto = str(row.get("URL_Foto", "")).strip()
+                                    if not url_foto.startswith("http"):
+                                        url_foto = "https://via.placeholder.com/60"
+
+                                    partes = str(row.get("Nombre", "")).split()
+                                    nombre = partes[0] if partes else "Sin nombre"
+                                    apellido = partes[-1] if len(partes) > 1 else ""
+
+                                    edad = row.get("Edad", "-")
+                                    altura = row.get("Altura", "-")
+                                    club = row.get("Club", "-")
+                                    url_perfil = str(row.get("URL_Perfil", ""))
+
+                                    link_html = (
+                                        f"<div class='player-link'><a href='{url_perfil}' target='_blank'>Ver perfil</a></div>"
+                                        if url_perfil.startswith("http") else ""
+                                    )
+
+                                    st.markdown(
+                                        f"""
+                                        <div class="player-card">
+                                            <img src="{url_foto}" class="player-photo"/>
+                                            <div class="player-info">
+                                                <h5>{nombre} {apellido}</h5>
+                                                <p>{club}</p>
+                                                <p>Edad: {edad} | Altura: {altura} cm</p>
+                                                {link_html}
+                                            </div>
+                                        </div>
+                                        """,
+                                        unsafe_allow_html=True
+                                    )
+
+    # =========================================================
+    # GESTOR DE LISTA CORTA — Eliminación
+    # =========================================================
     st.markdown("---")
-    st.markdown("### 🗑️ Gestor de Lista Corta")
+    st.markdown("### 🗑️ Gestor de Lista Corta (Eliminar jugadores)")
 
-    busqueda = st.text_input("Buscar jugador (nombre o club)")
+    busqueda = st.text_input("Buscar jugador para eliminar (por nombre o club)")
 
     if busqueda:
-        df_busq = df_f[
-            df_f["Nombre"].str.contains(busqueda, case=False, na=False) |
-            df_f["Club"].str.contains(busqueda, case=False, na=False)
+        df_busqueda = df_filtrado[
+            df_filtrado["Nombre"].str.contains(busqueda, case=False, na=False) |
+            df_filtrado["Club"].str.contains(busqueda, case=False, na=False)
         ]
     else:
-        df_busq = df_f.copy()
+        df_busqueda = df_filtrado.copy()
 
-    if df_busq.empty:
-        st.info("No se encontraron jugadores.")
+    if df_busqueda.empty:
+        st.info("No se encontraron jugadores que coincidan con la búsqueda.")
     else:
         st.dataframe(
-            df_busq[["Nombre", "Posición", "Club", "Agregado_Por"]],
+            df_busqueda[["Nombre", "Posición", "Club", "Agregado_Por"]],
             use_container_width=True,
             hide_index=True
         )
 
         jugador_sel = st.selectbox(
             "Seleccionar jugador a eliminar",
-            [""] + sorted(df_busq["Nombre"].unique())
+            [""] + sorted(df_busqueda["Nombre"].unique())
         )
 
         if jugador_sel:
-            jugador_row = df_busq[df_busq["Nombre"] == jugador_sel].iloc[0]
+            jugador_row = df_busqueda[df_busqueda["Nombre"] == jugador_sel].iloc[0]
             st.warning(f"⚠️ Vas a eliminar a **{jugador_sel}** de TU lista corta.")
             confirmar = st.checkbox("Confirmar eliminación")
 
@@ -1875,17 +2036,17 @@ if menu == "Lista corta":
                         df_short_local = df_short_local.drop(fila[0])
                         ws_short.clear()
                         ws_short.update(
-                            [df_short_local.columns.tolist()] +
+                            [df_short_local.columns.values.tolist()] +
                             df_short_local.values.tolist()
                         )
                         st.toast(
-                            f"🗑️ Jugador {jugador_sel} eliminado correctamente.",
+                            f"🗑️ Jugador {jugador_sel} eliminado correctamente de TU lista.",
                             icon="🗑️"
                         )
                         st.cache_data.clear()
                         st.experimental_rerun()
                     else:
-                        st.warning("⚠️ No se encontró el jugador.")
+                        st.warning("⚠️ No se encontró el jugador en tu lista corta.")
                 except Exception as e:
                     st.error(f"⚠️ Error al eliminar: {e}")
 
@@ -2696,6 +2857,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
