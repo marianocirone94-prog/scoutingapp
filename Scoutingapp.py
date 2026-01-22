@@ -212,8 +212,11 @@ st.set_page_config(
 )
 
 
-=====================================================
-   FONDO GLOBAL — FUTURISTA / TECH CON MOVIMIENTO
+st.markdown("""
+<style>
+
+/* =====================================================
+   🌌 FONDO GLOBAL — FUTURISTA / TECH CON MOVIMIENTO
 ===================================================== */
 .stApp {
     background:
@@ -238,7 +241,7 @@ st.set_page_config(
 }
 
 /* =====================================================
-   ANIMACIÓN SUAVE DEL FONDO
+   🎞️ ANIMACIÓN SUAVE DEL FONDO
 ===================================================== */
 @keyframes fondoVivo {
     0%   { background-position: 0% 50%; }
@@ -247,14 +250,14 @@ st.set_page_config(
 }
 
 /* =====================================================
-   TEXTO / TIPOGRAFÍA
+   ✍️ TEXTO / TIPOGRAFÍA GLOBAL
 ===================================================== */
 h1, h2, h3, h4, h5, h6, .stMarkdown {
     color: #ffffff !important;
 }
 
 /* =====================================================
-   CONTENEDORES / CARDS — GLASS TECH
+   🧊 CONTENEDORES / CARDS — GLASS TECH
 ===================================================== */
 div[data-testid="stContainer"] {
     background: linear-gradient(
@@ -272,7 +275,23 @@ div[data-testid="stContainer"] {
 }
 
 /* =====================================================
-   SLIDERS — NEÓN SUAVE
+   ⭐ KPI — HOVER GLOW (INTERACCIÓN PREMIUM)
+===================================================== */
+.kpi-card {
+    transition:
+        transform 0.25s ease,
+        box-shadow 0.25s ease;
+}
+
+.kpi-card:hover {
+    transform: translateY(-4px);
+    box-shadow:
+        0 16px 40px rgba(0,0,0,0.6),
+        0 0 22px rgba(0,198,255,0.45);
+}
+
+/* =====================================================
+   🎚️ SLIDERS — NEÓN SUAVE
 ===================================================== */
 .stSlider > div[data-baseweb="slider"] > div {
     background: rgba(255,255,255,0.26) !important;
@@ -292,18 +311,20 @@ div[data-testid="stContainer"] {
 }
 
 /* =====================================================
-   ALERTAS
+   🚨 ALERTAS
 ===================================================== */
 .stAlert.success {
     background-color: rgba(0,51,102,0.97) !important;
     color: #00c6ff !important;
     border-left: 4px solid #00c6ff !important;
 }
+
 .stAlert.warning {
     background-color: rgba(51,43,0,0.97) !important;
     color: #ffd700 !important;
     border-left: 4px solid #ffd700 !important;
 }
+
 .stAlert.error {
     background-color: rgba(51,0,0,0.97) !important;
     color: #ff6f61 !important;
@@ -311,7 +332,7 @@ div[data-testid="stContainer"] {
 }
 
 /* =====================================================
-   SIDEBAR — PROFUNDA + LIMPIA
+   📂 SIDEBAR — PROFUNDA + LIMPIA
 ===================================================== */
 section[data-testid="stSidebar"] {
     background: linear-gradient(
@@ -325,21 +346,6 @@ section[data-testid="stSidebar"] {
 </style>
 """, unsafe_allow_html=True)
 
-/* =====================================================
-   KPI — HOVER GLOW
-===================================================== */
-.kpi-card {
-    transition: 
-        transform 0.25s ease,
-        box-shadow 0.25s ease;
-}
-
-.kpi-card:hover {
-    transform: translateY(-4px);
-    box-shadow:
-        0 16px 40px rgba(0,0,0,0.6),
-        0 0 22px rgba(0,198,255,0.45);
-}
 
 # =========================================================
 # 🎨 CSS ESPECÍFICO — PANEL GENERAL (NO TOCAR LUEGO)
@@ -2754,6 +2760,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
