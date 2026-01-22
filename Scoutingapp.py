@@ -211,14 +211,8 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# =========================================================
-# 🚀 FONDO FUTURISTA AZUL / NEGRO — ScoutingApp PRO (ANIMADO)
-# =========================================================
 
-st.markdown("""
-<style>
-
-/* =====================================================
+=====================================================
    FONDO GLOBAL — FUTURISTA / TECH CON MOVIMIENTO
 ===================================================== */
 .stApp {
@@ -240,7 +234,7 @@ st.markdown("""
             #0e1117
         );
     background-size: 220% 220%;
-    animation: fondoVivo 35s ease-in-out infinite;
+    animation: fondoVivo 15s ease-in-out infinite;
 }
 
 /* =====================================================
@@ -331,6 +325,21 @@ section[data-testid="stSidebar"] {
 </style>
 """, unsafe_allow_html=True)
 
+/* =====================================================
+   KPI — HOVER GLOW
+===================================================== */
+.kpi-card {
+    transition: 
+        transform 0.25s ease,
+        box-shadow 0.25s ease;
+}
+
+.kpi-card:hover {
+    transform: translateY(-4px);
+    box-shadow:
+        0 16px 40px rgba(0,0,0,0.6),
+        0 0 22px rgba(0,198,255,0.45);
+}
 
 # =========================================================
 # 🎨 CSS ESPECÍFICO — PANEL GENERAL (NO TOCAR LUEGO)
@@ -2745,6 +2754,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
