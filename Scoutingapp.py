@@ -212,7 +212,7 @@ st.set_page_config(
 )
 
 # =========================================================
-# 🎨 FONDO FUTURISTA AZUL / NEGRO — ScoutingApp PRO
+# 🚀 FONDO FUTURISTA AZUL / NEGRO — ScoutingApp PRO
 # =========================================================
 
 st.markdown("""
@@ -223,23 +223,20 @@ st.markdown("""
 ===================================================== */
 .stApp {
     background:
-        /* glow cyan */
         radial-gradient(
-            circle at 70% 20%,
-            rgba(0,198,255,0.12),
+            circle at 15% 10%,
+            rgba(0,198,255,0.18),
+            transparent 35%
+        ),
+        radial-gradient(
+            circle at 85% 30%,
+            rgba(30,60,114,0.35),
             transparent 40%
         ),
-        /* glow azul profundo */
-        radial-gradient(
-            circle at 20% 80%,
-            rgba(30,60,114,0.35),
-            transparent 45%
-        ),
-        /* gradiente base */
         linear-gradient(
             160deg,
             #1e3c72 0%,
-            #16213e 35%,
+            #16213e 40%,
             #0e1117 75%
         ) !important;
 }
@@ -252,40 +249,41 @@ h1, h2, h3, h4, h5, h6, .stMarkdown {
 }
 
 /* =====================================================
-   CONTENEDORES / CARDS — GLASS FUTURISTA
+   CONTENEDORES / CARDS — GLASS TECH
 ===================================================== */
 div[data-testid="stContainer"] {
-    background:
-        linear-gradient(
-            145deg,
-            rgba(30,60,114,0.88),
-            rgba(14,17,23,0.94)
-        );
+    background: linear-gradient(
+        145deg,
+        rgba(30,60,114,0.75),
+        rgba(14,17,23,0.90)
+    );
     border-radius: 18px;
     padding: 18px;
     margin-bottom: 18px;
     box-shadow:
-        0 14px 34px rgba(0,0,0,0.6),
-        inset 0 1px 0 rgba(255,255,255,0.06);
-    border: 1px solid rgba(0,198,255,0.08);
+        0 12px 34px rgba(0,0,0,0.55),
+        inset 0 1px 0 rgba(255,255,255,0.06),
+        inset 0 0 20px rgba(0,198,255,0.05);
 }
 
 /* =====================================================
-   SLIDERS — NEÓN
+   SLIDERS — NEÓN SUAVE
 ===================================================== */
 .stSlider > div[data-baseweb="slider"] > div {
     background: rgba(255,255,255,0.25) !important;
     border-radius: 8px;
 }
+
 .stSlider > div[data-baseweb="slider"] > div > div {
     background-color: #00c6ff !important;
 }
+
 .stSlider [role="slider"] {
     background-color: #00c6ff !important;
     border: 2px solid #ffffff !important;
     box-shadow:
-        0 0 12px rgba(0,198,255,0.9),
-        0 0 22px rgba(0,198,255,0.4) !important;
+        0 0 10px rgba(0,198,255,0.9),
+        0 0 18px rgba(0,198,255,0.4) !important;
 }
 
 /* =====================================================
@@ -308,39 +306,20 @@ div[data-testid="stContainer"] {
 }
 
 /* =====================================================
-   SIDEBAR — TECH PANEL
+   SIDEBAR — PROFUNDA + LIMPIA
 ===================================================== */
 section[data-testid="stSidebar"] {
-    background:
-        linear-gradient(
-            180deg,
-            #0e1117 0%,
-            #16213e 100%
-        );
-    border-right: 1px solid rgba(0,198,255,0.12);
-}
-
-/* =====================================================
-   MICRO TEXTURA (NOISE)
-===================================================== */
-.stApp::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    background-image:
-        repeating-radial-gradient(
-            circle at 50% 50%,
-            rgba(255,255,255,0.015),
-            rgba(255,255,255,0.015) 1px,
-            transparent 1px,
-            transparent 3px
-        );
-    pointer-events: none;
-    z-index: 0;
+    background: linear-gradient(
+        180deg,
+        #0e1117 0%,
+        #16213e 100%
+    );
+    border-right: 1px solid rgba(255,255,255,0.06);
 }
 
 </style>
 """, unsafe_allow_html=True)
+
 
 # =========================================================
 # 🎨 CSS ESPECÍFICO — PANEL GENERAL (NO TOCAR LUEGO)
@@ -2755,6 +2734,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
