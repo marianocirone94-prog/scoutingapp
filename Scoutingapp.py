@@ -212,62 +212,24 @@ st.set_page_config(
 )
 
 # =========================================================
-# 🎥 FONDO PARALLAX + CSS GLOBAL — ScoutingApp PRO
-# (BLOQUE ÚNICO DEFINITIVO)
+# 🎨 FONDO PREMIUM AZUL / NEGRO — ScoutingApp PRO
+# (SIN IMÁGENES · 100% ESTABLE)
 # =========================================================
-
-# ---------- FONDO CON PARALLAX ----------
-def set_fondo_parallax(ruta_img: str):
-    import base64
-
-    with open(ruta_img, "rb") as f:
-        encoded = base64.b64encode(f.read()).decode()
-
-    st.markdown(
-        f"""
-        <style>
-        /* =====================================================
-           FONDO GLOBAL CON IMAGEN + PARALLAX
-        ===================================================== */
-        .stApp {{
-            background:
-                linear-gradient(
-                    rgba(14,17,23,0.88),
-                    rgba(14,17,23,0.88)
-                ),
-                url("data:image/png;base64,{encoded}");
-            background-size: cover;
-            background-position: center top;
-            background-repeat: no-repeat;
-            background-attachment: fixed;
-            animation: fondoParallax 90s linear infinite;
-        }}
-
-        @keyframes fondoParallax {{
-            0%   {{ background-position: center top; }}
-            50%  {{ background-position: center 55%; }}
-            100% {{ background-position: center top; }}
-        }}
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
-
-# 👉 ACÁ SE CARGA REALMENTE LA IMAGEN
-set_fondo_parallax("fondo_estadio.png.png")
-
-
-# =========================================================
-# CSS GLOBAL (INTERFAZ SOBRE EL FONDO)
-# =========================================================
-try:
-    from ui.style import load_custom_css
-    load_custom_css()
-except Exception:
-    pass
 
 st.markdown("""
 <style>
+
+/* =====================================================
+   FONDO GLOBAL — GRADIENTE CINEMÁTICO
+===================================================== */
+.stApp {
+    background: radial-gradient(
+        circle at top left,
+        #1e3c72 0%,
+        #16213e 35%,
+        #0e1117 70%
+    ) !important;
+}
 
 /* =====================================================
    TEXTO / TIPOGRAFÍA
@@ -277,11 +239,28 @@ h1, h2, h3, h4, h5, h6, .stMarkdown {
 }
 
 /* =====================================================
+   CONTENEDORES / CARDS (GLASSMORPHISM)
+===================================================== */
+div[data-testid="stContainer"] {
+    background: linear-gradient(
+        145deg,
+        rgba(30,60,114,0.85),
+        rgba(14,17,23,0.92)
+    );
+    border-radius: 18px;
+    padding: 18px;
+    margin-bottom: 18px;
+    box-shadow:
+        0 10px 30px rgba(0,0,0,0.55),
+        inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
+/* =====================================================
    SLIDERS
 ===================================================== */
 .stSlider > div[data-baseweb="slider"] > div {
-    background: rgba(255,255,255,0.20) !important;
-    border-radius: 6px;
+    background: rgba(255,255,255,0.22) !important;
+    border-radius: 8px;
 }
 .stSlider > div[data-baseweb="slider"] > div > div {
     background-color: #00c6ff !important;
@@ -289,45 +268,37 @@ h1, h2, h3, h4, h5, h6, .stMarkdown {
 .stSlider [role="slider"] {
     background-color: #00c6ff !important;
     border: 2px solid #ffffff !important;
-    box-shadow: 0 0 8px rgba(0,198,255,0.9) !important;
+    box-shadow: 0 0 10px rgba(0,198,255,0.9) !important;
 }
 
 /* =====================================================
    ALERTAS
 ===================================================== */
 .stAlert.success {
-    background-color: rgba(0,51,102,0.96) !important;
+    background-color: rgba(0,51,102,0.97) !important;
     color: #00c6ff !important;
     border-left: 4px solid #00c6ff !important;
 }
 .stAlert.warning {
-    background-color: rgba(51,43,0,0.96) !important;
+    background-color: rgba(51,43,0,0.97) !important;
     color: #ffd700 !important;
     border-left: 4px solid #ffd700 !important;
 }
 .stAlert.error {
-    background-color: rgba(51,0,0,0.96) !important;
+    background-color: rgba(51,0,0,0.97) !important;
     color: #ff6f61 !important;
     border-left: 4px solid #ff6f61 !important;
-}
-
-/* =====================================================
-   CONTENEDORES / CARDS
-===================================================== */
-div[data-testid="stContainer"] {
-    background-color: rgba(22,27,34,0.90);
-    backdrop-filter: blur(6px);
-    border-radius: 16px;
-    padding: 18px;
-    margin-bottom: 18px;
-    box-shadow: 0 12px 30px rgba(0,0,0,0.50);
 }
 
 /* =====================================================
    SIDEBAR
 ===================================================== */
 section[data-testid="stSidebar"] {
-    background-color: rgba(14,17,23,0.97);
+    background: linear-gradient(
+        180deg,
+        #0e1117 0%,
+        #16213e 100%
+    );
     border-right: 1px solid rgba(255,255,255,0.06);
 }
 
@@ -2747,6 +2718,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
