@@ -254,17 +254,33 @@ st.markdown("""
 <style>
 
 /* =====================================================
-🌌 FONDO GLOBAL — FUTURISTA / TECH CON MOVIMIENTO
+   🌌 FONDO GLOBAL — FUTURISTA / TECH CON MOVIMIENTO
 ===================================================== */
 .stApp {
     background:
-        radial-gradient(circle at 20% 15%, rgba(0,198,255,0.22), transparent 38%),
-        radial-gradient(circle at 80% 35%, rgba(30,60,114,0.40), transparent 42%),
-        linear-gradient(120deg, #1e3c72, #16213e, #0e1117);
+        radial-gradient(
+            circle at 20% 15%,
+            rgba(0,198,255,0.22),
+            transparent 38%
+        ),
+        radial-gradient(
+            circle at 80% 35%,
+            rgba(30,60,114,0.40),
+            transparent 42%
+        ),
+        linear-gradient(
+            120deg,
+            #1e3c72,
+            #16213e,
+            #0e1117
+        );
     background-size: 220% 220%;
     animation: fondoVivo 15s ease-in-out infinite;
 }
 
+/* =====================================================
+   🎞️ ANIMACIÓN SUAVE DEL FONDO
+===================================================== */
 @keyframes fondoVivo {
     0%   { background-position: 0% 50%; }
     50%  { background-position: 100% 50%; }
@@ -272,73 +288,135 @@ st.markdown("""
 }
 
 /* =====================================================
-✍️ TEXTO GLOBAL
+   ✍️ TEXTO / TIPOGRAFÍA GLOBAL
 ===================================================== */
-h1, h2, h3, h4, h5, h6, .stMarkdown, label {
+h1, h2, h3, h4, h5, h6, .stMarkdown {
     color: #ffffff !important;
 }
 
 /* =====================================================
-🧊 CONTENEDORES (CARDS / BLOQUES)
+   🧊 CONTENEDORES / CARDS — GLASS TECH + TRANSICIÓN
 ===================================================== */
 div[data-testid="stContainer"] {
-    background: linear-gradient(145deg, rgba(30,60,114,0.75), rgba(14,17,23,0.90));
+    background: linear-gradient(
+        145deg,
+        rgba(30,60,114,0.78),
+        rgba(14,17,23,0.92)
+    );
     border-radius: 18px;
     padding: 18px;
     margin-bottom: 18px;
     box-shadow:
         0 14px 36px rgba(0,0,0,0.55),
+        inset 0 1px 0 rgba(255,255,255,0.06),
         inset 0 0 24px rgba(0,198,255,0.06);
     animation: fadeUp 0.35s ease;
 }
 
+/* =====================================================
+   🔄 TRANSICIÓN SUAVE AL CAMBIAR FILTROS
+===================================================== */
 @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(8px); }
-    to   { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* =====================================================
-🎚️ SLIDERS — FULL CYAN (SIN ROJO)
+   ⭐ KPI — HOVER GLOW (INTERACCIÓN PREMIUM)
+===================================================== */
+.kpi-card {
+    transition:
+        transform 0.25s ease,
+        box-shadow 0.25s ease;
+}
+
+.kpi-card:hover {
+    transform: translateY(-4px);
+    box-shadow:
+        0 16px 40px rgba(0,0,0,0.6),
+        0 0 22px rgba(0,198,255,0.45);
+}
+
+/* =====================================================
+   🎚️ SLIDERS — NEÓN SUAVE
 ===================================================== */
 .stSlider > div[data-baseweb="slider"] > div {
-    background: rgba(255,255,255,0.25) !important;
+    background: rgba(255,255,255,0.26) !important;
     border-radius: 8px;
 }
+
 .stSlider > div[data-baseweb="slider"] > div > div {
     background-color: #00c6ff !important;
 }
+
 .stSlider [role="slider"] {
     background-color: #00c6ff !important;
-    border: 2px solid #00c6ff !important;
-    box-shadow: 0 0 12px rgba(0,198,255,0.85) !important;
+    border: 2px solid #ffffff !important;
+    box-shadow:
+        0 0 10px rgba(0,198,255,0.9),
+        0 0 20px rgba(0,198,255,0.45) !important;
 }
 
 /* =====================================================
-📂 SIDEBAR — RADIO BUTTONS (SIN ROJO)
+   🚨 ALERTAS
+===================================================== */
+.stAlert.success {
+    background-color: rgba(0,51,102,0.97) !important;
+    color: #00c6ff !important;
+    border-left: 4px solid #00c6ff !important;
+}
+
+.stAlert.warning {
+    background-color: rgba(51,43,0,0.97) !important;
+    color: #ffd700 !important;
+    border-left: 4px solid #ffd700 !important;
+}
+
+.stAlert.error {
+    background-color: rgba(51,0,0,0.97) !important;
+    color: #ff6f61 !important;
+    border-left: 4px solid #ff6f61 !important;
+}
+
+/* =====================================================
+   📂 SIDEBAR — PROFUNDA + ITEM ACTIVO
 ===================================================== */
 section[data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #0e1117 0%, #16213e 100%);
+    background: linear-gradient(
+        180deg,
+        #0e1117 0%,
+        #16213e 100%
+    );
     border-right: 1px solid rgba(255,255,255,0.06);
 }
 
-/* Radio / checkbox (cuando aplica) */
-section[data-testid="stSidebar"] input[type="radio"],
-section[data-testid="stSidebar"] input[type="checkbox"] {
-    accent-color: #00c6ff !important;
-}
-
-/* Item activo del menú (radio group) */
-section[data-testid="stSidebar"] div[role="radiogroup"] > label[data-selected="true"] {
-    background: linear-gradient(90deg, rgba(0,198,255,0.30), rgba(0,198,255,0.05));
+/* Item activo del menú */
+section[data-testid="stSidebar"]
+div[role="radiogroup"] > label[data-selected="true"] {
+    background: linear-gradient(
+        90deg,
+        rgba(0,198,255,0.30),
+        rgba(0,198,255,0.05)
+    );
     border-left: 4px solid #00c6ff;
     border-radius: 6px;
 }
 
 /* =====================================================
-📊 TABLAS — GLASS LIGERO (NO NEGRO OPACO)
+   📊 TABLAS — GLASS LIGERO (NO NEGRO OPACO)
 ===================================================== */
 div[data-testid="stDataFrame"] {
-    background: linear-gradient(145deg, rgba(30,60,114,0.45), rgba(14,17,23,0.70)) !important;
+    background: linear-gradient(
+        145deg,
+        rgba(30,60,114,0.45),
+        rgba(14,17,23,0.70)
+    ) !important;
     border-radius: 16px;
     padding: 8px;
     box-shadow:
@@ -353,7 +431,11 @@ div[data-testid="stDataFrame"] table {
 }
 
 div[data-testid="stDataFrame"] thead th {
-    background: linear-gradient(180deg, rgba(0,0,0,0.25), rgba(0,0,0,0.10)) !important;
+    background: linear-gradient(
+        180deg,
+        rgba(0,0,0,0.25),
+        rgba(0,0,0,0.10)
+    ) !important;
     color: #00c6ff !important;
     font-weight: 700;
     border-bottom: 1px solid rgba(255,255,255,0.14) !important;
@@ -365,72 +447,70 @@ div[data-testid="stDataFrame"] tbody td {
 }
 
 div[data-testid="stDataFrame"] tbody tr:hover td {
-    background: linear-gradient(90deg, rgba(0,198,255,0.16), rgba(0,198,255,0.05)) !important;
+    background: linear-gradient(
+        90deg,
+        rgba(0,198,255,0.16),
+        rgba(0,198,255,0.05)
+    ) !important;
 }
 
 /* =====================================================
-✅ FIX DEFINITIVO — ELIMINAR ROJO DE BASEWEB (FOCUS/INVALID)
-   (selectbox / multiselect / text_input / number_input / etc.)
+   🛠️ FIX DEFINITIVO — LÍNEAS ROJAS / FOCUS / INVALID
 ===================================================== */
 
-/* 1) Contenedor general de inputs/selects */
-div[data-baseweb="input"] > div,
-div[data-baseweb="select"] > div,
-div[data-baseweb="textarea"] > div {
-    border: 1px solid rgba(0,198,255,0.35) !important;
-    background-color: rgba(14,17,23,0.85) !important;
+/* Inputs base */
+input, textarea, select {
+    outline: none !important;
+    border-color: rgba(0,198,255,0.55) !important;
+}
+
+/* Selectbox / Multiselect */
+div[data-baseweb="select"] > div {
+    border-color: rgba(0,198,255,0.55) !important;
     box-shadow: none !important;
 }
 
-/* 2) Focus real (cuando clickeás adentro) */
-div[data-baseweb="input"] > div:focus-within,
-div[data-baseweb="select"] > div:focus-within,
-div[data-baseweb="textarea"] > div:focus-within {
-    border: 1px solid #00c6ff !important;
-    box-shadow: 0 0 10px rgba(0,198,255,0.45) !important;
-}
-
-/* 3) Estado INVALID que Streamlit pinta rojo (clave) */
-div[aria-invalid="true"],
-div[aria-invalid="true"] * {
+div[data-baseweb="select"] > div:hover {
     border-color: #00c6ff !important;
-    box-shadow: 0 0 10px rgba(0,198,255,0.45) !important;
-    outline: none !important;
 }
 
-/* 4) Quitar outlines rojos por defecto del navegador/BaseWeb */
-*:focus,
-*:focus-visible {
-    outline: none !important;
+div[data-baseweb="select"] > div:focus,
+div[data-baseweb="select"] > div:focus-within {
+    border-color: #00c6ff !important;
+    box-shadow:
+        0 0 0 1px rgba(0,198,255,0.65),
+        0 0 12px rgba(0,198,255,0.35) !important;
 }
 
-/* 5) Asegurar caret / selection en cyan (detalle premium) */
-input, textarea {
-    caret-color: #00c6ff !important;
+/* Estados inválidos */
+div[data-baseweb="select"] [aria-invalid="true"],
+input:invalid,
+textarea:invalid {
+    border-color: #00c6ff !important;
+    box-shadow: 0 0 0 1px rgba(0,198,255,0.6) !important;
 }
 
-/* =====================================================
-🚨 ALERTAS
-===================================================== */
-.stAlert.success {
-    background-color: rgba(0,51,102,0.97) !important;
+/* TextInput */
+div[data-testid="stTextInput"] input {
+    border-color: rgba(0,198,255,0.45) !important;
+}
+
+div[data-testid="stTextInput"] input:focus {
+    border-color: #00c6ff !important;
+    box-shadow:
+        0 0 0 1px rgba(0,198,255,0.6),
+        0 0 12px rgba(0,198,255,0.35) !important;
+}
+
+/* Multiselect pills */
+div[data-baseweb="tag"] {
+    background-color: rgba(0,198,255,0.15) !important;
+    border: 1px solid rgba(0,198,255,0.45) !important;
     color: #00c6ff !important;
-    border-left: 4px solid #00c6ff !important;
-}
-.stAlert.warning {
-    background-color: rgba(51,43,0,0.97) !important;
-    color: #ffd700 !important;
-    border-left: 4px solid #ffd700 !important;
-}
-.stAlert.error {
-    background-color: rgba(51,0,0,0.97) !important;
-    color: #ff6f61 !important;
-    border-left: 4px solid #ff6f61 !important;
 }
 
 </style>
 """, unsafe_allow_html=True)
-
 
 
 # =========================================================
@@ -2771,6 +2851,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
