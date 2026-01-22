@@ -398,30 +398,44 @@ div[data-testid="stContainer"] {
 }
 
 /* =====================================================
-🎚️ SLIDERS — FIX ROJO + NUMEROS
+🎚️ SLIDER — FIX DEFINITIVO SIN ROJO (BASEWEB)
 ===================================================== */
-.stSlider > div[data-baseweb="slider"] > div {
-    background: rgba(255,255,255,0.25) !important;
-    border-radius:8px;
+
+/* Track completo (fondo) */
+.stSlider div[data-baseweb="slider"] > div {
+    background: rgba(10, 20, 35, 0.85) !important; /* azul muy oscuro */
+    border-radius: 10px !important;
 }
 
-.stSlider > div[data-baseweb="slider"] > div > div {
-    background-color:#00c6ff !important;
+/* Track activo (hasta el valor) */
+.stSlider div[data-baseweb="slider"] > div > div {
+    background: linear-gradient(
+        90deg,
+        #00c6ff,
+        #1e3c72
+    ) !important;
 }
 
+/* Track inactivo (lo que antes era rojo) */
+.stSlider div[data-baseweb="slider"] > div > div + div {
+    background: rgba(20, 30, 50, 0.9) !important;
+}
+
+/* Thumb */
 .stSlider [role="slider"] {
-    background-color:#00c6ff !important;
-    border:2px solid #ffffff !important;
+    background-color: #00c6ff !important;
+    border: 2px solid #ffffff !important;
     box-shadow:
         0 0 8px rgba(0,198,255,0.9),
-        0 0 16px rgba(0,198,255,0.4) !important;
+        0 0 16px rgba(0,198,255,0.35) !important;
 }
 
-.stSlider span,
-.stSlider [data-testid="stSliderThumbValue"] {
-    color:#00c6ff !important;
-    font-weight:700;
+/* Números */
+.stSlider span {
+    color: #00c6ff !important;
+    font-weight: 600;
 }
+
 
 /* =====================================================
 📂 SIDEBAR — MENU + RADIO (SIN ROJO)
@@ -2869,6 +2883,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
