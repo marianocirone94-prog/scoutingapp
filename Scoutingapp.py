@@ -240,7 +240,7 @@ st.markdown("""
             #0e1117
         );
     background-size: 220% 220%;
-    animation: fondoVivo 55s ease-in-out infinite;
+    animation: fondoVivo 35s ease-in-out infinite;
 }
 
 /* =====================================================
@@ -2745,6 +2745,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
