@@ -2617,7 +2617,7 @@ if menu == "Panel Scouts":
     df_players["ID_Jugador"] = df_players["ID_Jugador"].astype(str)
 
     # -----------------------------------------------------
-    # 🕒 FECHA (USO PRÁCTICO, SIN PELEAR CON SHEETS)
+    # 🕒 FECHAS
     # -----------------------------------------------------
     df_reports["Fecha_dt"] = pd.to_datetime(
         df_reports["Fecha_Informe"],
@@ -2625,19 +2625,11 @@ if menu == "Panel Scouts":
         dayfirst=True
     )
 
-    # AÑO COMO STRING (FIX DEFINITIVO)
-    df_reports["Año"] = (
-        df_reports["Fecha_Informe"]
-        .astype(str)
-        .str[-4:]
-    )
-
-    # SEMESTRE DESDE EL MES
+    df_reports["Año"] = df_reports["Fecha_Informe"].astype(str).str[-4:]
     df_reports["Mes_num"] = df_reports["Fecha_dt"].dt.month
     df_reports["Semestre"] = df_reports["Mes_num"].apply(
         lambda m: "1º" if m and m <= 6 else "2º"
     )
-
     df_reports["Mes"] = df_reports["Fecha_dt"].dt.strftime("%Y-%m")
 
     # -----------------------------------------------------
@@ -2663,10 +2655,7 @@ if menu == "Panel Scouts":
         )
 
     with f2:
-        filtro_sem = st.multiselect(
-            "Semestre",
-            ["1º", "2º"]
-        )
+        filtro_sem = st.multiselect("Semestre", ["1º", "2º"])
 
     with f3:
         if CURRENT_ROLE == "admin":
@@ -2678,16 +2667,14 @@ if menu == "Panel Scouts":
             filtro_scout = []
 
     # -----------------------------------------------------
-    # 🎯 DATAFRAME FINAL (ÚNICO)
+    # 🎯 DATAFRAME FINAL
     # -----------------------------------------------------
     df_f = df.copy()
 
     if filtro_anio:
         df_f = df_f[df_f["Año"].isin(filtro_anio)]
-
     if filtro_sem:
         df_f = df_f[df_f["Semestre"].isin(filtro_sem)]
-
     if filtro_scout:
         df_f = df_f[df_f["Scout"].isin(filtro_scout)]
 
@@ -2697,7 +2684,6 @@ if menu == "Panel Scouts":
     st.markdown("### 📌 Actividad del período")
 
     k1, k2, k3, k4 = st.columns(4)
-
     k1.metric("📝 Informes", len(df_f))
     k2.metric("👤 Scouts activos", df_f["Scout"].nunique())
     k3.metric("🎯 Jugadores", df_f["ID_Jugador"].nunique())
@@ -2732,7 +2718,7 @@ if menu == "Panel Scouts":
     st.dataframe(ranking, use_container_width=True)
 
     # -----------------------------------------------------
-    # 📈 GRÁFICOS (TODOS df_f)
+    # 📈 GRÁFICOS
     # -----------------------------------------------------
     col1, col2 = st.columns(2)
 
@@ -2746,20 +2732,18 @@ if menu == "Panel Scouts":
             .sort_values("Mes")
         )
 
-        st.plotly_chart(
-            px.line(total_mes, x="Mes", y="Informes", markers=True),
-            use_container_width=True
-        )
+        fig = px.line(total_mes, x="Mes", y="Informes", markers=True)
+        fig = apply_glass_plotly(fig)
+        st.plotly_chart(fig, use_container_width=True)
 
         st.markdown("### 🧭 Observaciones por posición")
 
         pos_df = df_f["Posición"].value_counts().reset_index()
         pos_df.columns = ["Posición", "Cantidad"]
 
-        st.plotly_chart(
-            px.pie(pos_df, names="Posición", values="Cantidad", hole=0.45),
-            use_container_width=True
-        )
+        fig = px.pie(pos_df, names="Posición", values="Cantidad", hole=0.45)
+        fig = apply_glass_plotly(fig)
+        st.plotly_chart(fig, use_container_width=True)
 
     with col2:
         st.markdown("### 📊 Evolución mensual por scout")
@@ -2771,16 +2755,15 @@ if menu == "Panel Scouts":
             .sort_values("Mes")
         )
 
-        st.plotly_chart(
-            px.line(
-                scout_mes,
-                x="Mes",
-                y="Informes",
-                color="Scout",
-                markers=True
-            ),
-            use_container_width=True
+        fig = px.line(
+            scout_mes,
+            x="Mes",
+            y="Informes",
+            color="Scout",
+            markers=True
         )
+        fig = apply_glass_plotly(fig)
+        st.plotly_chart(fig, use_container_width=True)
 
         st.markdown("### 📊 Informes por scout")
 
@@ -2790,10 +2773,9 @@ if menu == "Panel Scouts":
             .reset_index(name="Informes")
         )
 
-        st.plotly_chart(
-            px.bar(bar_df, x="Scout", y="Informes", text="Informes"),
-            use_container_width=True
-        )
+        fig = px.bar(bar_df, x="Scout", y="Informes", text="Informes")
+        fig = apply_glass_plotly(fig)
+        st.plotly_chart(fig, use_container_width=True)
 
     # -----------------------------------------------------
     # 🎯 DISTRIBUCIÓN DE DECISIONES
@@ -2810,7 +2792,6 @@ if menu == "Panel Scouts":
     )
 
     st.dataframe(tabla_lineas, use_container_width=True)
-
 
 # =========================================================
 # BLOQUE — ÁREA PRÉSTAMOS (Power BI)
@@ -2858,6 +2839,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
