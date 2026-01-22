@@ -272,7 +272,7 @@ st.markdown("""
 }
 
 /* =====================================================
-✍️ TEXTO / TIPOGRAFÍA GLOBAL
+✍️ TEXTO GLOBAL
 ===================================================== */
 h1, h2, h3, h4, h5, h6, .stMarkdown, label {
     color: #ffffff !important;
@@ -302,32 +302,26 @@ div[data-testid="stContainer"] {
 }
 
 /* =====================================================
-📊 KPI / TARJETAS — ESTILO DEFINITIVO (RESTAURADO)
+📊 KPI — TARJETAS (COMO ANTES + MEJOR)
 ===================================================== */
 .kpi-container {
-    display: flex;
-    justify-content: center;
-    gap: 22px;
-    margin: 25px 0 35px 0;
-    flex-wrap: wrap;
+    display:flex;
+    justify-content:center;
+    gap:22px;
+    margin:25px 0 35px 0;
+    flex-wrap:wrap;
 }
 
 .kpi-card {
-    background: linear-gradient(
-        135deg,
-        rgba(14,17,23,0.95),
-        rgba(30,60,114,0.95)
-    );
-    border-radius: 16px;
-    padding: 18px 22px;
-    min-width: 220px;
-    text-align: center;
+    background: linear-gradient(135deg, #0e1117, #1e3c72);
+    border-radius:16px;
+    padding:18px 22px;
+    min-width:220px;
+    text-align:center;
     box-shadow:
         0 10px 26px rgba(0,0,0,0.55),
         inset 0 0 18px rgba(0,198,255,0.06);
-    transition:
-        transform 0.25s ease,
-        box-shadow 0.25s ease;
+    transition: all 0.25s ease;
 }
 
 .kpi-card:hover {
@@ -338,33 +332,86 @@ div[data-testid="stContainer"] {
 }
 
 .kpi-title {
-    color: #00c6ff;
-    font-size: 14px;
-    font-weight: 700;
-    margin-bottom: 6px;
+    color:#00c6ff;
+    font-size:14px;
+    font-weight:700;
 }
 
 .kpi-value {
-    font-size: 30px;
-    font-weight: 800;
-    color: #ffffff;
+    font-size:30px;
+    font-weight:800;
+    color:white;
 }
 
 /* =====================================================
-🎚️ SLIDERS — CYAN LIMPIO (SIN ROJO)
+🏆 RANKINGS — TARJETAS (FIX DEFINITIVO)
+===================================================== */
+.panel-title {
+    color:#00c6ff;
+    font-weight:700;
+    font-size:16px;
+    margin:14px 0 8px 0;
+    text-align:center;
+}
+
+.rank-card {
+    background: linear-gradient(90deg, #0e1117, #1e3c72);
+    border-radius:12px;
+    padding:10px 14px;
+    margin-bottom:8px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    box-shadow:0 0 10px rgba(0,0,0,0.45);
+    transition: all 0.25s ease;
+}
+
+.rank-card:hover {
+    transform: translateX(4px);
+    box-shadow:
+        0 0 18px rgba(0,198,255,0.45),
+        0 0 30px rgba(0,0,0,0.6);
+}
+
+.rank-left {
+    display:flex;
+    gap:12px;
+    align-items:center;
+}
+
+.rank-num {
+    color:#ffd700;
+    font-weight:800;
+    width:26px;
+    text-align:center;
+}
+
+.rank-name {
+    font-size:13px;
+    font-weight:700;
+    color:white;
+}
+
+.rank-score {
+    color:#00c6ff;
+    font-weight:800;
+}
+
+/* =====================================================
+🎚️ SLIDERS — FIX ROJO + NUMEROS
 ===================================================== */
 .stSlider > div[data-baseweb="slider"] > div {
     background: rgba(255,255,255,0.25) !important;
-    border-radius: 8px;
+    border-radius:8px;
 }
 
 .stSlider > div[data-baseweb="slider"] > div > div {
-    background-color: #00c6ff !important;
+    background-color:#00c6ff !important;
 }
 
 .stSlider [role="slider"] {
-    background-color: #00c6ff !important;
-    border: 2px solid #ffffff !important;
+    background-color:#00c6ff !important;
+    border:2px solid #ffffff !important;
     box-shadow:
         0 0 8px rgba(0,198,255,0.9),
         0 0 16px rgba(0,198,255,0.4) !important;
@@ -372,58 +419,60 @@ div[data-testid="stContainer"] {
 
 .stSlider span,
 .stSlider [data-testid="stSliderThumbValue"] {
-    color: #00c6ff !important;
-    font-weight: 700;
+    color:#00c6ff !important;
+    font-weight:700;
 }
 
 /* =====================================================
-📂 SIDEBAR — RADIO / MENÚ (SIN ROJO)
+📂 SIDEBAR — MENU + RADIO (SIN ROJO)
 ===================================================== */
 section[data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #0e1117 0%, #16213e 100%);
-    border-right: 1px solid rgba(255,255,255,0.06);
+    background: linear-gradient(180deg, #0e1117, #16213e);
+    border-right:1px solid rgba(255,255,255,0.06);
 }
 
 section[data-testid="stSidebar"]
 div[role="radiogroup"] > label[data-selected="true"] {
-    background: linear-gradient(
-        90deg,
-        rgba(0,198,255,0.30),
-        rgba(0,198,255,0.05)
-    );
-    border-left: 4px solid #00c6ff;
-    border-radius: 6px;
+    background: linear-gradient(90deg, rgba(0,198,255,0.30), rgba(0,198,255,0.05));
+    border-left:4px solid #00c6ff;
+    border-radius:6px;
+}
+
+/* Radio button interno (punto) */
+div[role="radiogroup"] label span div {
+    background-color:#00c6ff !important;
+}
+
+/* Borde radio */
+div[role="radiogroup"] label span[aria-hidden="true"] {
+    border-color:#00c6ff !important;
 }
 
 /* =====================================================
-📊 TABLAS — GLASS LIGERO
+📊 TABLAS — GLASS + HOVER
 ===================================================== */
 div[data-testid="stDataFrame"] {
-    background: linear-gradient(
-        145deg,
-        rgba(30,60,114,0.45),
-        rgba(14,17,23,0.70)
-    ) !important;
-    border-radius: 16px;
-    padding: 8px;
+    background: linear-gradient(145deg, rgba(30,60,114,0.45), rgba(14,17,23,0.70));
+    border-radius:16px;
+    padding:8px;
     box-shadow:
         0 12px 30px rgba(0,0,0,0.40),
         inset 0 0 18px rgba(0,198,255,0.05);
 }
 
 div[data-testid="stDataFrame"] table {
-    background-color: transparent !important;
-    color: #ffffff !important;
+    background-color:transparent !important;
+    color:white !important;
 }
 
 div[data-testid="stDataFrame"] thead th {
-    background: rgba(0,0,0,0.20) !important;
-    color: #00c6ff !important;
-    font-weight: 700;
+    background:rgba(0,0,0,0.20) !important;
+    color:#00c6ff !important;
+    font-weight:700;
 }
 
 div[data-testid="stDataFrame"] tbody tr:hover td {
-    background: rgba(0,198,255,0.15) !important;
+    background:rgba(0,198,255,0.15) !important;
 }
 
 /* =====================================================
@@ -431,52 +480,55 @@ div[data-testid="stDataFrame"] tbody tr:hover td {
 ===================================================== */
 *:focus,
 *:focus-visible {
-    outline: none !important;
+    outline:none !important;
 }
 
 input, textarea {
-    caret-color: #00c6ff !important;
+    caret-color:#00c6ff !important;
 }
 
 div[data-baseweb="input"] > div,
-div[data-baseweb="select"] > div {
-    border: 1px solid rgba(0,198,255,0.45) !important;
-    box-shadow: none !important;
+div[data-baseweb="select"] > div,
+div[data-baseweb="textarea"] > div {
+    border:1px solid rgba(0,198,255,0.45) !important;
+    background-color:rgba(14,17,23,0.85) !important;
+    box-shadow:none !important;
 }
 
 div[data-baseweb="input"] > div:focus-within,
-div[data-baseweb="select"] > div:focus-within {
-    border-color: #00c6ff !important;
-    box-shadow: 0 0 10px rgba(0,198,255,0.45) !important;
+div[data-baseweb="select"] > div:focus-within,
+div[data-baseweb="textarea"] > div:focus-within {
+    border-color:#00c6ff !important;
+    box-shadow:0 0 10px rgba(0,198,255,0.45) !important;
 }
 
-div[aria-invalid="true"] {
-    border-color: #00c6ff !important;
-    box-shadow: 0 0 10px rgba(0,198,255,0.45) !important;
+div[aria-invalid="true"],
+div[aria-invalid="true"] * {
+    border-color:#00c6ff !important;
+    box-shadow:0 0 10px rgba(0,198,255,0.45) !important;
 }
 
 /* =====================================================
 🚨 ALERTAS
 ===================================================== */
 .stAlert.success {
-    background-color: rgba(0,51,102,0.97) !important;
-    color: #00c6ff !important;
-    border-left: 4px solid #00c6ff !important;
+    background-color:rgba(0,51,102,0.97) !important;
+    color:#00c6ff !important;
+    border-left:4px solid #00c6ff !important;
 }
 .stAlert.warning {
-    background-color: rgba(51,43,0,0.97) !important;
-    color: #ffd700 !important;
-    border-left: 4px solid #ffd700 !important;
+    background-color:rgba(51,43,0,0.97) !important;
+    color:#ffd700 !important;
+    border-left:4px solid #ffd700 !important;
 }
 .stAlert.error {
-    background-color: rgba(51,0,0,0.97) !important;
-    color: #ff6f61 !important;
-    border-left: 4px solid #ff6f61 !important;
+    background-color:rgba(51,0,0,0.97) !important;
+    color:#ff6f61 !important;
+    border-left:4px solid #ff6f61 !important;
 }
 
 </style>
 """, unsafe_allow_html=True)
-
 
 
 # =========================================================
@@ -2817,6 +2869,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
