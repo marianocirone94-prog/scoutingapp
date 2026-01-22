@@ -14,6 +14,8 @@ import pandas as pd
 import streamlit as st
 import matplotlib.pyplot as plt
 import plotly.express as px
+import base64
+import streamlit as st
 
 from io import BytesIO
 from datetime import date, datetime, timedelta
@@ -210,7 +212,53 @@ st.set_page_config(
 )
 
 # =========================================================
-# CARGAR ESTILOS Y CSS PERSONALIZADO (GLOBAL)
+# 🎥 FONDO PARALLAX + CSS GLOBAL — ScoutingApp PRO
+# (BLOQUE ÚNICO DEFINITIVO)
+# =========================================================
+
+# ---------- FONDO CON PARALLAX ----------
+def set_fondo_parallax(ruta_img: str):
+    import base64
+
+    with open(ruta_img, "rb") as f:
+        encoded = base64.b64encode(f.read()).decode()
+
+    st.markdown(
+        f"""
+        <style>
+        /* =====================================================
+           FONDO GLOBAL CON IMAGEN + PARALLAX
+        ===================================================== */
+        .stApp {{
+            background:
+                linear-gradient(
+                    rgba(14,17,23,0.88),
+                    rgba(14,17,23,0.88)
+                ),
+                url("data:image/png;base64,{encoded}");
+            background-size: cover;
+            background-position: center top;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            animation: fondoParallax 90s linear infinite;
+        }}
+
+        @keyframes fondoParallax {{
+            0%   {{ background-position: center top; }}
+            50%  {{ background-position: center 55%; }}
+            100% {{ background-position: center top; }}
+        }}
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+# 👉 ACÁ SE CARGA REALMENTE LA IMAGEN
+set_fondo_parallax("fondo_estadio.png.png")
+
+
+# =========================================================
+# CSS GLOBAL (INTERFAZ SOBRE EL FONDO)
 # =========================================================
 try:
     from ui.style import load_custom_css
@@ -222,8 +270,7 @@ st.markdown("""
 <style>
 
 /* =====================================================
-   TEXTO / TIPOGRAFÍA GLOBAL
-   (mantiene identidad visual)
+   TEXTO / TIPOGRAFÍA
 ===================================================== */
 h1, h2, h3, h4, h5, h6, .stMarkdown {
     color: #ffffff !important;
@@ -231,70 +278,61 @@ h1, h2, h3, h4, h5, h6, .stMarkdown {
 
 /* =====================================================
    SLIDERS
-   (optimizados para fondo con imagen)
 ===================================================== */
 .stSlider > div[data-baseweb="slider"] > div {
-    background: rgba(255, 255, 255, 0.18) !important;
+    background: rgba(255,255,255,0.20) !important;
     border-radius: 6px;
 }
-
 .stSlider > div[data-baseweb="slider"] > div > div {
     background-color: #00c6ff !important;
 }
-
 .stSlider [role="slider"] {
     background-color: #00c6ff !important;
     border: 2px solid #ffffff !important;
-    box-shadow: 0 0 6px rgba(0, 198, 255, 0.85) !important;
+    box-shadow: 0 0 8px rgba(0,198,255,0.9) !important;
 }
 
 /* =====================================================
    ALERTAS
-   (mismos colores, mejor contraste)
 ===================================================== */
 .stAlert.success {
-    background-color: rgba(0, 51, 102, 0.95) !important;
+    background-color: rgba(0,51,102,0.96) !important;
     color: #00c6ff !important;
     border-left: 4px solid #00c6ff !important;
 }
-
 .stAlert.warning {
-    background-color: rgba(51, 43, 0, 0.95) !important;
+    background-color: rgba(51,43,0,0.96) !important;
     color: #ffd700 !important;
     border-left: 4px solid #ffd700 !important;
 }
-
 .stAlert.error {
-    background-color: rgba(51, 0, 0, 0.95) !important;
+    background-color: rgba(51,0,0,0.96) !important;
     color: #ff6f61 !important;
     border-left: 4px solid #ff6f61 !important;
 }
 
 /* =====================================================
-   CONTENEDORES PRINCIPALES
-   (cards / bloques flotantes)
+   CONTENEDORES / CARDS
 ===================================================== */
 div[data-testid="stContainer"] {
-    background-color: rgba(22, 27, 34, 0.92);
+    background-color: rgba(22,27,34,0.90);
     backdrop-filter: blur(6px);
     border-radius: 16px;
     padding: 18px;
     margin-bottom: 18px;
-    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.50);
 }
 
 /* =====================================================
    SIDEBAR
-   (oscura, coherente con el layout)
 ===================================================== */
 section[data-testid="stSidebar"] {
-    background-color: rgba(14, 17, 23, 0.98);
-    border-right: 1px solid rgba(255, 255, 255, 0.05);
+    background-color: rgba(14,17,23,0.97);
+    border-right: 1px solid rgba(255,255,255,0.06);
 }
 
 </style>
 """, unsafe_allow_html=True)
-
 
 # =========================================================
 # 🎨 CSS ESPECÍFICO — PANEL GENERAL (NO TOCAR LUEGO)
@@ -2709,6 +2747,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
