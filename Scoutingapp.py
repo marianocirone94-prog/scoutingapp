@@ -8,14 +8,16 @@
 # - Diseño oscuro #0e1117 + acento #00c6ff
 # =========================================================
 
+# ----------------------
+# 📦 IMPORTS GENERALES
+# ----------------------
 import os
+import base64
 import numpy as np
 import pandas as pd
 import streamlit as st
 import matplotlib.pyplot as plt
 import plotly.express as px
-import base64
-import streamlit as st
 
 from io import BytesIO
 from datetime import date, datetime, timedelta
@@ -24,6 +26,27 @@ from st_aggrid import AgGrid, GridOptionsBuilder
 import matplotlib.patches as patches
 import gspread
 from google.oauth2.service_account import Credentials
+
+# =========================================================
+# 🎨 HELPER VISUAL — PLOTLY GLASS (ANTI FONDO NEGRO)
+# =========================================================
+def apply_glass_plotly(fig):
+    """
+    Aplica un layout transparente y coherente con el diseño
+    glass/futurista de la app. Elimina el fondo negro por defecto
+    de Plotly y permite que se vea el fondo animado.
+    """
+    fig.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="white"),
+        legend=dict(
+            bgcolor="rgba(0,0,0,0)",
+            borderwidth=0
+        ),
+        margin=dict(l=20, r=20, t=40, b=20)
+    )
+    return fig
 
 # =========================================================
 # BLOQUE DE CONEXIÓN A GOOGLE SHEETS (FINAL - SEGURO Y MULTIUSUARIO)
@@ -2835,6 +2858,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
