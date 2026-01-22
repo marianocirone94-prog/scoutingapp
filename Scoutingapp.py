@@ -398,29 +398,64 @@ div[data-testid="stContainer"] {
 }
 
 /* =====================================================
-🎚️ SLIDERS — FIX TOTAL (ROJO MUERTO)
+🎚️ SLIDERS — FIX TOTAL DEFINITIVO (ROJO ELIMINADO)
 ===================================================== */
 
-/* Track INACTIVO (era rojo) */
-.stSlider div[data-baseweb="slider"] div[aria-hidden="true"]{
-    background-color:rgba(10,20,35,.85)!important;
+/* -----------------------------------------------------
+   TRACK INACTIVO (lado derecho / fondo)
+----------------------------------------------------- */
+.stSlider div[data-baseweb="slider"] > div {
+    background-color: rgba(12, 22, 38, 0.85) !important;  /* azul oscuro / negro */
+    border-radius: 8px;
 }
-/* Track ACTIVO */
-.stSlider div[data-baseweb="slider"] div[aria-hidden="false"]{
-    background:linear-gradient(90deg,#00c6ff,#1e3c72)!important;
+
+/* -----------------------------------------------------
+   TRACK ACTIVO (lado izquierdo — ERA ROJO)
+----------------------------------------------------- */
+.stSlider div[data-baseweb="slider"] > div > div {
+    background: linear-gradient(
+        90deg,
+        #00c6ff,
+        #1e3c72
+    ) !important;
+    border-radius: 8px;
 }
-/* Thumb */
-.stSlider [role="slider"]{
-    background:#00c6ff!important;
-    border:2px solid #fff!important;
-    box-shadow:0 0 10px rgba(0,198,255,.9)!important;
+
+/* -----------------------------------------------------
+   THUMB / HANDLE (bolita)
+----------------------------------------------------- */
+.stSlider [role="slider"] {
+    background-color: #00c6ff !important;
+    border: 2px solid #ffffff !important;
+    box-shadow:
+        0 0 10px rgba(0,198,255,0.9),
+        0 0 18px rgba(0,198,255,0.45) !important;
 }
-/* Números */
+
+/* -----------------------------------------------------
+   VALORES NUMÉRICOS (min / max / valor actual)
+----------------------------------------------------- */
 .stSlider span,
-.stSlider [data-testid="stSliderThumbValue"]{
-    color:#00c6ff!important;
-    font-weight:700;
+.stSlider [data-testid="stSliderThumbValue"] {
+    color: #00c6ff !important;
+    font-weight: 700;
 }
+
+/* -----------------------------------------------------
+   FIX EXTRA — COLOR PRIMARIO STREAMLIT (ANTI ROJO GLOBAL)
+----------------------------------------------------- */
+:root {
+    --primary-color: #00c6ff !important;
+    --primary-color-hover: #00c6ff !important;
+}
+
+.stApp,
+[data-testid="stAppViewContainer"],
+section[data-testid="stSidebar"] {
+    --primary-color: #00c6ff !important;
+    --primary-color-hover: #00c6ff !important;
+}
+
 
 /* =====================================================
 📂 SIDEBAR — MENU + RADIO (SIN ROJO)
@@ -2868,6 +2903,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
