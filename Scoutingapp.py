@@ -274,9 +274,7 @@ st.markdown("""
 /* =====================================================
 ✍️ TEXTO GLOBAL
 ===================================================== */
-h1, h2, h3, h4, h5, h6,
-.stMarkdown,
-label {
+h1, h2, h3, h4, h5, h6, .stMarkdown, label {
     color: #ffffff !important;
 }
 
@@ -284,11 +282,7 @@ label {
 🧊 CONTENEDORES (CARDS / BLOQUES)
 ===================================================== */
 div[data-testid="stContainer"] {
-    background: linear-gradient(
-        145deg,
-        rgba(30,60,114,0.75),
-        rgba(14,17,23,0.90)
-    );
+    background: linear-gradient(145deg, rgba(30,60,114,0.75), rgba(14,17,23,0.90));
     border-radius: 18px;
     padding: 18px;
     margin-bottom: 18px;
@@ -304,38 +298,19 @@ div[data-testid="stContainer"] {
 }
 
 /* =====================================================
-🎚️ SLIDERS — FIX ROJO DEFINITIVO
+🎚️ SLIDERS — FULL CYAN (SIN ROJO)
 ===================================================== */
-
-/* Track inactivo */
 .stSlider > div[data-baseweb="slider"] > div {
     background: rgba(255,255,255,0.25) !important;
+    border-radius: 8px;
 }
-
-/* Track activo */
 .stSlider > div[data-baseweb="slider"] > div > div {
     background-color: #00c6ff !important;
 }
-
-/* Thumb */
 .stSlider [role="slider"] {
     background-color: #00c6ff !important;
-    border: 2px solid #ffffff !important;
-    box-shadow:
-        0 0 8px rgba(0,198,255,0.9),
-        0 0 16px rgba(0,198,255,0.4) !important;
-}
-
-/* Números min / max */
-.stSlider span {
-    color: #00c6ff !important;
-    font-weight: 600;
-}
-
-/* Valor flotante */
-.stSlider [data-testid="stSliderThumbValue"] {
-    color: #00c6ff !important;
-    font-weight: 700;
+    border: 2px solid #00c6ff !important;
+    box-shadow: 0 0 12px rgba(0,198,255,0.85) !important;
 }
 
 /* =====================================================
@@ -346,20 +321,15 @@ section[data-testid="stSidebar"] {
     border-right: 1px solid rgba(255,255,255,0.06);
 }
 
-/* Forzar color cyan */
+/* Radio / checkbox (cuando aplica) */
 section[data-testid="stSidebar"] input[type="radio"],
 section[data-testid="stSidebar"] input[type="checkbox"] {
     accent-color: #00c6ff !important;
 }
 
-/* Item activo */
-section[data-testid="stSidebar"]
-div[role="radiogroup"] > label[data-selected="true"] {
-    background: linear-gradient(
-        90deg,
-        rgba(0,198,255,0.30),
-        rgba(0,198,255,0.05)
-    );
+/* Item activo del menú (radio group) */
+section[data-testid="stSidebar"] div[role="radiogroup"] > label[data-selected="true"] {
+    background: linear-gradient(90deg, rgba(0,198,255,0.30), rgba(0,198,255,0.05));
     border-left: 4px solid #00c6ff;
     border-radius: 6px;
 }
@@ -368,11 +338,7 @@ div[role="radiogroup"] > label[data-selected="true"] {
 📊 TABLAS — GLASS LIGERO (NO NEGRO OPACO)
 ===================================================== */
 div[data-testid="stDataFrame"] {
-    background: linear-gradient(
-        145deg,
-        rgba(30,60,114,0.45),
-        rgba(14,17,23,0.70)
-    ) !important;
+    background: linear-gradient(145deg, rgba(30,60,114,0.45), rgba(14,17,23,0.70)) !important;
     border-radius: 16px;
     padding: 8px;
     box-shadow:
@@ -387,11 +353,7 @@ div[data-testid="stDataFrame"] table {
 }
 
 div[data-testid="stDataFrame"] thead th {
-    background: linear-gradient(
-        180deg,
-        rgba(0,0,0,0.25),
-        rgba(0,0,0,0.10)
-    ) !important;
+    background: linear-gradient(180deg, rgba(0,0,0,0.25), rgba(0,0,0,0.10)) !important;
     color: #00c6ff !important;
     font-weight: 700;
     border-bottom: 1px solid rgba(255,255,255,0.14) !important;
@@ -403,16 +365,15 @@ div[data-testid="stDataFrame"] tbody td {
 }
 
 div[data-testid="stDataFrame"] tbody tr:hover td {
-    background: linear-gradient(
-        90deg,
-        rgba(0,198,255,0.16),
-        rgba(0,198,255,0.05)
-    ) !important;
+    background: linear-gradient(90deg, rgba(0,198,255,0.16), rgba(0,198,255,0.05)) !important;
 }
 
 /* =====================================================
-✅ FIX DEFINITIVO — ELIMINAR ROJO BASEWEB
+✅ FIX DEFINITIVO — ELIMINAR ROJO DE BASEWEB (FOCUS/INVALID)
+   (selectbox / multiselect / text_input / number_input / etc.)
 ===================================================== */
+
+/* 1) Contenedor general de inputs/selects */
 div[data-baseweb="input"] > div,
 div[data-baseweb="select"] > div,
 div[data-baseweb="textarea"] > div {
@@ -421,6 +382,7 @@ div[data-baseweb="textarea"] > div {
     box-shadow: none !important;
 }
 
+/* 2) Focus real (cuando clickeás adentro) */
 div[data-baseweb="input"] > div:focus-within,
 div[data-baseweb="select"] > div:focus-within,
 div[data-baseweb="textarea"] > div:focus-within {
@@ -428,7 +390,7 @@ div[data-baseweb="textarea"] > div:focus-within {
     box-shadow: 0 0 10px rgba(0,198,255,0.45) !important;
 }
 
-/* Estado inválido (el rojo fantasma) */
+/* 3) Estado INVALID que Streamlit pinta rojo (clave) */
 div[aria-invalid="true"],
 div[aria-invalid="true"] * {
     border-color: #00c6ff !important;
@@ -436,13 +398,13 @@ div[aria-invalid="true"] * {
     outline: none !important;
 }
 
-/* Quitar outlines del navegador */
+/* 4) Quitar outlines rojos por defecto del navegador/BaseWeb */
 *:focus,
 *:focus-visible {
     outline: none !important;
 }
 
-/* Caret */
+/* 5) Asegurar caret / selection en cyan (detalle premium) */
 input, textarea {
     caret-color: #00c6ff !important;
 }
@@ -468,7 +430,6 @@ input, textarea {
 
 </style>
 """, unsafe_allow_html=True)
-
 
 
 
@@ -2810,6 +2771,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
