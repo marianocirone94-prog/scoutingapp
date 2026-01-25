@@ -893,44 +893,44 @@ if menu == "Jugadores":
     opciones_pies = ["Derecho", "Izquierdo", "Ambidiestro"]
 
     opciones_posiciones = [
-        "Arquero","Lateral derecho","Defensa central derecho",
-        "Defensa central izquierdo","Lateral izquierdo",
-        "Mediocampista defensivo","Mediocampista mixto",
-        "Mediocampista ofensivo","Extremo derecho",
-        "Extremo izquierdo","Delantero centro"
+        "Arquero", "Lateral derecho", "Defensa central derecho",
+        "Defensa central izquierdo", "Lateral izquierdo",
+        "Mediocampista defensivo", "Mediocampista mixto",
+        "Mediocampista ofensivo", "Extremo derecho",
+        "Extremo izquierdo", "Delantero centro"
     ]
 
     opciones_ligas = [
-        "Argentina - LPF","Argentina - Primera Nacional","Argentina - Federal A",
-        "Brasil - Serie A (Brasileirão)","Brasil - Serie B",
-        "Chile - Primera División","Uruguay - Primera División",
-        "Uruguay - Segunda División Profesional","Paraguay - División Profesional",
-        "Colombia - Categoría Primera A","Ecuador - LigaPro Serie A",
-        "Perú - Liga 1","Venezuela - Liga FUTVE","México - Liga MX",
-        "España - LaLiga","España - LaLiga 2","Italia - Serie A","Italia - Serie B",
-        "Inglaterra - Premier League","Inglaterra - Championship",
-        "Francia - Ligue 1","Alemania - Bundesliga","Portugal - Primeira Liga",
-        "Países Bajos - Eredivisie","Suiza - Super League",
-        "Polonia - Liga Polaca","Bélgica - Pro League",
-        "Grecia - Super League","Turquía - Süper Lig",
-        "Arabia Saudita - Saudi Pro League","Estados Unidos - MLS",
+        "Argentina - LPF", "Argentina - Primera Nacional", "Argentina - Federal A",
+        "Brasil - Serie A (Brasileirão)", "Brasil - Serie B",
+        "Chile - Primera División", "Uruguay - Primera División",
+        "Uruguay - Segunda División Profesional", "Paraguay - División Profesional",
+        "Colombia - Categoría Primera A", "Ecuador - LigaPro Serie A",
+        "Perú - Liga 1", "Venezuela - Liga FUTVE", "México - Liga MX",
+        "España - LaLiga", "España - LaLiga 2", "Italia - Serie A", "Italia - Serie B",
+        "Inglaterra - Premier League", "Inglaterra - Championship",
+        "Francia - Ligue 1", "Alemania - Bundesliga", "Portugal - Primeira Liga",
+        "Países Bajos - Eredivisie", "Suiza - Super League",
+        "Polonia - Liga Polaca", "Bélgica - Pro League",
+        "Grecia - Super League", "Turquía - Süper Lig",
+        "Arabia Saudita - Saudi Pro League", "Estados Unidos - MLS",
         "Otro / Sin especificar"
     ]
 
     opciones_paises = [
-        "Argentina","Brasil","Chile","Uruguay","Paraguay","Colombia","México",
-        "Ecuador","Perú","Venezuela","España","Italia","Francia","Inglaterra",
-        "Alemania","Portugal","Estados Unidos","Canadá","Bolivia",
-        "Honduras","Costa Rica","El Salvador","Panamá",
-        "República Dominicana","Guatemala","Haití","Jamaica","Otro"
+        "Argentina", "Brasil", "Chile", "Uruguay", "Paraguay", "Colombia", "México",
+        "Ecuador", "Perú", "Venezuela", "España", "Italia", "Francia", "Inglaterra",
+        "Alemania", "Portugal", "Estados Unidos", "Canadá", "Bolivia",
+        "Honduras", "Costa Rica", "El Salvador", "Panamá",
+        "República Dominicana", "Guatemala", "Haití", "Jamaica", "Otro"
     ]
 
     opciones_caracteristicas = [
-        "agresivo","completo","tiempista","dinámico","velocista","goleador",
-        "juego de espalda","líder defensivo","versátil","posicional",
-        "habilidoso","táctico","aguerrido","resolutivo","creativo",
-        "preciso","criterioso","aplomado","temperamental",
-        "técnico","conductor","proyección"
+        "agresivo", "completo", "tiempista", "dinámico", "velocista", "goleador",
+        "juego de espalda", "líder defensivo", "versátil", "posicional",
+        "habilidoso", "táctico", "aguerrido", "resolutivo", "creativo",
+        "preciso", "criterioso", "aplomado", "temperamental",
+        "técnico", "conductor", "proyección"
     ]
 
     # ---------------------------------------------------------
@@ -1012,30 +1012,30 @@ if menu == "Jugadores":
         with col1:
             st.markdown(f"### {jugador['Nombre']}")
 
-            if str(jugador.get("URL_Foto","")).startswith("http"):
+            if str(jugador.get("URL_Foto", "")).startswith("http"):
                 st.image(jugador["URL_Foto"], width=160)
 
             edad = calcular_edad(jugador.get("Fecha_Nac"))
 
-            nac1 = jugador.get("Nacionalidad","-")
-            nac2 = jugador.get("Segunda_Nacionalidad","")
-            st.write(f"📅 Nacimiento: {jugador.get('Fecha_Nac','')} ({edad} años)")
+            nac1 = jugador.get("Nacionalidad", "-")
+            nac2 = jugador.get("Segunda_Nacionalidad", "")
+            st.write(f"📅 Nacimiento: {jugador.get('Fecha_Nac', '')} ({edad} años)")
             st.write(f"🌍 Nacionalidad: {nac1 if not nac2 else f'{nac1}, {nac2}'}")
-            st.write(f"📏 Altura: {jugador.get('Altura','-')} cm")
-            st.write(f"👟 Pie hábil: {jugador.get('Pie_Hábil','-')}")
-            st.write(f"🎯 Posición: {jugador.get('Posición','-')}")
-            st.write(f"🏟️ Club: {jugador.get('Club','-')} ({jugador.get('Liga','-')})")
+            st.write(f"📏 Altura: {jugador.get('Altura', '-')} cm")
+            st.write(f"👟 Pie hábil: {jugador.get('Pie_Hábil', '-')}")
+            st.write(f"🎯 Posición: {jugador.get('Posición', '-')}")
+            st.write(f"🏟️ Club: {jugador.get('Club', '-')} ({jugador.get('Liga', '-')})")
 
             if jugador.get("Fecha_Fin_Contrato"):
                 st.write(f"📄 Fin de contrato: {jugador['Fecha_Fin_Contrato']}")
 
-            if str(jugador.get("URL_Perfil","")).startswith("http"):
+            if str(jugador.get("URL_Perfil", "")).startswith("http"):
                 st.markdown(f"[🌐 Perfil externo]({jugador['URL_Perfil']})")
 
-            if str(jugador.get("Instagram","")).startswith("http"):
+            if str(jugador.get("Instagram", "")).startswith("http"):
                 st.markdown(f"[📸 Instagram]({jugador['Instagram']})")
 
-            # ⭐ AGREGAR A LISTA CORTA (NUEVO)
+            # ⭐ AGREGAR A LISTA CORTA (POR SEMESTRE)
             if CURRENT_ROLE in ["admin", "scout"]:
                 if st.button("⭐ Agregar a lista corta"):
                     try:
@@ -1043,25 +1043,46 @@ if menu == "Jugadores":
                         data_short = ws_short.get_all_records()
                         df_short_local = pd.DataFrame(data_short)
 
-                        existe = df_short_local[
-                            (df_short_local["ID_Jugador"].astype(str) == str(jugador["ID_Jugador"])) &
-                            (df_short_local["Agregado_Por"] == CURRENT_USER)
-                        ] if not df_short_local.empty else pd.DataFrame()
+                        from datetime import date
+                        hoy = date.today()
+                        ANIO_ACTUAL = hoy.year
+                        SEMESTRE_ACTUAL = 1 if hoy.month <= 6 else 2
+
+                        if not df_short_local.empty:
+                            df_short_local["Fecha_Agregado_dt"] = pd.to_datetime(
+                                df_short_local["Fecha_Agregado"],
+                                format="%d/%m/%Y",
+                                errors="coerce"
+                            )
+
+                            df_short_local["Año"] = df_short_local["Fecha_Agregado_dt"].dt.year
+                            df_short_local["Semestre"] = df_short_local["Fecha_Agregado_dt"].dt.month.apply(
+                                lambda m: 1 if m <= 6 else 2
+                            )
+
+                            existe = df_short_local[
+                                (df_short_local["ID_Jugador"].astype(str) == str(jugador["ID_Jugador"])) &
+                                (df_short_local["Agregado_Por"] == CURRENT_USER) &
+                                (df_short_local["Año"] == ANIO_ACTUAL) &
+                                (df_short_local["Semestre"] == SEMESTRE_ACTUAL)
+                            ]
+                        else:
+                            existe = pd.DataFrame()
 
                         if not existe.empty:
-                            st.info("⚠️ Ya agregaste este jugador a tu lista corta")
+                            st.info("⚠️ Ya agregaste este jugador a tu lista corta en este semestre")
                         else:
                             nueva_fila = [
                                 jugador["ID_Jugador"],
                                 jugador["Nombre"],
                                 edad,
-                                jugador.get("Altura","-"),
-                                jugador.get("Club","-"),
-                                jugador.get("Posición","-"),
-                                jugador.get("URL_Foto",""),
-                                jugador.get("URL_Perfil",""),
+                                jugador.get("Altura", "-"),
+                                jugador.get("Club", "-"),
+                                jugador.get("Posición", "-"),
+                                jugador.get("URL_Foto", ""),
+                                jugador.get("URL_Perfil", ""),
                                 CURRENT_USER,
-                                date.today().strftime("%d/%m/%Y")
+                                hoy.strftime("%d/%m/%Y")
                             ]
 
                             ws_short.append_row(nueva_fila, value_input_option="USER_ENTERED")
@@ -1069,9 +1090,10 @@ if menu == "Jugadores":
                             st.cache_data.clear()
 
                     except Exception as e:
-                        st.error(f"⚠️ Error al agregar a lista corta: {e}")
+                        st.error(f"Error al agregar a lista corta: {e}")
 
-                # ---------------------------------------------------------
+            
+        # ---------------------------------------------------------
         # EDITAR DATOS DEL JUGADOR
         # ---------------------------------------------------------
         with st.expander("✏️ Editar información del jugador", expanded=False):
@@ -2903,6 +2925,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
