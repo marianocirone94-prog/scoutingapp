@@ -1508,6 +1508,7 @@ if menu == "Ver informes":
             "Fecha_Informe", "Nombre", "Club",
             "Línea", "Scout", "Equipos_Resultados", "Observaciones"
         ]
+
         df_tabla = df_filtrado[[c for c in columnas if c in df_filtrado.columns]].copy()
 
         try:
@@ -1516,7 +1517,11 @@ if menu == "Ver informes":
                 format="%d/%m/%Y",
                 errors="coerce"
             )
-            df_tabla = df_tabla.sort_values("Fecha_dt", ascending=False).drop(columns="Fecha_dt")
+            df_tabla = (
+                df_tabla
+                .sort_values("Fecha_dt", ascending=False)
+                .drop(columns="Fecha_dt")
+            )
         except Exception:
             pass
 
@@ -1574,14 +1579,25 @@ if menu == "Ver informes":
         )
 
         # =========================================================
-        # SELECCIÓN SEGURA (FIX ValueError)
+        # SELECCIÓN ULTRA SEGURA (AgGrid FIX DEFINITIVO)
         # =========================================================
-        selected_data = grid_response.get("selected_rows", [])
+        selected_data = grid_response.get("selected_rows")
 
-        if isinstance(selected_data, pd.DataFrame):
+        # Normalización TOTAL
+        if selected_data is None:
+            selected_data = []
+        elif isinstance(selected_data, pd.DataFrame):
             selected_data = selected_data.to_dict("records")
         elif isinstance(selected_data, dict):
             selected_data = [selected_data]
+        elif not isinstance(selected_data, list):
+            selected_data = []
+
+        # A PARTIR DE ACÁ SIEMPRE ES list[dict]
+        if len(selected_data) > 0:
+            jugador_sel = selected_data[0]
+            nombre_jug = jugador_sel.get("Nombre", "")
+
 
         # =========================================================
         # FICHA DEL JUGADOR
@@ -2957,6 +2973,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
