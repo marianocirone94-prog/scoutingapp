@@ -1204,8 +1204,8 @@ if menu == "Jugadores":
         # ---------------------------------------------------------
         # ELIMINAR JUGADOR
         # ---------------------------------------------------------
-        if CURRENT_ROLE == "admin":
-            with st.expander("🗑️ Eliminar jugador permanentemente", expanded=False):
+            if CURRENT_ROLE == "admin":
+                with st.expander("🗑️ Eliminar jugador permanentemente", expanded=False):
 
             eliminar_confirm = st.checkbox("Confirmar eliminación")
 
@@ -2974,6 +2974,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
