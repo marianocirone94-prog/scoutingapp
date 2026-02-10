@@ -1201,64 +1201,6 @@ if menu == "Jugadores":
                     except Exception as e:
                         st.error(f"⚠️ Error al guardar: {e}")
 
-        # ---------------------------------------------------------
-        # ELIMINAR JUGADOR
-        # ---------------------------------------------------------
-            if CURRENT_ROLE == "admin":
-                with st.expander("🗑️ Eliminar jugador permanentemente", expanded=False):
-
-            eliminar_confirm = st.checkbox("Confirmar eliminación")
-
-            if st.button("Eliminar jugador", type="primary"):
-
-                if eliminar_confirm:
-                    try:
-                        ws_players = obtener_hoja("Jugadores")
-                        data_players = ws_players.get_all_records()
-                        df_players_local = pd.DataFrame(data_players)
-
-                        df_players_local = df_players_local[
-                            df_players_local["ID_Jugador"].astype(str) != str(id_jugador)
-                        ]
-
-                        ws_players.clear()
-                        ws_players.append_row(list(df_players_local.columns))
-
-                        if not df_players_local.empty:
-                            ws_players.update(
-                                [df_players_local.columns.values.tolist()]
-                                + df_players_local.values.tolist()
-                            )
-
-                        ws_short = obtener_hoja("Lista corta")
-                        data_short = ws_short.get_all_records()
-                        df_short_local = pd.DataFrame(data_short)
-
-                        if not df_short_local.empty:
-                            df_short_local = df_short_local[
-                                df_short_local["ID_Jugador"].astype(str) != str(id_jugador)
-                            ]
-
-                            ws_short.clear()
-                            ws_short.append_row(list(df_short_local.columns))
-
-                            if not df_short_local.empty:
-                                ws_short.update(
-                                    [df_short_local.columns.values.tolist()]
-                                    + df_short_local.values.tolist()
-                                )
-
-                        st.cache_data.clear()
-                        df_players = df_players_usercargar_datos_sheets("Jugadores")
-                        df_short = df_short_usercargar_datos_sheets("Lista corta")
-
-                        st.success(f"🗑️ Jugador '{jugador['Nombre']}' eliminado correctamente.")
-                        st.experimental_rerun()
-
-                    except Exception as e:
-                        st.error(f"⚠️ Error al eliminar: {e}")
-                else:
-                    st.warning("Debes confirmar la eliminación antes de continuar.")
 
         # ---------------------------------------------------------
         # CARGAR NUEVO INFORME
@@ -2974,46 +2916,5 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
