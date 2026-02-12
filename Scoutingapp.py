@@ -946,7 +946,7 @@ if menu == "Jugadores":
         [""] + list(opciones.keys())
     )
 
-    # ---------------------------------------------------------
+        # ---------------------------------------------------------
     # CREAR NUEVO JUGADOR
     # ---------------------------------------------------------
     if not seleccion_jug:
@@ -978,19 +978,41 @@ if menu == "Jugadores":
 
                 if guardar and nuevo_nombre:
                     try:
-                        nuevo_id = generar_id_unico(df_players_all, "ID_Jugador")
+                        # 🔒 GENERAR ID DESDE LA HOJA REAL (NO CACHE)
+                        ws = obtener_hoja("Jugadores")
+                        data_sheet = ws.get_all_records()
+                        df_sheet = pd.DataFrame(data_sheet)
+
+                        if not df_sheet.empty and "ID_Jugador" in df_sheet.columns:
+                            max_id = pd.to_numeric(
+                                df_sheet["ID_Jugador"],
+                                errors="coerce"
+                            ).max()
+                            nuevo_id = int(max_id) + 1 if pd.notna(max_id) else 1
+                        else:
+                            nuevo_id = 1
+
                         car_str = ", ".join(nueva_caracteristica)
 
                         fila = [
-                            nuevo_id, nuevo_nombre, nueva_fecha,
-                            nueva_nacionalidad, nueva_seg_nac,
-                            nueva_altura, nuevo_pie, nueva_posicion,
-                            car_str, nuevo_club, nueva_liga, "",
-                            nueva_url_foto, nueva_url_perfil, nueva_instagram,
+                            nuevo_id,
+                            nuevo_nombre,
+                            nueva_fecha,
+                            nueva_nacionalidad,
+                            nueva_seg_nac,
+                            nueva_altura,
+                            nuevo_pie,
+                            nueva_posicion,
+                            car_str,
+                            nuevo_club,
+                            nueva_liga,
+                            "",
+                            nueva_url_foto,
+                            nueva_url_perfil,
+                            nueva_instagram,
                             nueva_fecha_fin_contrato
                         ]
 
-                        ws = obtener_hoja("Jugadores")
                         ws.append_row(fila, value_input_option="USER_ENTERED")
 
                         st.cache_data.clear()
@@ -1664,28 +1686,41 @@ if menu == "Ver informes":
 
                             if guardar:
                                 try:
-                                    df_all = df_reports_all.copy()
+                                    ws_inf = obtener_hoja("Informes")
 
-                                    df_all.loc[
-                                        df_all["ID_Informe"] == inf.ID_Informe,
-                                        ["Scout","Fecha_Partido","Equipos_Resultados","Línea","Observaciones"]
-                                    ] = [
-                                        nuevo_scout,
-                                        nueva_fecha,
-                                        nuevos_equipos,
-                                        nueva_linea,
-                                        nuevas_obs
+                                    # Leer hoja real
+                                    data_sheet = ws_inf.get_all_records()
+                                    df_sheet = pd.DataFrame(data_sheet)
+
+                                    # Buscar fila real por ID
+                                    match = df_sheet[
+                                        df_sheet["ID_Informe"].astype(str) == str(inf.ID_Informe)
                                     ]
 
-                                    ws_inf = obtener_hoja("Informes")
-                                    ws_inf.update(
-                                        [df_all.columns.values.tolist()] +
-                                        df_all.values.tolist()
-                                    )
+                                    if not match.empty:
 
-                                    st.cache_data.clear()
-                                    st.toast("✓ Informe actualizado correctamente", icon="✅")
-                                    st.rerun()
+                                        row_index = match.index[0] + 2  # +2 porque fila 1 es encabezado
+
+                                        fila_actual = match.copy()
+
+                                        # Aplicar cambios
+                                        fila_actual["Scout"] = nuevo_scout
+                                        fila_actual["Fecha_Partido"] = nueva_fecha
+                                        fila_actual["Equipos_Resultados"] = nuevos_equipos
+                                        fila_actual["Línea"] = nueva_linea
+                                        fila_actual["Observaciones"] = nuevas_obs
+
+                                        # Actualizar SOLO esa fila
+                                        ws_inf.update(
+                                            f"A{row_index}:AB{row_index}",
+                                            [fila_actual.values.tolist()[0]]
+                                        )
+
+                                        st.cache_data.clear()
+                                        st.toast("✓ Informe actualizado correctamente", icon="✅")
+                                        st.rerun()
+                                    else:
+                                        st.error("No se encontró el informe en la hoja.")
 
                                 except Exception as e:
                                     st.error(f"⚠️ Error al actualizar el informe: {e}")
@@ -1716,9 +1751,6 @@ if menu == "Ver informes":
 
                                 except Exception as e:
                                     st.error(f"⚠️ Error al eliminar el informe: {e}")
-
-    else:
-        st.info("📍 Seleccioná un registro para ver la ficha del jugador.")
 
 
 # =========================================================
@@ -2916,6 +2948,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
