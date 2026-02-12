@@ -929,7 +929,7 @@ if menu == "Jugadores":
         "agresivo", "completo", "tiempista", "dinámico", "velocista", "goleador",
         "juego de espalda", "líder defensivo", "versátil", "posicional",
         "habilidoso", "táctico", "aguerrido", "resolutivo", "creativo",
-        "preciso", "criterioso", "aplomado", "temperamental",
+        "preciso", "criterioso", "aplomado", "potente", "temperamental",
         "técnico", "conductor", "proyección"
     ]
 
@@ -1217,7 +1217,7 @@ if menu == "Jugadores":
                 equipos_resultados = st.text_input("Equipos y resultado")
                 formacion = st.selectbox(
                     "Formación",
-                    ["4-2-3-1", "4-3-1-2", "4-4-2", "4-3-3", "3-5-2", "3-4-3", "5-3-2"]
+                    ["4-2-3-1", "4-3-1-2", "4-1-3-2", "4-4-2", "4-3-3", "3-5-2", "3-4-3", "5-3-2"]
                 )
 
                 observaciones = st.text_area("Observaciones generales", height=100)
@@ -1305,7 +1305,7 @@ if menu == "Jugadores":
                                 return 0.0
 
                         nuevo = [
-                            len(df_reports) + 1,
+                            generar_id_unico(df_reports_all, "ID_Informe"),
                             jugador["ID_Jugador"],
                             CURRENT_USER,
                             fecha_partido.strftime("%d/%m/%Y"),
@@ -2916,5 +2916,6 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
