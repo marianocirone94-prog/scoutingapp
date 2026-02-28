@@ -911,7 +911,7 @@ if menu == "Jugadores":
         "Inglaterra - Premier League", "Inglaterra - Championship",
         "Francia - Ligue 1", "Alemania - Bundesliga", "Portugal - Primeira Liga",
         "Países Bajos - Eredivisie", "Suiza - Super League",
-        "Polonia - Liga Polaca", "Bélgica - Pro League",
+        "Polonia - Liga Polaca", "Bélgica - Pro League", "Bulgaria - Primera Liga",
         "Grecia - Super League", "Turquía - Süper Lig", "Chipre - Liga Chipre",
         "Arabia Saudita - Saudi Pro League", "Estados Unidos - MLS", "Rusia - Premier League",
         "Otro / Sin especificar"
@@ -2948,6 +2948,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
