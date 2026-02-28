@@ -912,15 +912,15 @@ if menu == "Jugadores":
         "Francia - Ligue 1", "Alemania - Bundesliga", "Portugal - Primeira Liga",
         "Países Bajos - Eredivisie", "Suiza - Super League",
         "Polonia - Liga Polaca", "Bélgica - Pro League",
-        "Grecia - Super League", "Turquía - Süper Lig",
-        "Arabia Saudita - Saudi Pro League", "Estados Unidos - MLS",
+        "Grecia - Super League", "Turquía - Süper Lig", "Chipre - Liga Chipre"
+        "Arabia Saudita - Saudi Pro League", "Estados Unidos - MLS", "Rusia - Premier League"
         "Otro / Sin especificar"
     ]
 
     opciones_paises = [
         "Argentina", "Brasil", "Chile", "Uruguay", "Paraguay", "Colombia", "México",
         "Ecuador", "Perú", "Venezuela", "España", "Italia", "Francia", "Inglaterra",
-        "Alemania", "Portugal", "Estados Unidos", "Canadá", "Bolivia",
+        "Alemania", "Portugal", "Estados Unidos", "Canadá", "Bolivia", "Suiza",
         "Honduras", "Costa Rica", "El Salvador", "Panamá",
         "República Dominicana", "Guatemala", "Haití", "Jamaica", "Otro"
     ]
@@ -2948,6 +2948,7 @@ st.markdown(
     "<p style='text-align:center;color:gray;font-size:12px;'>© 2025 · Mariano Cirone · ScoutingApp Profesional</p>",
     unsafe_allow_html=True
 )
+
 
 
 
