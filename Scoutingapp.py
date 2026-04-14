@@ -27,7 +27,6 @@ from st_aggrid import AgGrid, GridOptionsBuilder
 import matplotlib.patches as patches
 import gspread
 from google.oauth2.service_account import Credentials
-from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
 
 # =========================================================
 # 🎨 HELPER VISUAL — PLOTLY GLASS (ANTI FONDO NEGRO)
@@ -1377,7 +1376,7 @@ if menu == "Jugadores":
 
 
 # =========================================================
-# BLOQUE 4 / 5 — Ver Informes (estable + prolijo + AgGrid)
+# BLOQUE 4 / 5 — Ver Informes (AgGrid estable + visual PlayerScope)
 # =========================================================
 
 if menu == "Ver informes":
@@ -1416,12 +1415,7 @@ if menu == "Ver informes":
     def _safe_options(df, col):
         if col not in df.columns:
             return []
-        vals = (
-            df[col]
-            .dropna()
-            .astype(str)
-            .str.strip()
-        )
+        vals = df[col].dropna().astype(str).str.strip()
         vals = vals[vals != ""]
         return sorted(vals.unique().tolist())
 
@@ -1493,7 +1487,6 @@ if menu == "Ver informes":
             how="left",
             suffixes=("", "_jug")
         )
-
     except Exception as e:
         st.error(f"❌ Error al unir datos: {e}")
         st.stop()
@@ -1524,19 +1517,14 @@ if menu == "Ver informes":
 
     with f1:
         filtro_scout = st.multiselect("Scout", _safe_options(df_merged, "Scout"))
-
     with f2:
         filtro_jugador = st.multiselect("Jugador", _safe_options(df_merged, "Nombre"))
-
     with f3:
         filtro_club = st.multiselect("Club", _safe_options(df_merged, "Club"))
-
     with f4:
         filtro_pos = st.multiselect("Posición", _safe_options(df_merged, "Posición"))
-
     with f5:
         filtro_linea = st.multiselect("Línea", _safe_options(df_merged, "Línea"))
-
     with f6:
         filtro_nac = st.multiselect("Nacionalidad", _safe_options(df_merged, "Nacionalidad"))
 
@@ -1619,102 +1607,161 @@ if menu == "Ver informes":
         st.warning("No hay informes disponibles.")
         st.stop()
 
-    gb = GridOptionsBuilder.from_dataframe(df_tabla)
+    selected_data = []
 
-    gb.configure_selection(
-        selection_mode="single",
-        use_checkbox=False
-    )
-    gb.configure_pagination(
-        enabled=True,
-        paginationAutoPageSize=True
-    )
-    gb.configure_grid_options(
-        domLayout="normal",
-        rowHeight=38,
-        suppressRowClickSelection=False
-    )
+    try:
+        gb = GridOptionsBuilder.from_dataframe(df_tabla)
 
-    # ocultas pero necesarias para identificar la fila seleccionada
-    if "ID_Informe" in df_tabla.columns:
-        gb.configure_column("ID_Informe", hide=True)
-    if "ID_Jugador" in df_tabla.columns:
-        gb.configure_column("ID_Jugador", hide=True)
+        gb.configure_selection(
+            selection_mode="single",
+            use_checkbox=False
+        )
+        gb.configure_pagination(
+            enabled=True,
+            paginationAutoPageSize=True
+        )
+        gb.configure_grid_options(
+            domLayout="normal",
+            rowHeight=38,
+            suppressRowClickSelection=False,
+            animateRows=True
+        )
 
-    widths = {
-        "Fecha_Informe": 110,
-        "Nombre": 170,
-        "Club": 150,
-        "Posición": 150,
-        "Línea": 135,
-        "Scout": 130,
-        "Equipos_Resultados": 170,
-        "Observaciones": 430,
-    }
+        if "ID_Informe" in df_tabla.columns:
+            gb.configure_column("ID_Informe", hide=True)
+        if "ID_Jugador" in df_tabla.columns:
+            gb.configure_column("ID_Jugador", hide=True)
 
-    for c in df_tabla.columns:
-        if c in ["ID_Informe", "ID_Jugador"]:
-            continue
+        widths = {
+            "Fecha_Informe": 110,
+            "Nombre": 180,
+            "Club": 160,
+            "Posición": 170,
+            "Línea": 140,
+            "Scout": 140,
+            "Equipos_Resultados": 180,
+            "Observaciones": 480,
+        }
 
-        if c == "Observaciones":
-            gb.configure_column(
-                c,
-                wrapText=True,
-                autoHeight=True,
-                width=widths.get(c, 120)
-            )
-        else:
-            gb.configure_column(
-                c,
-                width=widths.get(c, 120)
-            )
+        for c in df_tabla.columns:
+            if c in ["ID_Informe", "ID_Jugador"]:
+                continue
 
-    grid_response = AgGrid(
-        df_tabla,
-        gridOptions=gb.build(),
-        fit_columns_on_grid_load=True,
-        theme="blue",
-        height=580,
-        allow_unsafe_jscode=True,
-        update_mode="MODEL_CHANGED",
-        custom_css={
-            ".ag-header": {
-                "background-color": "#1e3c72",
-                "color": "white",
-                "font-weight": "bold",
-                "font-size": "13px"
-            },
-            ".ag-row-even": {
-                "background-color": "#2a5298 !important",
-                "color": "white !important"
-            },
-            ".ag-row-odd": {
-                "background-color": "#3b6bbf !important",
-                "color": "white !important"
-            },
-            ".ag-cell": {
-                "white-space": "normal !important",
-                "line-height": "1.25",
-                "padding": "5px",
-                "font-size": "12.5px"
-            },
-        },
-    )
+            if c == "Observaciones":
+                gb.configure_column(
+                    c,
+                    wrapText=True,
+                    autoHeight=True,
+                    width=widths.get(c, 120)
+                )
+            else:
+                gb.configure_column(
+                    c,
+                    width=widths.get(c, 120)
+                )
+
+        grid_response = AgGrid(
+            df_tabla,
+            gridOptions=gb.build(),
+            fit_columns_on_grid_load=True,
+            theme="streamlit",
+            height=580,
+            allow_unsafe_jscode=True,
+            update_mode="MODEL_CHANGED",
+            reload_data=False,
+            custom_css={
+                "#gridToolBar": {
+                    "display": "none !important"
+                },
+                ".ag-root-wrapper": {
+                    "border": "1px solid rgba(255,255,255,0.10) !important",
+                    "border-radius": "14px !important",
+                    "overflow": "hidden !important",
+                    "background": "#0f172a !important"
+                },
+                ".ag-header": {
+                    "background-color": "#17376e !important",
+                    "border-bottom": "1px solid rgba(255,255,255,0.08) !important"
+                },
+                ".ag-header-cell": {
+                    "color": "white !important",
+                    "font-weight": "700 !important",
+                    "font-size": "13px !important",
+                    "background-color": "#17376e !important",
+                    "border-right": "1px solid rgba(255,255,255,0.05) !important"
+                },
+                ".ag-row": {
+                    "border-bottom": "1px solid rgba(255,255,255,0.04) !important"
+                },
+                ".ag-row-even": {
+                    "background-color": "#0f1d3a !important",
+                    "color": "white !important"
+                },
+                ".ag-row-odd": {
+                    "background-color": "#13254a !important",
+                    "color": "white !important"
+                },
+                ".ag-row-hover": {
+                    "background-color": "#1c3f7a !important"
+                },
+                ".ag-row-selected": {
+                    "background-color": "#2454a6 !important",
+                    "color": "white !important"
+                },
+                ".ag-cell": {
+                    "white-space": "normal !important",
+                    "line-height": "1.35 !important",
+                    "padding-top": "8px !important",
+                    "padding-bottom": "8px !important",
+                    "font-size": "12.5px !important",
+                    "color": "white !important",
+                    "border-right": "1px solid rgba(255,255,255,0.03) !important"
+                },
+                ".ag-paging-panel": {
+                    "background-color": "#0f172a !important",
+                    "color": "white !important",
+                    "border-top": "1px solid rgba(255,255,255,0.08) !important"
+                },
+                ".ag-theme-streamlit": {
+                    "--ag-background-color": "#0f172a",
+                    "--ag-foreground-color": "white",
+                    "--ag-header-foreground-color": "white",
+                    "--ag-header-background-color": "#17376e",
+                    "--ag-odd-row-background-color": "#13254a",
+                    "--ag-row-hover-color": "#1c3f7a",
+                    "--ag-selected-row-background-color": "#2454a6",
+                    "--ag-border-color": "rgba(255,255,255,0.08)",
+                    "--ag-secondary-border-color": "rgba(255,255,255,0.05)",
+                    "--ag-font-size": "12.5px",
+                    "--ag-font-family": "sans-serif"
+                }
+            }
+        )
+
+        selected_data = grid_response.get("selected_rows")
+
+        if selected_data is None:
+            selected_data = []
+        elif isinstance(selected_data, pd.DataFrame):
+            selected_data = selected_data.to_dict("records")
+        elif isinstance(selected_data, dict):
+            selected_data = [selected_data]
+        elif not isinstance(selected_data, list):
+            selected_data = []
+
+    except Exception as e:
+        st.error(f"⚠️ Error al renderizar la tabla: {e}")
+        st.dataframe(
+            df_tabla.drop(columns=[c for c in ["ID_Informe", "ID_Jugador"] if c in df_tabla.columns]),
+            use_container_width=True,
+            height=580,
+            hide_index=True
+        )
+        st.stop()
 
     # ---------------------------------------------------------
-    # SELECCIÓN ULTRA SEGURA
+    # SELECCIÓN SEGURA
     # ---------------------------------------------------------
-    selected_data = grid_response.get("selected_rows")
-
-    if selected_data is None:
-        selected_data = []
-    elif isinstance(selected_data, pd.DataFrame):
-        selected_data = selected_data.to_dict("records")
-    elif isinstance(selected_data, dict):
-        selected_data = [selected_data]
-    elif not isinstance(selected_data, list):
-        selected_data = []
-
     if len(selected_data) == 0:
         st.info("Seleccioná un informe en la tabla para ver la ficha del jugador.")
         st.stop()
@@ -1872,11 +1919,7 @@ if menu == "Ver informes":
                 linea_actual = _safe_text(inf.get("Línea", ""))
                 index_linea = opciones_linea.index(linea_actual) if linea_actual in opciones_linea else 2
 
-                nueva_linea = st.selectbox(
-                    "Línea",
-                    opciones_linea,
-                    index=index_linea
-                )
+                nueva_linea = st.selectbox("Línea", opciones_linea, index=index_linea)
 
                 nuevas_obs = st.text_area(
                     "Observaciones",
@@ -1921,7 +1964,6 @@ if menu == "Ver informes":
                                 st.rerun()
                             else:
                                 st.error("No se encontró el informe en la hoja.")
-
                     except Exception as e:
                         st.error(f"⚠️ Error al actualizar el informe: {e}")
 
