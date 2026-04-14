@@ -1398,21 +1398,6 @@ if menu == "Ver informes":
         txt = str(val).strip()
         return txt if txt else default
 
-    def _safe_options(df, col):
-        if col not in df.columns:
-            return []
-        vals = (
-            df[col]
-            .dropna()
-            .astype(str)
-            .str.strip()
-        )
-        vals = vals[vals != ""]
-        return sorted(vals.unique().tolist())
-
-    def _safe_http(val):
-        return pd.notna(val) and str(val).strip().startswith("http")
-
     def _excel_col_letter(n):
         result = ""
         while n > 0:
@@ -1423,70 +1408,37 @@ if menu == "Ver informes":
     # ---------------------------------------------------------
     # DATASETS SEGÚN ROL
     # ---------------------------------------------------------
-    df_players = df_players_all.copy()  # todos los jugadores
+    df_players = df_players_all.copy()     # todos los jugadores
 
     if CURRENT_ROLE == "admin":
-        df_reports = df_reports_all.copy()   # admin ve todo
+        df_reports = df_reports_all.copy()     # admin ve todo
     else:
-        df_reports = df_reports_user.copy()  # scout ve solo sus informes
+        df_reports = df_reports_user.copy()    # scout ve solo sus informes
 
     # ---------------------------------------------------------
-    # VALIDACIONES
+    # VALIDACIONES BÁSICAS
     # ---------------------------------------------------------
     if df_reports.empty:
         st.info("No hay informes cargados.")
         st.stop()
 
     if df_players.empty:
-        st.error("La hoja de jugadores está vacía o no cargó correctamente.")
-        st.stop()
-
-    required_reports = [
-        "ID_Informe", "ID_Jugador", "Scout", "Fecha_Partido",
-        "Fecha_Informe", "Equipos_Resultados", "Observaciones", "Línea"
-    ]
-    required_players = [
-        "ID_Jugador", "Nombre", "Club", "Posición", "Nacionalidad",
-        "Fecha_Nac", "Altura", "Pie_Hábil", "Liga",
-        "Caracteristica", "URL_Foto", "URL_Perfil", "Instagram"
-    ]
-
-    faltantes_reports = [c for c in required_reports if c not in df_reports.columns]
-    faltantes_players = [c for c in required_players if c not in df_players.columns]
-
-    if faltantes_reports:
-        st.error(f"Faltan columnas en Informes: {faltantes_reports}")
-        st.stop()
-
-    if faltantes_players:
-        st.error(f"Faltan columnas en Jugadores: {faltantes_players}")
+        st.error("No hay jugadores cargados.")
         st.stop()
 
     # ---------------------------------------------------------
-    # NORMALIZACIÓN + MERGE
+    # UNIFICACIÓN SEGURA
     # ---------------------------------------------------------
     try:
         df_reports["ID_Jugador"] = _safe_str_series(df_reports["ID_Jugador"])
         df_reports["ID_Informe"] = _safe_str_series(df_reports["ID_Informe"])
         df_players["ID_Jugador"] = _safe_str_series(df_players["ID_Jugador"])
 
-        # Un jugador por ID
         df_players = df_players.drop_duplicates(subset=["ID_Jugador"], keep="first").copy()
 
-        # Merge
-        df_merged = df_reports.merge(
-            df_players,
-            on="ID_Jugador",
-            how="left",
-            suffixes=("", "_jug")
-        )
-
+        df_merged = df_reports.merge(df_players, on="ID_Jugador", how="left")
     except Exception as e:
         st.error(f"❌ Error al unir datos: {e}")
-        st.stop()
-
-    if df_merged.empty:
-        st.warning("No hay informes para mostrar.")
         st.stop()
 
     # =========================================================
@@ -1499,37 +1451,37 @@ if menu == "Ver informes":
     with f1:
         filtro_scout = st.multiselect(
             "Scout",
-            _safe_options(df_merged, "Scout")
+            sorted(df_merged["Scout"].dropna().astype(str).unique())
         )
 
     with f2:
         filtro_jugador = st.multiselect(
             "Jugador",
-            _safe_options(df_merged, "Nombre")
+            sorted(df_merged["Nombre"].dropna().astype(str).unique())
         )
 
     with f3:
         filtro_club = st.multiselect(
             "Club",
-            _safe_options(df_merged, "Club")
+            sorted(df_merged["Club"].dropna().astype(str).unique())
         )
 
     with f4:
         filtro_pos = st.multiselect(
             "Posición",
-            _safe_options(df_merged, "Posición")
+            sorted(df_merged["Posición"].dropna().astype(str).unique())
         )
 
     with f5:
         filtro_linea = st.multiselect(
             "Línea",
-            _safe_options(df_merged, "Línea")
+            sorted(df_merged["Línea"].dropna().astype(str).unique())
         )
 
     with f6:
         filtro_nac = st.multiselect(
             "Nacionalidad",
-            _safe_options(df_merged, "Nacionalidad")
+            sorted(df_merged["Nacionalidad"].dropna().astype(str).unique())
         )
 
     # ---------------------------------------------------------
@@ -1551,12 +1503,12 @@ if menu == "Ver informes":
         df_filtrado = df_filtrado[df_filtrado["Nacionalidad"].astype(str).isin(filtro_nac)]
 
     # =========================================================
-    # TABLA PRINCIPAL (AgGrid) — CUADRO COMO EL ORIGINAL
+    # TABLA PRINCIPAL (AgGrid) — DISEÑO ORIGINAL
     # =========================================================
     if not df_filtrado.empty:
         st.markdown("### 📋 Informes disponibles")
 
-        columnas_grid = [
+        columnas = [
             "ID_Informe",
             "ID_Jugador",
             "Fecha_Informe",
@@ -1568,9 +1520,8 @@ if menu == "Ver informes":
             "Observaciones"
         ]
 
-        df_tabla = df_filtrado[[c for c in columnas_grid if c in df_filtrado.columns]].copy()
+        df_tabla = df_filtrado[[c for c in columnas if c in df_filtrado.columns]].copy()
 
-        # Ordenar del último informe al más lejano
         try:
             df_tabla["Fecha_dt"] = pd.to_datetime(
                 df_tabla["Fecha_Informe"],
@@ -1585,27 +1536,19 @@ if menu == "Ver informes":
         except Exception:
             pass
 
-        # Texto seguro
-        for c in df_tabla.columns:
-            df_tabla[c] = df_tabla[c].apply(lambda x: _safe_text(x, ""))
-
         gb = GridOptionsBuilder.from_dataframe(df_tabla)
         gb.configure_selection("single", use_checkbox=False)
         gb.configure_pagination(enabled=True, paginationAutoPageSize=True)
-        gb.configure_grid_options(
-            domLayout="normal",
-            rowHeight=42,
-            suppressRowClickSelection=False
-        )
+        gb.configure_grid_options(domLayout="normal")
 
         widths = {
-            "Fecha_Informe": 105,
-            "Nombre": 160,
-            "Club": 140,
-            "Línea": 135,
+            "Fecha_Informe": 100,
+            "Nombre": 150,
+            "Club": 130,
+            "Línea": 120,
             "Scout": 120,
-            "Equipos_Resultados": 170,
-            "Observaciones": 430
+            "Equipos_Resultados": 150,
+            "Observaciones": 420
         }
 
         for c in df_tabla.columns:
@@ -1623,9 +1566,7 @@ if menu == "Ver informes":
             theme="blue",
             height=580,
             allow_unsafe_jscode=True,
-            update_mode="SELECTION_CHANGED",
-            reload_data=True,
-            key="ver_informes_grid",
+            update_mode="MODEL_CHANGED",
             custom_css={
                 ".ag-header": {
                     "background-color": "#1e3c72",
@@ -1672,7 +1613,7 @@ if menu == "Ver informes":
             id_jugador_sel = _safe_text(fila_sel.get("ID_Jugador"), "")
             id_informe_sel = _safe_text(fila_sel.get("ID_Informe"), "")
 
-            jugador_data = df_players[df_players["ID_Jugador"] == id_jugador_sel].copy()
+            jugador_data = df_players[df_players["ID_Jugador"] == id_jugador_sel]
 
             if not jugador_data.empty:
                 j = jugador_data.iloc[0]
@@ -1683,7 +1624,7 @@ if menu == "Ver informes":
                 col1, col2, col3 = st.columns([1, 1, 1])
 
                 with col1:
-                    if _safe_http(j.get("URL_Foto")):
+                    if pd.notna(j.get("URL_Foto")) and str(j.get("URL_Foto", "")).startswith("http"):
                         st.image(j["URL_Foto"], width=150)
 
                     st.markdown(f"**📍 Club:** {_safe_text(j.get('Club'))}")
@@ -1699,10 +1640,10 @@ if menu == "Ver informes":
                 with col3:
                     st.markdown(f"**🧠 Característica:** {_safe_text(j.get('Caracteristica'))}")
 
-                    if _safe_http(j.get("Instagram")):
+                    if pd.notna(j.get("Instagram")) and str(j.get("Instagram", "")).startswith("http"):
                         st.markdown(f"[📸 Instagram]({j['Instagram']})")
 
-                    if _safe_http(j.get("URL_Perfil")):
+                    if pd.notna(j.get("URL_Perfil")) and str(j.get("URL_Perfil", "")).startswith("http"):
                         st.markdown(f"[🌐 Perfil externo]({j['URL_Perfil']})")
 
                 # =========================================================
@@ -1715,8 +1656,6 @@ if menu == "Ver informes":
 
                         pdf = FPDF()
                         pdf.add_page()
-                        pdf.set_auto_page_break(auto=True, margin=12)
-
                         pdf.set_font("Arial", "B", 14)
                         pdf.cell(0, 10, "SCOUTING REPORT", ln=True)
 
@@ -1761,7 +1700,7 @@ if menu == "Ver informes":
                         st.error(f"⚠️ Error PDF: {e}")
 
                 # =========================================================
-                # EXPANDER — EDITAR INFORMES
+                # EXPANDER — EDITAR / ELIMINAR INFORMES
                 # =========================================================
                 informes_sel = df_reports[df_reports["ID_Jugador"] == id_jugador_sel].copy()
 
@@ -1849,7 +1788,17 @@ if menu == "Ver informes":
                                     st.error(f"⚠️ Error al actualizar el informe: {e}")
 
                         st.markdown("---")
-                        st.info("La eliminación quedó desactivada en esta vista para evitar borrar informes por error.")
+
+                        confirmar = st.checkbox(
+                            "Confirmar eliminación del informe",
+                            key=f"del_chk_{getattr(inf, 'ID_Informe', idx)}",
+                            disabled=True
+                        )
+
+                        st.form_submit_button(
+                            "🗑️ Eliminar informe",
+                            disabled=True
+                        )
     else:
         st.warning("No hay informes que coincidan con los filtros seleccionados.")
 
