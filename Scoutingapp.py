@@ -1556,7 +1556,7 @@ if menu == "Ver informes":
         st.warning("No hay informes que coincidan con los filtros seleccionados.")
         st.stop()
 
-    # ---------------------------------------------------------
+        # ---------------------------------------------------------
     # TABLA VISIBLE
     # ---------------------------------------------------------
     st.markdown("""
@@ -1569,11 +1569,12 @@ if menu == "Ver informes":
     ">
         <div style="color:white; font-size:18px; font-weight:700;">📋 Informes disponibles</div>
         <div style="color:rgba(255,255,255,0.78); font-size:13px;">
-            Vista estable de informes ordenados por fecha. Seleccionalo abajo para ver ficha y editar.
+            Vista estable y más limpia de informes. Seleccionalo abajo para ver ficha y editar.
         </div>
     </div>
     """, unsafe_allow_html=True)
 
+    # dataframe base completo (para selección interna)
     columnas_mostrar = [
         "ID_Informe",
         "ID_Jugador",
@@ -1609,17 +1610,34 @@ if menu == "Ver informes":
         if col in df_tabla.columns:
             df_tabla[col] = df_tabla[col].apply(_safe_text)
 
-    df_tabla_show = df_tabla.copy()
-    if "Observaciones" in df_tabla_show.columns:
-        df_tabla_show["Observaciones"] = df_tabla_show["Observaciones"].apply(lambda x: _short_obs(x, 160))
+    # tabla visible limpia (SIN IDs y SIN observaciones largas)
+    columnas_visibles = [
+        "Fecha_Informe",
+        "Nombre",
+        "Club",
+        "Posición",
+        "Línea",
+        "Scout",
+        "Equipos_Resultados"
+    ]
+    columnas_visibles = [c for c in columnas_visibles if c in df_tabla.columns]
 
-    df_tabla_show = df_tabla_show.drop(columns=[c for c in ["ID_Jugador"] if c in df_tabla_show.columns]).copy()
+    df_tabla_show = df_tabla[columnas_visibles].copy()
 
     st.dataframe(
         df_tabla_show,
         use_container_width=True,
-        height=480,
-        hide_index=True
+        height=440,
+        hide_index=True,
+        column_config={
+            "Fecha_Informe": st.column_config.TextColumn("Fecha", width="small"),
+            "Nombre": st.column_config.TextColumn("Jugador", width="medium"),
+            "Club": st.column_config.TextColumn("Club", width="medium"),
+            "Posición": st.column_config.TextColumn("Posición", width="medium"),
+            "Línea": st.column_config.TextColumn("Línea", width="small"),
+            "Scout": st.column_config.TextColumn("Scout", width="medium"),
+            "Equipos_Resultados": st.column_config.TextColumn("Partido", width="large"),
+        }
     )
 
     # ---------------------------------------------------------
@@ -1669,7 +1687,6 @@ if menu == "Ver informes":
     fila_sel = df_selector[df_selector["__label__"] == informe_label].iloc[0]
     id_informe_sel = _safe_text(fila_sel.get("ID_Informe"), "")
     id_jugador_sel = _safe_text(fila_sel.get("ID_Jugador"), "")
-
     # ---------------------------------------------------------
     # RESUMEN DEL INFORME SELECCIONADO
     # ---------------------------------------------------------
