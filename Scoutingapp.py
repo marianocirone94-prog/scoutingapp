@@ -16,6 +16,7 @@ import base64
 import numpy as np
 import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as components
 import matplotlib.pyplot as plt
 import plotly.express as px
 
@@ -26,7 +27,6 @@ from st_aggrid import AgGrid, GridOptionsBuilder
 import matplotlib.patches as patches
 import gspread
 from google.oauth2.service_account import Credentials
-
 # =========================================================
 # 🎨 HELPER VISUAL — PLOTLY GLASS (ANTI FONDO NEGRO)
 # =========================================================
@@ -1657,7 +1657,11 @@ if menu == "Ver informes":
     for col in df_tabla.columns:
         df_tabla[col] = df_tabla[col].apply(_safe_text)
 
-    st.markdown(_build_html_table(df_tabla.head(300)), unsafe_allow_html=True)
+    components.html(
+    _build_html_table(df_tabla.head(300)),
+    height=800,
+    scrolling=True
+)
 
     # ---------------------------------------------------------
     # SELECTOR DE INFORME
