@@ -1375,7 +1375,7 @@ if menu == "Jugadores":
 
 
 # =========================================================
-# BLOQUE 4 / 5 — Ver Informes (robusto y seguro)
+# BLOQUE 4 / 5 — Ver Informes (SIN AGGRID, estable)
 # =========================================================
 
 if menu == "Ver informes":
@@ -1387,9 +1387,9 @@ if menu == "Ver informes":
     def _safe_str_series(sr):
         return (
             sr.fillna("")
-              .astype(str)
-              .str.strip()
-              .str.replace(".0", "", regex=False)
+            .astype(str)
+            .str.strip()
+            .str.replace(".0", "", regex=False)
         )
 
     def _safe_text(val, default="-"):
@@ -1421,8 +1421,16 @@ if menu == "Ver informes":
         df_reports = df_reports_user.copy()
 
     # ---------------------------------------------------------
-    # VALIDACIONES BÁSICAS
+    # VALIDACIONES
     # ---------------------------------------------------------
+    if df_reports.empty:
+        st.info("No hay informes cargados.")
+        st.stop()
+
+    if df_players.empty:
+        st.error("La hoja de jugadores está vacía o no cargó correctamente.")
+        st.stop()
+
     required_reports = [
         "ID_Informe", "ID_Jugador", "Scout", "Fecha_Partido",
         "Fecha_Informe", "Equipos_Resultados", "Observaciones", "Línea"
@@ -1445,17 +1453,15 @@ if menu == "Ver informes":
         st.stop()
 
     # ---------------------------------------------------------
-    # NORMALIZACIÓN SEGURA
+    # NORMALIZACIÓN + MERGE
     # ---------------------------------------------------------
     try:
         df_reports["ID_Jugador"] = _safe_str_series(df_reports["ID_Jugador"])
-        df_players["ID_Jugador"] = _safe_str_series(df_players["ID_Jugador"])
         df_reports["ID_Informe"] = _safe_str_series(df_reports["ID_Informe"])
+        df_players["ID_Jugador"] = _safe_str_series(df_players["ID_Jugador"])
 
-        # limpiar duplicados de jugadores por ID, por si hubiera
         df_players = df_players.drop_duplicates(subset=["ID_Jugador"], keep="first").copy()
 
-        # merge seguro
         df_merged = df_reports.merge(
             df_players,
             on="ID_Jugador",
@@ -1468,11 +1474,11 @@ if menu == "Ver informes":
         st.stop()
 
     if df_merged.empty:
-        st.info("No hay informes para mostrar.")
+        st.warning("No se pudieron unir informes con jugadores.")
         st.stop()
 
     # ---------------------------------------------------------
-    # FILTROS SUPERIORES
+    # FILTROS
     # ---------------------------------------------------------
     st.markdown("### 🔎 Filtros")
 
@@ -1496,9 +1502,6 @@ if menu == "Ver informes":
     with f6:
         filtro_nac = st.multiselect("Nacionalidad", _safe_options(df_merged, "Nacionalidad"))
 
-    # ---------------------------------------------------------
-    # APLICAR FILTROS
-    # ---------------------------------------------------------
     df_filtrado = df_merged.copy()
 
     if filtro_scout:
@@ -1519,26 +1522,26 @@ if menu == "Ver informes":
         st.stop()
 
     # ---------------------------------------------------------
-    # TABLA PRINCIPAL
+    # TABLA VISIBLE
     # ---------------------------------------------------------
     st.markdown("### 📋 Informes disponibles")
 
-    columnas_base = [
+    columnas_mostrar = [
         "ID_Informe",
         "ID_Jugador",
         "Fecha_Informe",
         "Nombre",
         "Club",
+        "Posición",
         "Línea",
         "Scout",
         "Equipos_Resultados",
-        "Observaciones",
+        "Observaciones"
     ]
 
-    columnas_tabla = [c for c in columnas_base if c in df_filtrado.columns]
-    df_tabla = df_filtrado[columnas_tabla].copy()
+    columnas_mostrar = [c for c in columnas_mostrar if c in df_filtrado.columns]
+    df_tabla = df_filtrado[columnas_mostrar].copy()
 
-    # Ordenar por fecha
     if "Fecha_Informe" in df_tabla.columns:
         try:
             df_tabla["Fecha_dt"] = pd.to_datetime(
@@ -1546,315 +1549,226 @@ if menu == "Ver informes":
                 format="%d/%m/%Y",
                 errors="coerce"
             )
-            df_tabla = (
-                df_tabla
-                .sort_values(["Fecha_dt", "ID_Informe"], ascending=[False, False], na_position="last")
-                .drop(columns=["Fecha_dt"])
-            )
+            df_tabla = df_tabla.sort_values(
+                ["Fecha_dt", "ID_Informe"],
+                ascending=[False, False],
+                na_position="last"
+            ).drop(columns="Fecha_dt")
         except Exception:
             pass
 
-    # Limpiar texto visible
-    for c in ["Fecha_Informe", "Nombre", "Club", "Línea", "Scout", "Equipos_Resultados", "Observaciones"]:
-        if c in df_tabla.columns:
-            df_tabla[c] = df_tabla[c].apply(_safe_text)
+    st.dataframe(
+        df_tabla.drop(columns=[c for c in ["ID_Jugador"] if c in df_tabla.columns]),
+        use_container_width=True,
+        height=420
+    )
 
     # ---------------------------------------------------------
-    # AGGRID ESTABLE
+    # SELECTOR DE INFORME
     # ---------------------------------------------------------
-    selected_data = []
+    df_selector = df_tabla.copy()
 
-    try:
-        gb = GridOptionsBuilder.from_dataframe(df_tabla)
+    df_selector["__label__"] = df_selector.apply(
+        lambda x: f"{_safe_text(x.get('Fecha_Informe'))} | {_safe_text(x.get('Nombre'))} | {_safe_text(x.get('Club'))} | {_safe_text(x.get('Scout'))} | {_safe_text(x.get('Línea'))}",
+        axis=1
+    )
 
-        gb.configure_default_column(
-            resizable=True,
-            sortable=True,
-            filter=True
-        )
-        gb.configure_selection("single", use_checkbox=False)
-        gb.configure_pagination(enabled=True, paginationPageSize=15)
-        gb.configure_grid_options(domLayout="normal", rowHeight=42)
+    opciones = df_selector["__label__"].tolist()
 
-        widths = {
-            "Fecha_Informe": 110,
-            "Nombre": 170,
-            "Club": 150,
-            "Línea": 145,
-            "Scout": 130,
-            "Equipos_Resultados": 170,
-            "Observaciones": 430,
-        }
+    informe_label = st.selectbox(
+        "Seleccionar informe",
+        options=opciones,
+        index=0
+    )
 
-        for c in df_tabla.columns:
-            if c in ["ID_Informe", "ID_Jugador"]:
-                gb.configure_column(c, hide=True)
-            elif c == "Observaciones":
-                gb.configure_column(c, wrapText=True, autoHeight=True, width=widths.get(c, 430))
-            else:
-                gb.configure_column(c, width=widths.get(c, 130))
-
-        grid_response = AgGrid(
-            df_tabla,
-            gridOptions=gb.build(),
-            theme="streamlit",
-            height=580,
-            fit_columns_on_grid_load=False,
-            allow_unsafe_jscode=False,
-            update_mode="SELECTION_CHANGED",
-            reload_data=True,
-            key="grid_ver_informes",
-            custom_css={
-                ".ag-header": {
-                    "font-weight": "bold",
-                    "font-size": "13px"
-                },
-                ".ag-cell": {
-                    "white-space": "normal !important",
-                    "line-height": "1.25",
-                    "padding": "6px",
-                    "font-size": "12.5px"
-                },
-            },
-        )
-
-        selected_data = grid_response.get("selected_rows", [])
-
-        if selected_data is None:
-            selected_data = []
-        elif isinstance(selected_data, pd.DataFrame):
-            selected_data = selected_data.to_dict("records")
-        elif isinstance(selected_data, dict):
-            selected_data = [selected_data]
-        elif not isinstance(selected_data, list):
-            selected_data = []
-
-    except Exception as e:
-        st.warning(f"No se pudo renderizar AgGrid. Se muestra tabla simple. Detalle: {e}")
-        st.dataframe(
-            df_tabla.drop(columns=[c for c in ["ID_Informe", "ID_Jugador"] if c in df_tabla.columns]),
-            use_container_width=True,
-            height=580
-        )
+    fila_sel = df_selector[df_selector["__label__"] == informe_label].iloc[0]
+    id_informe_sel = _safe_text(fila_sel.get("ID_Informe"), "")
+    id_jugador_sel = _safe_text(fila_sel.get("ID_Jugador"), "")
 
     # ---------------------------------------------------------
     # FICHA DEL JUGADOR
     # ---------------------------------------------------------
-    if len(selected_data) > 0:
-        fila_sel = selected_data[0]
-        id_jugador_sel = _safe_text(fila_sel.get("ID_Jugador", ""), default="")
+    jugador_data = df_players[df_players["ID_Jugador"] == id_jugador_sel].copy()
 
-        jugador_data = df_players[df_players["ID_Jugador"] == id_jugador_sel].copy()
+    if not jugador_data.empty:
+        j = jugador_data.iloc[0]
 
-        if not jugador_data.empty:
-            j = jugador_data.iloc[0]
+        st.markdown("---")
+        st.markdown(f"### 🧾 Ficha del jugador: **{_safe_text(j.get('Nombre'))}**")
 
-            st.markdown("---")
-            st.markdown(f"### 🧾 Ficha del jugador: **{_safe_text(j.get('Nombre'))}**")
+        col1, col2, col3 = st.columns([1, 1, 1])
 
-            col1, col2, col3 = st.columns([1, 1, 1])
+        with col1:
+            if pd.notna(j.get("URL_Foto")) and str(j.get("URL_Foto", "")).startswith("http"):
+                st.image(j["URL_Foto"], width=150)
 
-            with col1:
-                if pd.notna(j.get("URL_Foto")) and str(j.get("URL_Foto", "")).startswith("http"):
-                    st.image(j["URL_Foto"], width=150)
+            st.markdown(f"**📍 Club:** {_safe_text(j.get('Club'))}")
+            st.markdown(f"**🎯 Posición:** {_safe_text(j.get('Posición'))}")
+            st.markdown(f"**📏 Altura:** {_safe_text(j.get('Altura'))} cm")
+            st.markdown(f"**📅 Edad:** {calcular_edad(j.get('Fecha_Nac'))}")
 
-                st.markdown(f"**📍 Club:** {_safe_text(j.get('Club'))}")
-                st.markdown(f"**🎯 Posición:** {_safe_text(j.get('Posición'))}")
-                st.markdown(f"**📏 Altura:** {_safe_text(j.get('Altura'))} cm")
-                st.markdown(f"**📅 Edad:** {calcular_edad(j.get('Fecha_Nac'))}")
+        with col2:
+            st.markdown(f"**👟 Pie hábil:** {_safe_text(j.get('Pie_Hábil'))}")
+            st.markdown(f"**🌍 Nacionalidad:** {_safe_text(j.get('Nacionalidad'))}")
+            st.markdown(f"**🏆 Liga:** {_safe_text(j.get('Liga'))}")
 
-            with col2:
-                st.markdown(f"**👟 Pie hábil:** {_safe_text(j.get('Pie_Hábil'))}")
-                st.markdown(f"**🌍 Nacionalidad:** {_safe_text(j.get('Nacionalidad'))}")
-                st.markdown(f"**🏆 Liga:** {_safe_text(j.get('Liga'))}")
+        with col3:
+            st.markdown(f"**🧠 Característica:** {_safe_text(j.get('Caracteristica'))}")
 
-            with col3:
-                st.markdown(f"**🧠 Característica:** {_safe_text(j.get('Caracteristica'))}")
+            if pd.notna(j.get("Instagram")) and str(j.get("Instagram", "")).startswith("http"):
+                st.markdown(f"[📸 Instagram]({j['Instagram']})")
 
-                if pd.notna(j.get("Instagram")) and str(j.get("Instagram", "")).startswith("http"):
-                    st.markdown(f"[📸 Instagram]({j['Instagram']})")
+            if pd.notna(j.get("URL_Perfil")) and str(j.get("URL_Perfil", "")).startswith("http"):
+                st.markdown(f"[🌐 Perfil externo]({j['URL_Perfil']})")
 
-                if pd.notna(j.get("URL_Perfil")) and str(j.get("URL_Perfil", "")).startswith("http"):
-                    st.markdown(f"[🌐 Perfil externo]({j['URL_Perfil']})")
+    # ---------------------------------------------------------
+    # PDF SIMPLE
+    # ---------------------------------------------------------
+    if st.button("📥 Exportar informe simple", key=f"pdf_{id_jugador_sel}_{id_informe_sel}"):
+        try:
+            from fpdf import FPDF
+            from io import BytesIO
 
-            # ---------------------------------------------------------
-            # EXPORTAR PDF SIMPLE
-            # ---------------------------------------------------------
-            if st.button("📥 Exportar informe simple", key=f"pdf_{id_jugador_sel}"):
+            pdf = FPDF()
+            pdf.add_page()
+            pdf.set_auto_page_break(auto=True, margin=12)
+
+            pdf.set_font("Arial", "B", 14)
+            pdf.cell(0, 10, "SCOUTING REPORT", ln=True)
+
+            if not jugador_data.empty:
+                pdf.set_font("Arial", "", 11)
+                pdf.ln(4)
+                pdf.cell(0, 8, f"Jugador: {_safe_text(j.get('Nombre'))}", ln=True)
+                pdf.cell(0, 8, f"Club: {_safe_text(j.get('Club'))}", ln=True)
+                pdf.cell(0, 8, f"Posicion: {_safe_text(j.get('Posición'))}", ln=True)
+                pdf.ln(3)
+
+            informes_pdf = df_reports[df_reports["ID_Jugador"] == id_jugador_sel].copy()
+
+            if "Fecha_Partido" in informes_pdf.columns:
                 try:
-                    from fpdf import FPDF
-                    from io import BytesIO
-
-                    pdf = FPDF()
-                    pdf.add_page()
-                    pdf.set_auto_page_break(auto=True, margin=12)
-
-                    pdf.set_font("Arial", "B", 14)
-                    pdf.cell(0, 10, "SCOUTING REPORT", ln=True)
-
-                    pdf.set_font("Arial", "", 11)
-                    pdf.ln(4)
-                    pdf.cell(0, 8, f"Jugador: {_safe_text(j.get('Nombre'))}", ln=True)
-                    pdf.cell(0, 8, f"Club: {_safe_text(j.get('Club'))}", ln=True)
-                    pdf.cell(0, 8, f"Posicion: {_safe_text(j.get('Posición'))}", ln=True)
-                    pdf.ln(3)
-
-                    informes_pdf = df_reports[df_reports["ID_Jugador"] == id_jugador_sel].copy()
-
-                    if "Fecha_Partido" in informes_pdf.columns:
-                        try:
-                            informes_pdf["Fecha_dt"] = pd.to_datetime(
-                                informes_pdf["Fecha_Partido"],
-                                format="%d/%m/%Y",
-                                errors="coerce"
-                            )
-                            informes_pdf = informes_pdf.sort_values("Fecha_dt", ascending=False)
-                        except Exception:
-                            pass
-
-                    for _, inf in informes_pdf.iterrows():
-                        fecha = _safe_text(inf.get("Fecha_Partido"))
-                        scout = _safe_text(inf.get("Scout"))
-                        linea = _safe_text(inf.get("Línea"))
-                        obs = _safe_text(inf.get("Observaciones"), default="")[:500]
-
-                        pdf.multi_cell(
-                            0,
-                            6,
-                            f"- {fecha} | {scout} | {linea}\n{obs}"
-                        )
-                        pdf.ln(2)
-
-                    pdf_bytes = bytes(pdf.output(dest="S"))
-                    buffer = BytesIO(pdf_bytes)
-
-                    st.download_button(
-                        "📄 Descargar PDF",
-                        data=buffer,
-                        file_name=f"Informe_{_safe_text(j.get('Nombre'), 'Jugador')}.pdf",
-                        mime="application/pdf"
-                    )
-
-                except Exception as e:
-                    st.error(f"⚠️ Error PDF: {e}")
-
-            # ---------------------------------------------------------
-            # EDITAR / ELIMINAR INFORMES
-            # ---------------------------------------------------------
-            informes_sel = df_reports[df_reports["ID_Jugador"] == id_jugador_sel].copy()
-
-            if "Fecha_Partido" in informes_sel.columns:
-                try:
-                    informes_sel["Fecha_dt"] = pd.to_datetime(
-                        informes_sel["Fecha_Partido"],
+                    informes_pdf["Fecha_dt"] = pd.to_datetime(
+                        informes_pdf["Fecha_Partido"],
                         format="%d/%m/%Y",
                         errors="coerce"
                     )
-                    informes_sel = informes_sel.sort_values("Fecha_dt", ascending=False)
+                    informes_pdf = informes_pdf.sort_values("Fecha_dt", ascending=False)
                 except Exception:
                     pass
 
-            for idx, inf in enumerate(informes_sel.itertuples(index=False)):
-                titulo = f"{_safe_text(getattr(inf, 'Fecha_Partido', '-'))} | Scout: {_safe_text(getattr(inf, 'Scout', '-'))} | Línea: {_safe_text(getattr(inf, 'Línea', '-'))}"
+            for _, inf in informes_pdf.iterrows():
+                fecha = _safe_text(inf.get("Fecha_Partido"))
+                scout = _safe_text(inf.get("Scout"))
+                linea = _safe_text(inf.get("Línea"))
+                obs = _safe_text(inf.get("Observaciones"), default="")[:500]
 
-                with st.expander(titulo):
-                    with st.form(f"form_edit_{getattr(inf, 'ID_Informe', idx)}_{idx}"):
+                pdf.multi_cell(
+                    0,
+                    6,
+                    f"- {fecha} | {scout} | {linea}\n{obs}"
+                )
+                pdf.ln(2)
 
-                        nuevo_scout = st.text_input("Scout", _safe_text(getattr(inf, "Scout", "")))
-                        nueva_fecha = st.text_input("Fecha del partido", _safe_text(getattr(inf, "Fecha_Partido", "")))
-                        nuevos_equipos = st.text_input("Equipos y resultado", _safe_text(getattr(inf, "Equipos_Resultados", "")))
+            pdf_bytes = bytes(pdf.output(dest="S"))
+            buffer = BytesIO(pdf_bytes)
 
-                        opciones_linea = [
-                            "1ra (Fichar)",
-                            "2da (Seguir)",
-                            "3ra (Ver más adelante)",
-                            "4ta (Descartar)",
-                            "Joven Promesa",
-                        ]
+            nombre_archivo = "Informe.pdf"
+            if not jugador_data.empty:
+                nombre_archivo = f"Informe_{_safe_text(j.get('Nombre'), 'Jugador')}.pdf"
 
-                        linea_actual = _safe_text(getattr(inf, "Línea", ""))
-                        index_linea = opciones_linea.index(linea_actual) if linea_actual in opciones_linea else 2
+            st.download_button(
+                "📄 Descargar PDF",
+                data=buffer,
+                file_name=nombre_archivo,
+                mime="application/pdf"
+            )
 
-                        nueva_linea = st.selectbox(
-                            "Línea",
-                            opciones_linea,
-                            index=index_linea
-                        )
+        except Exception as e:
+            st.error(f"⚠️ Error PDF: {e}")
 
-                        nuevas_obs = st.text_area(
-                            "Observaciones",
-                            _safe_text(getattr(inf, "Observaciones", ""), default=""),
-                            height=120
-                        )
+    # ---------------------------------------------------------
+    # EDICIÓN DEL INFORME SELECCIONADO
+    # ---------------------------------------------------------
+    st.markdown("---")
+    st.markdown("### ✏️ Editar informe seleccionado")
 
-                        guardar = st.form_submit_button("💾 Guardar cambios")
+    informe_edit = df_reports[df_reports["ID_Informe"] == id_informe_sel].copy()
 
-                        if guardar:
-                            try:
-                                ws_inf = obtener_hoja("Informes")
-                                data_sheet = ws_inf.get_all_records()
-                                df_sheet = pd.DataFrame(data_sheet)
+    if not informe_edit.empty:
+        inf = informe_edit.iloc[0]
 
-                                if "ID_Informe" not in df_sheet.columns:
-                                    st.error("La hoja Informes no contiene la columna ID_Informe.")
-                                else:
-                                    df_sheet["ID_Informe"] = _safe_str_series(df_sheet["ID_Informe"])
+        with st.form(f"form_edit_{id_informe_sel}"):
 
-                                    id_informe_actual = _safe_text(getattr(inf, "ID_Informe", ""), default="")
-                                    match = df_sheet[df_sheet["ID_Informe"] == id_informe_actual]
+            nuevo_scout = st.text_input("Scout", _safe_text(inf.get("Scout", "")))
+            nueva_fecha = st.text_input("Fecha del partido", _safe_text(inf.get("Fecha_Partido", "")))
+            nuevos_equipos = st.text_input("Equipos y resultado", _safe_text(inf.get("Equipos_Resultados", "")))
 
-                                    if not match.empty:
-                                        row_index = match.index[0] + 2
-                                        fila_actual = match.iloc[0].copy()
+            opciones_linea = [
+                "1ra (Fichar)",
+                "2da (Seguir)",
+                "3ra (Ver más adelante)",
+                "4ta (Descartar)",
+                "Joven Promesa"
+            ]
 
-                                        fila_actual["Scout"] = nuevo_scout
-                                        fila_actual["Fecha_Partido"] = nueva_fecha
-                                        fila_actual["Equipos_Resultados"] = nuevos_equipos
-                                        fila_actual["Línea"] = nueva_linea
-                                        fila_actual["Observaciones"] = nuevas_obs
+            linea_actual = _safe_text(inf.get("Línea", ""))
+            index_linea = opciones_linea.index(linea_actual) if linea_actual in opciones_linea else 2
 
-                                        total_cols = len(df_sheet.columns)
-                                        end_col = chr(64 + total_cols) if total_cols <= 26 else "AB"
+            nueva_linea = st.selectbox(
+                "Línea",
+                opciones_linea,
+                index=index_linea
+            )
 
-                                        ws_inf.update(
-                                            f"A{row_index}:{end_col}{row_index}",
-                                            [fila_actual.tolist()]
-                                        )
+            nuevas_obs = st.text_area(
+                "Observaciones",
+                _safe_text(inf.get("Observaciones", ""), default=""),
+                height=160
+            )
 
-                                        st.cache_data.clear()
-                                        st.toast("✓ Informe actualizado correctamente", icon="✅")
-                                        st.rerun()
-                                    else:
-                                        st.error("No se encontró el informe en la hoja.")
-                            except Exception as e:
-                                st.error(f"⚠️ Error al actualizar el informe: {e}")
+            guardar = st.form_submit_button("💾 Guardar cambios")
 
-                        st.markdown("---")
+            if guardar:
+                try:
+                    ws_inf = obtener_hoja("Informes")
+                    data_sheet = ws_inf.get_all_records()
+                    df_sheet = pd.DataFrame(data_sheet)
 
-                        confirmar = st.checkbox(
-                            "Confirmar eliminación del informe",
-                            key=f"del_chk_{_safe_text(getattr(inf, 'ID_Informe', idx))}"
-                        )
+                    if "ID_Informe" not in df_sheet.columns:
+                        st.error("La hoja Informes no contiene la columna ID_Informe.")
+                    else:
+                        df_sheet["ID_Informe"] = _safe_str_series(df_sheet["ID_Informe"])
+                        match = df_sheet[df_sheet["ID_Informe"] == id_informe_sel]
 
-                        eliminar = st.form_submit_button(
-                            "🗑️ Eliminar informe",
-                            disabled=not confirmar
-                        )
+                        if not match.empty:
+                            row_index = match.index[0] + 2
+                            fila_actual = match.iloc[0].copy()
 
-                        if eliminar:
-                            try:
-                                eliminar_por_id(
-                                    nombre_hoja="Informes",
-                                    id_col="ID_Informe",
-                                    id_valor=getattr(inf, "ID_Informe")
-                                )
+                            fila_actual["Scout"] = nuevo_scout
+                            fila_actual["Fecha_Partido"] = nueva_fecha
+                            fila_actual["Equipos_Resultados"] = nuevos_equipos
+                            fila_actual["Línea"] = nueva_linea
+                            fila_actual["Observaciones"] = nuevas_obs
 
-                                st.cache_data.clear()
-                                st.toast("🗑️ Informe eliminado correctamente", icon="🗑️")
-                                st.rerun()
+                            ws_inf.update(
+                                f"A{row_index}:AB{row_index}",
+                                [fila_actual.tolist()]
+                            )
 
-                            except Exception as e:
-                                st.error(f"⚠️ Error al eliminar el informe: {e}")
+                            st.cache_data.clear()
+                            st.toast("✓ Informe actualizado correctamente", icon="✅")
+                            st.rerun()
+                        else:
+                            st.error("No se encontró el informe en la hoja.")
+
+                except Exception as e:
+                    st.error(f"⚠️ Error al actualizar el informe: {e}")
+
+    # ---------------------------------------------------------
+    # ELIMINACIÓN DESACTIVADA A PROPÓSITO
+    # ---------------------------------------------------------
+    st.info("El borrado quedó desactivado en esta versión para evitar eliminar informes por error.")
 
 
 # =========================================================
