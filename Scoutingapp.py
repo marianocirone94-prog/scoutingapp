@@ -1381,13 +1381,105 @@ if menu == "Jugadores":
 
 if menu == "Ver informes":
     st.markdown("""
-    <div style="
+    <style>
+    .ps-hero {
         padding: 18px 20px;
         border-radius: 18px;
         background: linear-gradient(135deg, rgba(15,23,42,0.98), rgba(30,58,138,0.92));
         border: 1px solid rgba(255,255,255,0.08);
         margin-bottom: 18px;
-    ">
+    }
+    .ps-filter-box {
+        padding: 12px 16px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, rgba(30,60,114,0.95), rgba(42,82,152,0.92));
+        border: 1px solid rgba(255,255,255,0.10);
+        margin-bottom: 12px;
+    }
+    .ps-section-title {
+        color: white;
+        font-size: 18px;
+        font-weight: 700;
+        margin-bottom: 2px;
+    }
+    .ps-section-sub {
+        color: rgba(255,255,255,0.78);
+        font-size: 13px;
+    }
+
+    .ps-table-wrap {
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 16px;
+        overflow: hidden;
+        background: rgba(20,10,35,0.88);
+        margin-top: 14px;
+    }
+    .ps-table-header {
+        display: grid;
+        grid-template-columns: 110px 210px 190px 170px 150px 150px 230px minmax(380px, 1fr);
+        gap: 0;
+        background: linear-gradient(135deg, rgba(88,0,68,0.96), rgba(66,0,88,0.96));
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+        font-weight: 700;
+        color: white;
+        font-size: 14px;
+    }
+    .ps-table-header > div {
+        padding: 12px 14px;
+        border-right: 1px solid rgba(255,255,255,0.06);
+    }
+    .ps-table-header > div:last-child {
+        border-right: none;
+    }
+
+    .ps-row-box {
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+        background: rgba(44,10,58,0.78);
+    }
+    .ps-row-box:last-child {
+        border-bottom: none;
+    }
+
+    .ps-summary-box {
+        margin-top: 14px;
+        margin-bottom: 8px;
+        padding: 12px 16px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, rgba(22,78,99,0.35), rgba(30,58,138,0.28));
+        border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .ps-obs-box {
+        padding: 14px 16px;
+        border-radius: 12px;
+        background: rgba(15,23,42,0.78);
+        border: 1px solid rgba(255,255,255,0.07);
+        color: white;
+        line-height: 1.55;
+        font-size: 14px;
+        margin-bottom: 14px;
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+
+    .ps-player-box {
+        margin-top: 12px;
+        margin-bottom: 14px;
+        padding: 12px 16px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, rgba(20,20,30,0.95), rgba(35,45,70,0.92));
+        border: 1px solid rgba(255,255,255,0.10);
+    }
+
+    div[data-testid="stButton"] > button[kind="secondary"] {
+        width: 100%;
+        border-radius: 10px;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="ps-hero">
         <div style="color:white; font-size:24px; font-weight:800;">📝 Ver informes</div>
         <div style="color:rgba(255,255,255,0.78); font-size:14px; margin-top:4px;">
             Explorá informes cargados, visualizá la ficha completa del jugador y editá solo cuando lo necesites.
@@ -1429,11 +1521,13 @@ if menu == "Ver informes":
             result = chr(65 + remainder) + result
         return result
 
-    def _short_obs(val, max_len=180):
-        txt = _safe_text(val, default="")
-        if len(txt) <= max_len:
-            return txt
-        return txt[:max_len].rstrip() + "..."
+    def _escape_html(val):
+        return (
+            str(val)
+            .replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+        )
 
     # ---------------------------------------------------------
     # DATASETS SEGÚN ROL
@@ -1505,15 +1599,9 @@ if menu == "Ver informes":
     # FILTROS
     # ---------------------------------------------------------
     st.markdown("""
-    <div style="
-        padding: 12px 16px;
-        border-radius: 14px;
-        background: linear-gradient(135deg, rgba(30,60,114,0.95), rgba(42,82,152,0.92));
-        border: 1px solid rgba(255,255,255,0.10);
-        margin-bottom: 12px;
-    ">
-        <div style="color:white; font-size:18px; font-weight:700;">🔎 Filtros</div>
-        <div style="color:rgba(255,255,255,0.78); font-size:13px;">
+    <div class="ps-filter-box">
+        <div class="ps-section-title">🔎 Filtros</div>
+        <div class="ps-section-sub">
             Combiná scout, jugador, club, posición, línea o nacionalidad.
         </div>
     </div>
@@ -1556,25 +1644,9 @@ if menu == "Ver informes":
         st.warning("No hay informes que coincidan con los filtros seleccionados.")
         st.stop()
 
-        # ---------------------------------------------------------
-    # TABLA VISIBLE
     # ---------------------------------------------------------
-    st.markdown("""
-    <div style="
-        padding: 12px 16px;
-        border-radius: 14px;
-        background: linear-gradient(135deg, rgba(30,60,114,0.95), rgba(42,82,152,0.92));
-        border: 1px solid rgba(255,255,255,0.10);
-        margin: 16px 0 12px 0;
-    ">
-        <div style="color:white; font-size:18px; font-weight:700;">📋 Informes disponibles</div>
-        <div style="color:rgba(255,255,255,0.78); font-size:13px;">
-            Vista estable y más limpia de informes. Seleccionalo abajo para ver ficha y editar.
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # dataframe base completo (para selección interna)
+    # TABLA BASE
+    # ---------------------------------------------------------
     columnas_mostrar = [
         "ID_Informe",
         "ID_Jugador",
@@ -1587,7 +1659,6 @@ if menu == "Ver informes":
         "Equipos_Resultados",
         "Observaciones"
     ]
-
     columnas_mostrar = [c for c in columnas_mostrar if c in df_filtrado.columns]
     df_tabla = df_filtrado[columnas_mostrar].copy()
 
@@ -1610,95 +1681,233 @@ if menu == "Ver informes":
         if col in df_tabla.columns:
             df_tabla[col] = df_tabla[col].apply(_safe_text)
 
-    # tabla visible limpia (SIN IDs y SIN observaciones largas)
-    columnas_visibles = [
-        "Fecha_Informe",
-        "Nombre",
-        "Club",
-        "Posición",
-        "Línea",
-        "Scout",
-        "Equipos_Resultados"
-    ]
-    columnas_visibles = [c for c in columnas_visibles if c in df_tabla.columns]
-
-    df_tabla_show = df_tabla[columnas_visibles].copy()
-
-    st.dataframe(
-        df_tabla_show,
-        use_container_width=True,
-        height=440,
-        hide_index=True,
-        column_config={
-            "Fecha_Informe": st.column_config.TextColumn("Fecha", width="small"),
-            "Nombre": st.column_config.TextColumn("Jugador", width="medium"),
-            "Club": st.column_config.TextColumn("Club", width="medium"),
-            "Posición": st.column_config.TextColumn("Posición", width="medium"),
-            "Línea": st.column_config.TextColumn("Línea", width="small"),
-            "Scout": st.column_config.TextColumn("Scout", width="medium"),
-            "Equipos_Resultados": st.column_config.TextColumn("Partido", width="large"),
-        }
-    )
-
     # ---------------------------------------------------------
-    # SELECTOR DE INFORME
+    # CABECERA TABLA
     # ---------------------------------------------------------
     st.markdown("""
-    <div style="
-        margin-top: 14px;
-        padding: 12px 16px;
-        border-radius: 14px;
-        background: linear-gradient(135deg, rgba(17,24,39,0.96), rgba(30,41,59,0.94));
-        border: 1px solid rgba(255,255,255,0.08);
-    ">
-        <div style="color:white; font-size:17px; font-weight:700;">🎯 Selección de informe</div>
-        <div style="color:rgba(255,255,255,0.72); font-size:13px; margin-top:2px;">
-            Elegí un informe de la lista filtrada para ver la ficha completa del jugador.
+    <div class="ps-filter-box" style="margin-top:16px;">
+        <div class="ps-section-title">📋 Informes disponibles</div>
+        <div class="ps-section-sub">
+            Tocá el nombre del jugador para seleccionar el informe. Observaciones se muestra completa.
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-    df_selector = df_tabla.copy()
+    st.markdown("""
+    <div class="ps-table-wrap">
+        <div class="ps-table-header">
+            <div>Fecha</div>
+            <div>Nombre</div>
+            <div>Club</div>
+            <div>Posición</div>
+            <div>Línea</div>
+            <div>Scout</div>
+            <div>Equipos_Resultados</div>
+            <div>Observaciones</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-    df_selector["__label__"] = df_selector.apply(
-        lambda x: (
-            f"{_safe_text(x.get('Fecha_Informe'))} | "
-            f"{_safe_text(x.get('Nombre'))} | "
-            f"{_safe_text(x.get('Club'))} | "
-            f"{_safe_text(x.get('Scout'))} | "
-            f"{_safe_text(x.get('Línea'))}"
-        ),
-        axis=1
-    )
+    # ---------------------------------------------------------
+    # ESTADO SELECCIÓN
+    # ---------------------------------------------------------
+    if "id_informe_sel_ver_informes" not in st.session_state:
+        if not df_tabla.empty:
+            st.session_state["id_informe_sel_ver_informes"] = _safe_text(df_tabla.iloc[0]["ID_Informe"], "")
 
-    opciones = df_selector["__label__"].tolist()
+    # ---------------------------------------------------------
+    # FILAS CUSTOM
+    # ---------------------------------------------------------
+    max_filas_visibles = 25
+    df_tabla_show = df_tabla.head(max_filas_visibles).copy()
 
-    if not opciones:
-        st.warning("No hay informes disponibles para seleccionar.")
-        st.stop()
+    for i, row in df_tabla_show.iterrows():
+        row_bg = "rgba(44,10,58,0.78)"
+        if _safe_text(row.get("ID_Informe")) == st.session_state.get("id_informe_sel_ver_informes", ""):
+            row_bg = "rgba(70,18,88,0.95)"
 
-    informe_label = st.selectbox(
-        "Elegí un informe",
-        options=opciones,
-        index=0,
-        key="selector_ver_informes"
-    )
+        st.markdown(
+            f"""
+            <div class="ps-row-box" style="background:{row_bg}; padding:0;">
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
-    fila_sel = df_selector[df_selector["__label__"] == informe_label].iloc[0]
-    id_informe_sel = _safe_text(fila_sel.get("ID_Informe"), "")
+        c1, c2, c3, c4, c5, c6, c7, c8 = st.columns([1.0, 1.8, 1.7, 1.5, 1.4, 1.4, 2.0, 4.3])
+
+        with c1:
+            st.markdown(
+                f"""
+                <div style="
+                    min-height:120px;
+                    display:flex;
+                    align-items:flex-start;
+                    padding:12px 4px 12px 6px;
+                    color:white;
+                    font-size:14px;
+                    font-weight:600;
+                ">
+                    {_escape_html(_safe_text(row.get("Fecha_Informe")))}
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+        with c2:
+            if st.button(
+                _safe_text(row.get("Nombre")),
+                key=f"ver_informe_nombre_{_safe_text(row.get('ID_Informe'))}",
+                use_container_width=True,
+                type="secondary"
+            ):
+                st.session_state["id_informe_sel_ver_informes"] = _safe_text(row.get("ID_Informe"))
+                st.rerun()
+
+        with c3:
+            st.markdown(
+                f"""
+                <div style="
+                    min-height:120px;
+                    display:flex;
+                    align-items:flex-start;
+                    padding:12px 6px;
+                    color:white;
+                    font-size:14px;
+                    font-weight:600;
+                ">
+                    {_escape_html(_safe_text(row.get("Club")))}
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+        with c4:
+            st.markdown(
+                f"""
+                <div style="
+                    min-height:120px;
+                    display:flex;
+                    align-items:flex-start;
+                    padding:12px 6px;
+                    color:white;
+                    font-size:14px;
+                    font-weight:600;
+                    white-space:pre-wrap;
+                ">
+                    {_escape_html(_safe_text(row.get("Posición")))}
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+        with c5:
+            st.markdown(
+                f"""
+                <div style="
+                    min-height:120px;
+                    display:flex;
+                    align-items:flex-start;
+                    padding:12px 6px;
+                    color:white;
+                    font-size:14px;
+                    font-weight:600;
+                    white-space:pre-wrap;
+                ">
+                    {_escape_html(_safe_text(row.get("Línea")))}
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+        with c6:
+            st.markdown(
+                f"""
+                <div style="
+                    min-height:120px;
+                    display:flex;
+                    align-items:flex-start;
+                    padding:12px 6px;
+                    color:white;
+                    font-size:14px;
+                    font-weight:600;
+                    white-space:pre-wrap;
+                ">
+                    {_escape_html(_safe_text(row.get("Scout")))}
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+        with c7:
+            st.markdown(
+                f"""
+                <div style="
+                    min-height:120px;
+                    display:flex;
+                    align-items:flex-start;
+                    padding:12px 6px;
+                    color:white;
+                    font-size:14px;
+                    font-weight:600;
+                    white-space:pre-wrap;
+                    word-break:break-word;
+                ">
+                    {_escape_html(_safe_text(row.get("Equipos_Resultados")))}
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+        with c8:
+            st.markdown(
+                f"""
+                <div style="
+                    min-height:120px;
+                    max-height:120px;
+                    overflow-y:auto;
+                    padding:12px 8px;
+                    color:white;
+                    font-size:14px;
+                    line-height:1.45;
+                    white-space:pre-wrap;
+                    word-break:break-word;
+                    border-left:1px solid rgba(255,255,255,0.06);
+                ">
+                    {_escape_html(_safe_text(row.get("Observaciones"), default="Sin observaciones."))}
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+        st.markdown(
+            "<div style='height:1px; background:rgba(255,255,255,0.05); margin:0 0 2px 0;'></div>",
+            unsafe_allow_html=True
+        )
+
+    if len(df_tabla) > max_filas_visibles:
+        st.info(f"Mostrando las primeras {max_filas_visibles} filas filtradas. Ajustamos esto después si querés paginado.")
+
+    # ---------------------------------------------------------
+    # INFORME SELECCIONADO
+    # ---------------------------------------------------------
+    id_informe_sel = st.session_state.get("id_informe_sel_ver_informes", "")
+
+    informe_sel_df = df_tabla[df_tabla["ID_Informe"].astype(str) == str(id_informe_sel)].copy()
+
+    if informe_sel_df.empty and not df_tabla.empty:
+        informe_sel_df = df_tabla.iloc[[0]].copy()
+        id_informe_sel = _safe_text(informe_sel_df.iloc[0]["ID_Informe"], "")
+        st.session_state["id_informe_sel_ver_informes"] = id_informe_sel
+
+    fila_sel = informe_sel_df.iloc[0]
     id_jugador_sel = _safe_text(fila_sel.get("ID_Jugador"), "")
+
     # ---------------------------------------------------------
     # RESUMEN DEL INFORME SELECCIONADO
     # ---------------------------------------------------------
     st.markdown("""
-    <div style="
-        margin-top: 14px;
-        margin-bottom: 8px;
-        padding: 12px 16px;
-        border-radius: 14px;
-        background: linear-gradient(135deg, rgba(22,78,99,0.35), rgba(30,58,138,0.28));
-        border: 1px solid rgba(255,255,255,0.08);
-    ">
+    <div class="ps-summary-box">
         <div style="color:white; font-size:17px; font-weight:700;">📌 Informe seleccionado</div>
     </div>
     """, unsafe_allow_html=True)
@@ -1716,20 +1925,14 @@ if menu == "Ver informes":
         st.markdown(f"**Línea**  \n{_safe_text(fila_sel.get('Línea'))}")
 
     st.markdown("**Observaciones del informe seleccionado**")
-    st.markdown(f"""
-    <div style="
-        padding: 14px 16px;
-        border-radius: 12px;
-        background: rgba(15,23,42,0.78);
-        border: 1px solid rgba(255,255,255,0.07);
-        color: white;
-        line-height: 1.55;
-        font-size: 14px;
-        margin-bottom: 14px;
-    ">
-        {_safe_text(fila_sel.get("Observaciones"), default="Sin observaciones.")}
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown(
+        f"""
+        <div class="ps-obs-box">
+            {_escape_html(_safe_text(fila_sel.get("Observaciones"), default="Sin observaciones."))}
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
     # ---------------------------------------------------------
     # FICHA DEL JUGADOR
@@ -1740,14 +1943,7 @@ if menu == "Ver informes":
         j = jugador_data.iloc[0]
 
         st.markdown("""
-        <div style="
-            margin-top: 12px;
-            margin-bottom: 14px;
-            padding: 12px 16px;
-            border-radius: 14px;
-            background: linear-gradient(135deg, rgba(20,20,30,0.95), rgba(35,45,70,0.92));
-            border: 1px solid rgba(255,255,255,0.10);
-        ">
+        <div class="ps-player-box">
             <div style="color:white; font-size:18px; font-weight:700;">🧾 Ficha del jugador</div>
             <div style="color:rgba(255,255,255,0.72); font-size:13px;">
                 Datos vinculados al informe seleccionado.
