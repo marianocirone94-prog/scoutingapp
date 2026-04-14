@@ -1376,7 +1376,7 @@ if menu == "Jugadores":
 
 
 # =========================================================
-# BLOQUE 4 / 5 — Ver Informes (AgGrid estable + visual PlayerScope)
+# BLOQUE 4 / 5 — Ver Informes (estable + visual prolija SIN AgGrid)
 # =========================================================
 
 if menu == "Ver informes":
@@ -1428,6 +1428,12 @@ if menu == "Ver informes":
             n, remainder = divmod(n - 1, 26)
             result = chr(65 + remainder) + result
         return result
+
+    def _short_obs(val, max_len=180):
+        txt = _safe_text(val, default="")
+        if len(txt) <= max_len:
+            return txt
+        return txt[:max_len].rstrip() + "..."
 
     # ---------------------------------------------------------
     # DATASETS SEGÚN ROL
@@ -1551,7 +1557,7 @@ if menu == "Ver informes":
         st.stop()
 
     # ---------------------------------------------------------
-    # TABLA PRINCIPAL (AgGrid)
+    # TABLA VISIBLE
     # ---------------------------------------------------------
     st.markdown("""
     <div style="
@@ -1563,12 +1569,12 @@ if menu == "Ver informes":
     ">
         <div style="color:white; font-size:18px; font-weight:700;">📋 Informes disponibles</div>
         <div style="color:rgba(255,255,255,0.78); font-size:13px;">
-            Hacé click en una fila para ver la ficha completa y editar ese informe.
+            Vista estable de informes ordenados por fecha. Seleccionalo abajo para ver ficha y editar.
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-    columnas_base = [
+    columnas_mostrar = [
         "ID_Informe",
         "ID_Jugador",
         "Fecha_Informe",
@@ -1581,8 +1587,8 @@ if menu == "Ver informes":
         "Observaciones"
     ]
 
-    columnas_base = [c for c in columnas_base if c in df_filtrado.columns]
-    df_tabla = df_filtrado[columnas_base].copy()
+    columnas_mostrar = [c for c in columnas_mostrar if c in df_filtrado.columns]
+    df_tabla = df_filtrado[columnas_mostrar].copy()
 
     if "Fecha_Informe" in df_tabla.columns:
         try:
@@ -1603,176 +1609,110 @@ if menu == "Ver informes":
         if col in df_tabla.columns:
             df_tabla[col] = df_tabla[col].apply(_safe_text)
 
-    if df_tabla.empty:
-        st.warning("No hay informes disponibles.")
-        st.stop()
+    df_tabla_show = df_tabla.copy()
+    if "Observaciones" in df_tabla_show.columns:
+        df_tabla_show["Observaciones"] = df_tabla_show["Observaciones"].apply(lambda x: _short_obs(x, 160))
 
-    selected_data = []
+    df_tabla_show = df_tabla_show.drop(columns=[c for c in ["ID_Jugador"] if c in df_tabla_show.columns]).copy()
 
-    try:
-        gb = GridOptionsBuilder.from_dataframe(df_tabla)
-
-        gb.configure_selection(
-            selection_mode="single",
-            use_checkbox=False
-        )
-        gb.configure_pagination(
-            enabled=True,
-            paginationAutoPageSize=True
-        )
-        gb.configure_grid_options(
-            domLayout="normal",
-            rowHeight=38,
-            suppressRowClickSelection=False,
-            animateRows=True
-        )
-
-        if "ID_Informe" in df_tabla.columns:
-            gb.configure_column("ID_Informe", hide=True)
-        if "ID_Jugador" in df_tabla.columns:
-            gb.configure_column("ID_Jugador", hide=True)
-
-        widths = {
-            "Fecha_Informe": 110,
-            "Nombre": 180,
-            "Club": 160,
-            "Posición": 170,
-            "Línea": 140,
-            "Scout": 140,
-            "Equipos_Resultados": 180,
-            "Observaciones": 480,
-        }
-
-        for c in df_tabla.columns:
-            if c in ["ID_Informe", "ID_Jugador"]:
-                continue
-
-            if c == "Observaciones":
-                gb.configure_column(
-                    c,
-                    wrapText=True,
-                    autoHeight=True,
-                    width=widths.get(c, 120)
-                )
-            else:
-                gb.configure_column(
-                    c,
-                    width=widths.get(c, 120)
-                )
-
-        grid_response = AgGrid(
-            df_tabla,
-            gridOptions=gb.build(),
-            fit_columns_on_grid_load=True,
-            theme="streamlit",
-            height=580,
-            allow_unsafe_jscode=True,
-            update_mode="MODEL_CHANGED",
-            reload_data=False,
-            custom_css={
-                "#gridToolBar": {
-                    "display": "none !important"
-                },
-                ".ag-root-wrapper": {
-                    "border": "1px solid rgba(255,255,255,0.10) !important",
-                    "border-radius": "14px !important",
-                    "overflow": "hidden !important",
-                    "background": "#0f172a !important"
-                },
-                ".ag-header": {
-                    "background-color": "#17376e !important",
-                    "border-bottom": "1px solid rgba(255,255,255,0.08) !important"
-                },
-                ".ag-header-cell": {
-                    "color": "white !important",
-                    "font-weight": "700 !important",
-                    "font-size": "13px !important",
-                    "background-color": "#17376e !important",
-                    "border-right": "1px solid rgba(255,255,255,0.05) !important"
-                },
-                ".ag-row": {
-                    "border-bottom": "1px solid rgba(255,255,255,0.04) !important"
-                },
-                ".ag-row-even": {
-                    "background-color": "#0f1d3a !important",
-                    "color": "white !important"
-                },
-                ".ag-row-odd": {
-                    "background-color": "#13254a !important",
-                    "color": "white !important"
-                },
-                ".ag-row-hover": {
-                    "background-color": "#1c3f7a !important"
-                },
-                ".ag-row-selected": {
-                    "background-color": "#2454a6 !important",
-                    "color": "white !important"
-                },
-                ".ag-cell": {
-                    "white-space": "normal !important",
-                    "line-height": "1.35 !important",
-                    "padding-top": "8px !important",
-                    "padding-bottom": "8px !important",
-                    "font-size": "12.5px !important",
-                    "color": "white !important",
-                    "border-right": "1px solid rgba(255,255,255,0.03) !important"
-                },
-                ".ag-paging-panel": {
-                    "background-color": "#0f172a !important",
-                    "color": "white !important",
-                    "border-top": "1px solid rgba(255,255,255,0.08) !important"
-                },
-                ".ag-theme-streamlit": {
-                    "--ag-background-color": "#0f172a",
-                    "--ag-foreground-color": "white",
-                    "--ag-header-foreground-color": "white",
-                    "--ag-header-background-color": "#17376e",
-                    "--ag-odd-row-background-color": "#13254a",
-                    "--ag-row-hover-color": "#1c3f7a",
-                    "--ag-selected-row-background-color": "#2454a6",
-                    "--ag-border-color": "rgba(255,255,255,0.08)",
-                    "--ag-secondary-border-color": "rgba(255,255,255,0.05)",
-                    "--ag-font-size": "12.5px",
-                    "--ag-font-family": "sans-serif"
-                }
-            }
-        )
-
-        selected_data = grid_response.get("selected_rows")
-
-        if selected_data is None:
-            selected_data = []
-        elif isinstance(selected_data, pd.DataFrame):
-            selected_data = selected_data.to_dict("records")
-        elif isinstance(selected_data, dict):
-            selected_data = [selected_data]
-        elif not isinstance(selected_data, list):
-            selected_data = []
-
-    except Exception as e:
-        st.error(f"⚠️ Error al renderizar la tabla: {e}")
-        st.dataframe(
-            df_tabla.drop(columns=[c for c in ["ID_Informe", "ID_Jugador"] if c in df_tabla.columns]),
-            use_container_width=True,
-            height=580,
-            hide_index=True
-        )
-        st.stop()
+    st.dataframe(
+        df_tabla_show,
+        use_container_width=True,
+        height=480,
+        hide_index=True
+    )
 
     # ---------------------------------------------------------
-    # SELECCIÓN SEGURA
+    # SELECTOR DE INFORME
     # ---------------------------------------------------------
-    if len(selected_data) == 0:
-        st.info("Seleccioná un informe en la tabla para ver la ficha del jugador.")
+    st.markdown("""
+    <div style="
+        margin-top: 14px;
+        padding: 12px 16px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, rgba(17,24,39,0.96), rgba(30,41,59,0.94));
+        border: 1px solid rgba(255,255,255,0.08);
+    ">
+        <div style="color:white; font-size:17px; font-weight:700;">🎯 Selección de informe</div>
+        <div style="color:rgba(255,255,255,0.72); font-size:13px; margin-top:2px;">
+            Elegí un informe de la lista filtrada para ver la ficha completa del jugador.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    df_selector = df_tabla.copy()
+
+    df_selector["__label__"] = df_selector.apply(
+        lambda x: (
+            f"{_safe_text(x.get('Fecha_Informe'))} | "
+            f"{_safe_text(x.get('Nombre'))} | "
+            f"{_safe_text(x.get('Club'))} | "
+            f"{_safe_text(x.get('Scout'))} | "
+            f"{_safe_text(x.get('Línea'))}"
+        ),
+        axis=1
+    )
+
+    opciones = df_selector["__label__"].tolist()
+
+    if not opciones:
+        st.warning("No hay informes disponibles para seleccionar.")
         st.stop()
 
-    fila_sel = selected_data[0]
+    informe_label = st.selectbox(
+        "Elegí un informe",
+        options=opciones,
+        index=0,
+        key="selector_ver_informes"
+    )
+
+    fila_sel = df_selector[df_selector["__label__"] == informe_label].iloc[0]
     id_informe_sel = _safe_text(fila_sel.get("ID_Informe"), "")
     id_jugador_sel = _safe_text(fila_sel.get("ID_Jugador"), "")
 
-    if not id_informe_sel or not id_jugador_sel:
-        st.warning("No se pudo identificar correctamente el informe seleccionado.")
-        st.stop()
+    # ---------------------------------------------------------
+    # RESUMEN DEL INFORME SELECCIONADO
+    # ---------------------------------------------------------
+    st.markdown("""
+    <div style="
+        margin-top: 14px;
+        margin-bottom: 8px;
+        padding: 12px 16px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, rgba(22,78,99,0.35), rgba(30,58,138,0.28));
+        border: 1px solid rgba(255,255,255,0.08);
+    ">
+        <div style="color:white; font-size:17px; font-weight:700;">📌 Informe seleccionado</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    r1, r2, r3, r4, r5 = st.columns(5)
+    with r1:
+        st.markdown(f"**Fecha**  \n{_safe_text(fila_sel.get('Fecha_Informe'))}")
+    with r2:
+        st.markdown(f"**Jugador**  \n{_safe_text(fila_sel.get('Nombre'))}")
+    with r3:
+        st.markdown(f"**Club**  \n{_safe_text(fila_sel.get('Club'))}")
+    with r4:
+        st.markdown(f"**Scout**  \n{_safe_text(fila_sel.get('Scout'))}")
+    with r5:
+        st.markdown(f"**Línea**  \n{_safe_text(fila_sel.get('Línea'))}")
+
+    st.markdown("**Observaciones del informe seleccionado**")
+    st.markdown(f"""
+    <div style="
+        padding: 14px 16px;
+        border-radius: 12px;
+        background: rgba(15,23,42,0.78);
+        border: 1px solid rgba(255,255,255,0.07);
+        color: white;
+        line-height: 1.55;
+        font-size: 14px;
+        margin-bottom: 14px;
+    ">
+        {_safe_text(fila_sel.get("Observaciones"), default="Sin observaciones.")}
+    </div>
+    """, unsafe_allow_html=True)
 
     # ---------------------------------------------------------
     # FICHA DEL JUGADOR
@@ -1919,7 +1859,11 @@ if menu == "Ver informes":
                 linea_actual = _safe_text(inf.get("Línea", ""))
                 index_linea = opciones_linea.index(linea_actual) if linea_actual in opciones_linea else 2
 
-                nueva_linea = st.selectbox("Línea", opciones_linea, index=index_linea)
+                nueva_linea = st.selectbox(
+                    "Línea",
+                    opciones_linea,
+                    index=index_linea
+                )
 
                 nuevas_obs = st.text_area(
                     "Observaciones",
@@ -1964,6 +1908,7 @@ if menu == "Ver informes":
                                 st.rerun()
                             else:
                                 st.error("No se encontró el informe en la hoja.")
+
                     except Exception as e:
                         st.error(f"⚠️ Error al actualizar el informe: {e}")
 
