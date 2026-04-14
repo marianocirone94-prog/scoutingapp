@@ -1375,11 +1375,24 @@ if menu == "Jugadores":
 
 
 # =========================================================
-# BLOQUE 4 / 5 — Ver Informes (SIN AGGRID, estable)
+# BLOQUE 4 / 5 — Ver Informes (estable + prolijo)
 # =========================================================
 
 if menu == "Ver informes":
-    st.subheader("📝 Informes cargados")
+    st.markdown("""
+    <div style="
+        padding: 18px 20px;
+        border-radius: 18px;
+        background: linear-gradient(135deg, rgba(15,23,42,0.98), rgba(30,58,138,0.92));
+        border: 1px solid rgba(255,255,255,0.08);
+        margin-bottom: 18px;
+    ">
+        <div style="color:white; font-size:24px; font-weight:800;">📝 Ver informes</div>
+        <div style="color:rgba(255,255,255,0.78); font-size:14px; margin-top:4px;">
+            Explorá informes cargados, visualizá la ficha completa del jugador y editá solo cuando lo necesites.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
     # ---------------------------------------------------------
     # HELPERS
@@ -1409,6 +1422,16 @@ if menu == "Ver informes":
         )
         vals = vals[vals != ""]
         return sorted(vals.unique().tolist())
+
+    def _safe_http(val):
+        return pd.notna(val) and str(val).strip().startswith("http")
+
+    def _excel_col_letter(n):
+        result = ""
+        while n > 0:
+            n, remainder = divmod(n - 1, 26)
+            result = chr(65 + remainder) + result
+        return result
 
     # ---------------------------------------------------------
     # DATASETS SEGÚN ROL
@@ -1480,7 +1503,20 @@ if menu == "Ver informes":
     # ---------------------------------------------------------
     # FILTROS
     # ---------------------------------------------------------
-    st.markdown("### 🔎 Filtros")
+    st.markdown("""
+    <div style="
+        padding: 12px 16px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, rgba(30,60,114,0.95), rgba(42,82,152,0.92));
+        border: 1px solid rgba(255,255,255,0.10);
+        margin-bottom: 12px;
+    ">
+        <div style="color:white; font-size:18px; font-weight:700;">🔎 Filtros</div>
+        <div style="color:rgba(255,255,255,0.78); font-size:13px;">
+            Combiná scout, jugador, club, posición, línea o nacionalidad.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
     f1, f2, f3, f4, f5, f6 = st.columns(6)
 
@@ -1502,6 +1538,9 @@ if menu == "Ver informes":
     with f6:
         filtro_nac = st.multiselect("Nacionalidad", _safe_options(df_merged, "Nacionalidad"))
 
+    # ---------------------------------------------------------
+    # APLICAR FILTROS
+    # ---------------------------------------------------------
     df_filtrado = df_merged.copy()
 
     if filtro_scout:
@@ -1524,7 +1563,20 @@ if menu == "Ver informes":
     # ---------------------------------------------------------
     # TABLA VISIBLE
     # ---------------------------------------------------------
-    st.markdown("### 📋 Informes disponibles")
+    st.markdown("""
+    <div style="
+        padding: 12px 16px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, rgba(30,60,114,0.95), rgba(42,82,152,0.92));
+        border: 1px solid rgba(255,255,255,0.10);
+        margin: 16px 0 12px 0;
+    ">
+        <div style="color:white; font-size:18px; font-weight:700;">📋 Informes disponibles</div>
+        <div style="color:rgba(255,255,255,0.78); font-size:13px;">
+            Seleccioná un informe debajo para ver ficha completa y opciones de edición.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
     columnas_mostrar = [
         "ID_Informe",
@@ -1557,26 +1609,45 @@ if menu == "Ver informes":
         except Exception:
             pass
 
+    for col in ["Fecha_Informe", "Nombre", "Club", "Posición", "Línea", "Scout", "Equipos_Resultados", "Observaciones"]:
+        if col in df_tabla.columns:
+            df_tabla[col] = df_tabla[col].apply(_safe_text)
+
+    df_tabla_show = df_tabla.drop(columns=[c for c in ["ID_Jugador"] if c in df_tabla.columns]).copy()
+
     st.dataframe(
-        df_tabla.drop(columns=[c for c in ["ID_Jugador"] if c in df_tabla.columns]),
+        df_tabla_show,
         use_container_width=True,
-        height=420
+        height=460,
+        hide_index=True
     )
 
     # ---------------------------------------------------------
     # SELECTOR DE INFORME
     # ---------------------------------------------------------
+    st.markdown("### 🎯 Selección de informe")
+
     df_selector = df_tabla.copy()
 
     df_selector["__label__"] = df_selector.apply(
-        lambda x: f"{_safe_text(x.get('Fecha_Informe'))} | {_safe_text(x.get('Nombre'))} | {_safe_text(x.get('Club'))} | {_safe_text(x.get('Scout'))} | {_safe_text(x.get('Línea'))}",
+        lambda x: (
+            f"{_safe_text(x.get('Fecha_Informe'))} | "
+            f"{_safe_text(x.get('Nombre'))} | "
+            f"{_safe_text(x.get('Club'))} | "
+            f"{_safe_text(x.get('Scout'))} | "
+            f"{_safe_text(x.get('Línea'))}"
+        ),
         axis=1
     )
 
     opciones = df_selector["__label__"].tolist()
 
+    if not opciones:
+        st.warning("No hay informes disponibles para seleccionar.")
+        st.stop()
+
     informe_label = st.selectbox(
-        "Seleccionar informe",
+        "Elegí un informe",
         options=opciones,
         index=0
     )
@@ -1593,13 +1664,26 @@ if menu == "Ver informes":
     if not jugador_data.empty:
         j = jugador_data.iloc[0]
 
-        st.markdown("---")
-        st.markdown(f"### 🧾 Ficha del jugador: **{_safe_text(j.get('Nombre'))}**")
+        st.markdown("""
+        <div style="
+            margin-top: 12px;
+            margin-bottom: 14px;
+            padding: 12px 16px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, rgba(20,20,30,0.95), rgba(35,45,70,0.92));
+            border: 1px solid rgba(255,255,255,0.10);
+        ">
+            <div style="color:white; font-size:18px; font-weight:700;">🧾 Ficha del jugador</div>
+            <div style="color:rgba(255,255,255,0.72); font-size:13px;">
+                Datos vinculados al informe seleccionado.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
         col1, col2, col3 = st.columns([1, 1, 1])
 
         with col1:
-            if pd.notna(j.get("URL_Foto")) and str(j.get("URL_Foto", "")).startswith("http"):
+            if _safe_http(j.get("URL_Foto")):
                 st.image(j["URL_Foto"], width=150)
 
             st.markdown(f"**📍 Club:** {_safe_text(j.get('Club'))}")
@@ -1615,15 +1699,17 @@ if menu == "Ver informes":
         with col3:
             st.markdown(f"**🧠 Característica:** {_safe_text(j.get('Caracteristica'))}")
 
-            if pd.notna(j.get("Instagram")) and str(j.get("Instagram", "")).startswith("http"):
+            if _safe_http(j.get("Instagram")):
                 st.markdown(f"[📸 Instagram]({j['Instagram']})")
 
-            if pd.notna(j.get("URL_Perfil")) and str(j.get("URL_Perfil", "")).startswith("http"):
+            if _safe_http(j.get("URL_Perfil")):
                 st.markdown(f"[🌐 Perfil externo]({j['URL_Perfil']})")
 
     # ---------------------------------------------------------
     # PDF SIMPLE
     # ---------------------------------------------------------
+    st.markdown("---")
+
     if st.button("📥 Exportar informe simple", key=f"pdf_{id_jugador_sel}_{id_informe_sel}"):
         try:
             from fpdf import FPDF
@@ -1691,84 +1777,87 @@ if menu == "Ver informes":
     # EDICIÓN DEL INFORME SELECCIONADO
     # ---------------------------------------------------------
     st.markdown("---")
-    st.markdown("### ✏️ Editar informe seleccionado")
 
-    informe_edit = df_reports[df_reports["ID_Informe"] == id_informe_sel].copy()
+    with st.expander("✏️ Editar informe seleccionado", expanded=False):
+        informe_edit = df_reports[df_reports["ID_Informe"] == id_informe_sel].copy()
 
-    if not informe_edit.empty:
-        inf = informe_edit.iloc[0]
+        if not informe_edit.empty:
+            inf = informe_edit.iloc[0]
 
-        with st.form(f"form_edit_{id_informe_sel}"):
+            with st.form(f"form_edit_{id_informe_sel}"):
 
-            nuevo_scout = st.text_input("Scout", _safe_text(inf.get("Scout", "")))
-            nueva_fecha = st.text_input("Fecha del partido", _safe_text(inf.get("Fecha_Partido", "")))
-            nuevos_equipos = st.text_input("Equipos y resultado", _safe_text(inf.get("Equipos_Resultados", "")))
+                nuevo_scout = st.text_input("Scout", _safe_text(inf.get("Scout", "")))
+                nueva_fecha = st.text_input("Fecha del partido", _safe_text(inf.get("Fecha_Partido", "")))
+                nuevos_equipos = st.text_input("Equipos y resultado", _safe_text(inf.get("Equipos_Resultados", "")))
 
-            opciones_linea = [
-                "1ra (Fichar)",
-                "2da (Seguir)",
-                "3ra (Ver más adelante)",
-                "4ta (Descartar)",
-                "Joven Promesa"
-            ]
+                opciones_linea = [
+                    "1ra (Fichar)",
+                    "2da (Seguir)",
+                    "3ra (Ver más adelante)",
+                    "4ta (Descartar)",
+                    "Joven Promesa"
+                ]
 
-            linea_actual = _safe_text(inf.get("Línea", ""))
-            index_linea = opciones_linea.index(linea_actual) if linea_actual in opciones_linea else 2
+                linea_actual = _safe_text(inf.get("Línea", ""))
+                index_linea = opciones_linea.index(linea_actual) if linea_actual in opciones_linea else 2
 
-            nueva_linea = st.selectbox(
-                "Línea",
-                opciones_linea,
-                index=index_linea
-            )
+                nueva_linea = st.selectbox(
+                    "Línea",
+                    opciones_linea,
+                    index=index_linea
+                )
 
-            nuevas_obs = st.text_area(
-                "Observaciones",
-                _safe_text(inf.get("Observaciones", ""), default=""),
-                height=160
-            )
+                nuevas_obs = st.text_area(
+                    "Observaciones",
+                    _safe_text(inf.get("Observaciones", ""), default=""),
+                    height=160
+                )
 
-            guardar = st.form_submit_button("💾 Guardar cambios")
+                guardar = st.form_submit_button("💾 Guardar cambios")
 
-            if guardar:
-                try:
-                    ws_inf = obtener_hoja("Informes")
-                    data_sheet = ws_inf.get_all_records()
-                    df_sheet = pd.DataFrame(data_sheet)
+                if guardar:
+                    try:
+                        ws_inf = obtener_hoja("Informes")
+                        data_sheet = ws_inf.get_all_records()
+                        df_sheet = pd.DataFrame(data_sheet)
 
-                    if "ID_Informe" not in df_sheet.columns:
-                        st.error("La hoja Informes no contiene la columna ID_Informe.")
-                    else:
-                        df_sheet["ID_Informe"] = _safe_str_series(df_sheet["ID_Informe"])
-                        match = df_sheet[df_sheet["ID_Informe"] == id_informe_sel]
-
-                        if not match.empty:
-                            row_index = match.index[0] + 2
-                            fila_actual = match.iloc[0].copy()
-
-                            fila_actual["Scout"] = nuevo_scout
-                            fila_actual["Fecha_Partido"] = nueva_fecha
-                            fila_actual["Equipos_Resultados"] = nuevos_equipos
-                            fila_actual["Línea"] = nueva_linea
-                            fila_actual["Observaciones"] = nuevas_obs
-
-                            ws_inf.update(
-                                f"A{row_index}:AB{row_index}",
-                                [fila_actual.tolist()]
-                            )
-
-                            st.cache_data.clear()
-                            st.toast("✓ Informe actualizado correctamente", icon="✅")
-                            st.rerun()
+                        if "ID_Informe" not in df_sheet.columns:
+                            st.error("La hoja Informes no contiene la columna ID_Informe.")
                         else:
-                            st.error("No se encontró el informe en la hoja.")
+                            df_sheet["ID_Informe"] = _safe_str_series(df_sheet["ID_Informe"])
+                            match = df_sheet[df_sheet["ID_Informe"] == id_informe_sel]
 
-                except Exception as e:
-                    st.error(f"⚠️ Error al actualizar el informe: {e}")
+                            if not match.empty:
+                                row_index = match.index[0] + 2
+                                fila_actual = match.iloc[0].copy()
+
+                                fila_actual["Scout"] = nuevo_scout
+                                fila_actual["Fecha_Partido"] = nueva_fecha
+                                fila_actual["Equipos_Resultados"] = nuevos_equipos
+                                fila_actual["Línea"] = nueva_linea
+                                fila_actual["Observaciones"] = nuevas_obs
+
+                                total_cols = len(df_sheet.columns)
+                                end_col = _excel_col_letter(total_cols)
+
+                                ws_inf.update(
+                                    f"A{row_index}:{end_col}{row_index}",
+                                    [fila_actual.tolist()]
+                                )
+
+                                st.cache_data.clear()
+                                st.toast("✓ Informe actualizado correctamente", icon="✅")
+                                st.rerun()
+                            else:
+                                st.error("No se encontró el informe en la hoja.")
+
+                    except Exception as e:
+                        st.error(f"⚠️ Error al actualizar el informe: {e}")
 
     # ---------------------------------------------------------
-    # ELIMINACIÓN DESACTIVADA A PROPÓSITO
+    # ELIMINACIÓN DESACTIVADA
     # ---------------------------------------------------------
-    st.info("El borrado quedó desactivado en esta versión para evitar eliminar informes por error.")
+    st.info("El borrado quedó desactivado en esta vista para evitar eliminar informes por error.")
 
 
 # =========================================================
